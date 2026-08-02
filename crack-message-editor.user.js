@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         ✏️ 크랙 출력물 일괄 편집
+// @name         ✏️ 크랙 메시지 일괄 편집
 // @namespace    https://crack.wrtn.ai/
-// @version      0.5.1
-// @description  채팅방의 AI 출력물과 내 메시지를 섹션별로 훑어보고, 원문과 나란히 비교하며 수정·찾기바꾸기·JSON 일괄적용으로 고친 뒤 저장한다. 기본값은 읽기 전용이며 저장 직전 원본을 자동 백업한다.
+// @version      0.6.3
+// @description  채팅방의 AI 답변과 내 메시지를 섹션별로 훑어보고, 원문과 나란히 비교하며 수정·찾기바꾸기·JSON 일괄적용으로 고친 뒤 저장한다. 기본값은 읽기 전용이며 저장 직전 원본을 자동 백업한다.
 // @author       Gia
 // @match        https://crack.wrtn.ai/*
 // @grant        none
@@ -23,9 +23,13 @@
     var SAVE_GAP_MS = 150;        // 연속 PATCH 사이 간격 (레이트 리밋 회피)
     var SAVE_ABORT_AFTER = 3;     // 연속 실패 이 횟수면 중단
     var RENDER_CHUNK = 200;       // 한 번에 그릴 행 수
+    var BACKUP_MIN = 5;           // 이 건수 이상 저장할 때만 원본을 강제로 내려받는다
+                                  // (1로 두면 항상 백업, 아주 크게 두면 자동 백업 없음)
 
     // 섹션 구분 — 화면 전환·JSON 내보내기 범위에 함께 쓴다.
-    var SCOPE_LABEL = { bot: 'AI 출력물', user: '내 메시지', all: '전체' };
+    // 라벨이 버튼 글자로 그대로 나가므로, 다른 스크립트의 탐색 키워드를 피한다.
+    // ('AI 출력물'은 모바일 유틸의 /출력/ 패턴에 걸린다. createButton() 위 주석 참고)
+    var SCOPE_LABEL = { bot: 'AI 답변', user: '내 메시지', all: '전체' };
     var SCOPE_SLUG = { bot: 'ai', user: 'user', all: 'all' };
 
     var BTN_CLASS = 'crack-msg-ed-btn';
@@ -63,8 +67,24 @@
 
     function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-    function stamp() {
-        return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    // 파일명용 시각 — 반드시 로컬 시간. toISOString()은 UTC라
+    // 한국시간 새벽 0~9시에 내보내면 날짜가 하루 전으로 찍힌다.
+    function stampLocal() {
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        var d = new Date();
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+               '_' + p(d.getHours()) + p(d.getMinutes());
+    }
+
+    // 파일명에 못 쓰는 문자를 걷어내고 길이를 제한한다.
+    function safeFileName(s, max) {
+        var t = String(s == null ? '' : s)
+            .replace(/[\x00-\x1f\x7f]/g, '')          // 제어문자
+            .replace(/[\\\/:*?\x22<>|]/g, ' ')        // 윈도우/맥 금지 문자 (\x22 = 큰따옴표)
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (t.length > max) t = t.slice(0, max).trim();
+        return t.replace(/[. ]+$/, '');           // 윈도우는 끝의 마침표·공백을 못 쓴다
     }
 
     // ============== API ==============
@@ -96,6 +116,19 @@
             throw new Error('HTTP ' + res.status + (body ? ' · ' + body : ''));
         }
         return true;
+    }
+
+    // 방 정보 — GET {API_BASE}/{chatId} (아카이브 스크립트가 쓰는 것과 같은 엔드포인트).
+    // 파일명·화면 표시에만 쓰므로 실패해도 편집에는 지장이 없다.
+    // 이름은 story.name만 쓴다. character.name 폴백은 일부러 넣지 않았다.
+    async function fetchChatMeta() {
+        var res = await apiGet('');
+        var d = (res && res.data) || {};
+        return {
+            storyName: (d.story && d.story.name) || '',
+            characterName: (d.character && d.character.name) || '',   // 진단용으로만 들고 있는다
+            plainName: d.name || ''
+        };
     }
 
     // 읽기 검증을 위해 페이지별 통계와 중복 _id를 함께 수집한다.
@@ -343,6 +376,8 @@
             'border-bottom:1px solid var(--cme-line2);background:var(--cme-head);flex:0 0 auto;flex-wrap:wrap}',
             '.cme-head h3{margin:0;font-size:15px;font-weight:700;flex:0 0 auto}',
             '.cme-stat{font-size:11.5px;color:var(--cme-muted);font-variant-numeric:tabular-nums}',
+            '.cme-room{font-size:12.5px;font-weight:650;color:var(--cme-accent2);',
+            'max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}',
             '.cme-spacer{flex:1 1 auto}',
 
             // ---- 버튼 ----
@@ -431,7 +466,8 @@
         overlay.innerHTML =
             '<div class="cme-modal">' +
               '<div class="cme-head">' +
-                '<h3>✏️ 출력물 일괄 편집</h3>' +
+                '<h3>✏️ 메시지 일괄 편집</h3>' +
+                '<span class="cme-room" id="cme-room"></span>' +
                 '<span class="cme-stat" id="cme-stat">불러오는 중…</span>' +
                 '<span class="cme-spacer"></span>' +
                 '<button class="cme-b" id="cme-verify" disabled>읽기 검증</button>' +
@@ -447,7 +483,7 @@
               '</div>' +
               '<div class="cme-tools">' +
                 '<div class="cme-seg" id="cme-seg">' +
-                  '<button class="cme-segb active" data-view="bot">AI 출력물<b data-n="bot"></b></button>' +
+                  '<button class="cme-segb active" data-view="bot">AI 답변<b data-n="bot"></b></button>' +
                   '<button class="cme-segb" data-view="user">내 메시지<b data-n="user"></b></button>' +
                   '<button class="cme-segb" data-view="all">전체<b data-n="all"></b></button>' +
                 '</div>' +
@@ -468,7 +504,7 @@
         document.body.appendChild(overlay);
 
         var $ = function (id) { return overlay.querySelector('#' + id); };
-        var listEl = $('cme-list'), statEl = $('cme-stat'), logEl = $('cme-log');
+        var listEl = $('cme-list'), statEl = $('cme-stat'), logEl = $('cme-log'), roomEl = $('cme-room');
         var searchEl = $('cme-search'), changedOnlyEl = $('cme-changed-only');
         var segEl = $('cme-seg'), segBtns = segEl.querySelectorAll('.cme-segb');
         var findEl = $('cme-find'), replaceEl = $('cme-replace'), regexEl = $('cme-regex');
@@ -488,6 +524,8 @@
         var locked = true;       // 기본값은 읽기 전용. 명시적으로 풀어야 쓰기가 열린다.
         var view = 'bot';        // 'bot' | 'user' | 'all' — 섹션 구분
         var warnedUser = false;
+        var chatMeta = null;     // { storyName, ... } — 못 가져오면 null
+        var storyName = '';
 
         function log(msg) {
             logEl.classList.add('open');
@@ -711,7 +749,7 @@
             for (var i = 0; i < segBtns.length; i++) segBtns[i].classList.toggle('active', segBtns[i] === b);
             if (view === 'user' && !warnedUser) {
                 warnedUser = true;
-                log('내 메시지 구간입니다. 저장 방식은 AI 출력물과 같지만, 이 구간에서 저장을 시험해 본 적은 아직 없습니다. ' +
+                log('내 메시지 구간입니다. 저장 방식은 AI 답변과 같지만, 이 구간에서 저장을 시험해 본 적은 아직 없습니다. ' +
                     '한 건만 먼저 고쳐서 반영되는지 확인한 뒤 나머지를 손대세요.');
             }
             renderLimit = RENDER_CHUNK;
@@ -727,6 +765,14 @@
                 catch (err) { return { error: '정규식 오류: ' + err.message }; }
             }
             return { re: new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g') };
+        }
+
+        // 어느 메시지가 바뀌는지 번호로 보여준다.
+        // 손으로 채워 넣은 설정 블록 같은 걸 모른 채 덮어쓰는 사고를 막기 위한 것.
+        function planNumbers(plan, max) {
+            var nums = plan.map(function (p) { return '#' + p.m.index + '(' + p.n + ')'; });
+            if (nums.length <= max) return nums.join(' ');
+            return nums.slice(0, max).join(' ') + ' … 외 ' + nf(nums.length - max) + '개';
         }
 
         previewBtn.onclick = function () {
@@ -746,11 +792,15 @@
                 var next = String(m.draft).replace(p.re, replacement);
                 if (next === m.draft) return;
                 hitMsgs++; hitCount += n;
-                plan.push({ m: m, next: next });
+                plan.push({ m: m, next: next, n: n });
             });
             if (!hitMsgs) { findStatEl.textContent = '일치하는 내용이 없습니다.'; return; }
             findStatEl.textContent = '메시지 ' + hitMsgs + '개 · ' + hitCount + '곳이 바뀝니다' +
                 (locked ? ' (읽기 전용 — 적용하려면 잠금 해제)' : '');
+            log('찾기/바꾸기 미리보기 — ' + SCOPE_LABEL[view] + ' 중 메시지 ' +
+                nf(hitMsgs) + '개 · ' + nf(hitCount) + '곳');
+            log('   ' + planNumbers(plan, 20));
+            log('   ↑ 괄호 안은 그 메시지에서 바뀌는 횟수입니다. 손대면 안 되는 번호가 없는지 확인하세요.');
             pendingReplace = plan;
             applyBtn.disabled = locked;
         };
@@ -758,8 +808,10 @@
         applyBtn.onclick = function () {
             if (locked) return;
             if (!pendingReplace || !pendingReplace.length) return;
-            if (!window.confirm('메시지 ' + pendingReplace.length + '개의 본문을 바꿉니다.\n' +
+            if (!window.confirm('메시지 ' + pendingReplace.length + '개의 본문을 바꿉니다.\n\n' +
+                                planNumbers(pendingReplace, 12) + '\n\n' +
                                 '아직 서버에 저장되지 않으며, 저장 전까지 전체 원복이 가능합니다.\n계속할까요?')) return;
+            log('✓ ' + nf(pendingReplace.length) + '개 적용됨 (미저장) — ' + planNumbers(pendingReplace, 20));
             pendingReplace.forEach(function (p) { p.m.draft = p.next; });
             findStatEl.textContent = pendingReplace.length + '개 적용됨 (미저장)';
             pendingReplace = null;
@@ -779,15 +831,29 @@
             return items;
         }
 
+        // 파일명: {스토리이름}_{구분}_{chatId앞6}_{로컬시각}.json
+        // 이름을 못 가져오면 chatId 전체로 떨어진다 (구분할 단서가 그것뿐이므로).
+        function makeFileName(label) {
+            var name = safeFileName(storyName, 30);
+            var id = String(getChatId() || 'chat');
+            var parts = [];
+            if (name) parts.push(name);
+            parts.push(label);
+            parts.push(name ? id.slice(0, 6) : id);
+            parts.push(stampLocal());
+            return parts.join('_') + '.json';
+        }
+
         // scope를 생략하면 항상 전체. 저장 직전 자동 백업은 반드시 전체여야 한다.
         function backupPayload(tag, scope) {
             scope = scope || 'all';
             var list = scopedItems(scope);
             return {
-                exportedAt: new Date().toISOString(),
+                exportedAt: new Date().toISOString(),   // 이쪽은 UTC ISO 그대로 (기계용)
                 reason: tag,
                 scope: scope,
                 chatId: getChatId(),
+                storyName: storyName,
                 total: list.length,
                 totalInChat: items.length,
                 messages: list.map(function (m) {
@@ -800,10 +866,11 @@
         exportBtn.onclick = function () {
             var n = scopedItems(view).length;
             if (!n) { log('내보낼 메시지가 없습니다.'); return; }
-            downloadJson(backupPayload('manual', view),
-                'crack-messages-' + (getChatId() || 'chat') + '-' + SCOPE_SLUG[view] + '-' + stamp() + '.json');
+            var fname = makeFileName(SCOPE_SLUG[view]);
+            downloadJson(backupPayload('manual', view), fname);
             log('JSON 내보내기 — ' + SCOPE_LABEL[view] + ' ' + nf(n) + '개' +
                 (view === 'all' ? '' : ' (검색·필터와 무관하게 이 섹션 전부)'));
+            log('   ' + fname);
         };
 
         // ---------- JSON 불러오기 (일괄 적용) ----------
@@ -923,7 +990,7 @@
             if (locked) {
                 if (!window.confirm('편집을 허용합니다.\n\n' +
                     '이 상태에서는 본문 수정과 서버 저장이 가능해집니다.\n' +
-                    '저장은 되돌리기 어려우니, 먼저 [백업 내보내기]로 원본을 받아두시길 권합니다.\n\n계속할까요?')) return;
+                    '저장은 되돌리기 어려우니, 먼저 [JSON 내보내기]로 원본을 받아두시길 권합니다.\n\n계속할까요?')) return;
                 locked = false;
                 log('편집 잠금이 해제되었습니다.');
             } else {
@@ -955,6 +1022,18 @@
 
             var L = [];
             L.push('──────── 읽기 검증 ────────');
+            if (!chatMeta) {
+                L.push('방 이름: 조회 실패 — 파일명은 chatId만 씁니다');
+            } else if (storyName) {
+                L.push('방 이름: ' + JSON.stringify(storyName) + '  (story.name)');
+                L.push('파일명 예: ' + makeFileName(SCOPE_SLUG[view]));
+            } else {
+                L.push('방 이름: story.name이 비어 있습니다 — 파일명은 chatId만 씁니다');
+                var alt = [];
+                if (chatMeta.characterName) alt.push('character.name = ' + JSON.stringify(chatMeta.characterName));
+                if (chatMeta.plainName) alt.push('name = ' + JSON.stringify(chatMeta.plainName));
+                if (alt.length) L.push('  참고 — 이 방에 있는 다른 이름: ' + alt.join(' · '));
+            }
             L.push('요청 페이지 크기 ' + PAGE_SIZE + ' → 실제 첫 페이지 ' + firstPage + '개' +
                    (firstPage < PAGE_SIZE ? '  ⚠ 서버가 상한을 두는 것으로 보임' : '  (정상)'));
             L.push('페이지 ' + counts.length + '회 · 개수 ' +
@@ -966,7 +1045,7 @@
                    (s.hitPageCap ? '  ⚠ 페이지 상한(' + MAX_PAGES + ') 도달 — 앞부분이 누락됐을 수 있음' : ''));
             var botN = roles.assistant || 0;
             var oddRoles = Object.keys(roles).filter(function (k) { return k !== 'assistant' && k !== 'user'; });
-            L.push('섹션 분포: AI 출력물 ' + nf(botN) + ' / 내 메시지 ' + nf(items.length - botN) +
+            L.push('섹션 분포: AI 답변 ' + nf(botN) + ' / 내 메시지 ' + nf(items.length - botN) +
                    (oddRoles.length ? '  ⚠ 예외 role: ' + oddRoles.join(', ') : ''));
             L.push('turnId 종류: ' + nf(turnCount) + '개' +
                    (turnCount === items.length ? '  (메시지마다 고유 — 대화 턴 수가 아닙니다)'
@@ -998,15 +1077,24 @@
             var targets = changedItems();
             if (!targets.length || saving) return;
             if (invalidItems().length) { window.alert('본문이 빈 항목이 있습니다. 먼저 채워주세요.'); return; }
+            // 몇 건 안 되면 백업 파일을 만들지 않는다. 매번 받아봐야 폴더만 늘고
+            // 정작 필요한 대량 작업 직전 백업을 찾기 어려워진다.
+            var withBackup = targets.length >= BACKUP_MIN;
             if (!window.confirm(targets.length + '건을 서버에 저장합니다.\n' +
-                                '저장 직전 원본 전체가 JSON으로 자동 다운로드됩니다.\n계속할까요?')) return;
+                                (withBackup
+                                    ? '저장 직전 원본 전체가 JSON으로 자동 다운로드됩니다.\n'
+                                    : '백업 파일은 만들지 않습니다. (' + BACKUP_MIN + '건 이상일 때만)\n') +
+                                '계속할까요?')) return;
 
-            // 저장 전 원본 자동 백업 — 되돌릴 수 없는 작업이므로 강제한다.
-            downloadJson(backupPayload('before-save'), 'crack-backup-' + (getChatId() || 'chat') + '-' + stamp() + '.json');
+            if (withBackup) {
+                // 되돌릴 수 없는 작업이므로 강제한다. 범위는 항상 전체.
+                downloadJson(backupPayload('before-save'), makeFileName('저장전백업'));
+            }
 
             saving = true;
             logEl.textContent = '';
-            log('원본 백업을 내려받았습니다. 저장을 시작합니다… (' + targets.length + '건)');
+            log((withBackup ? '원본 백업을 내려받았습니다. ' : '') +
+                '저장을 시작합니다… (' + targets.length + '건)');
             updateCounters();
             closeBtn.disabled = true;
 
@@ -1045,10 +1133,15 @@
             statEl.textContent = '불러오는 중…';
             listEl.innerHTML = '<div class="cme-empty">불러오는 중…</div>';
             try {
+                // 방 이름은 실패해도 편집을 막지 않는다. 메시지 로딩과 같이 걸어둔다.
+                var metaPromise = fetchChatMeta().catch(function () { return null; });
                 var result = await fetchAllMessages(function (count, pages) {
                     statEl.textContent = nf(count) + '개 (' + pages + '페이지)…';
                 });
                 loadStats = result.stats;
+                chatMeta = await metaPromise;
+                storyName = (chatMeta && chatMeta.storyName) || '';
+                if (storyName) { roomEl.textContent = storyName; roomEl.title = storyName; }
                 items = result.messages.map(function (r, i) {
                     var content = String(r.content == null ? '' : r.content);
                     return {
@@ -1078,8 +1171,14 @@
         var btn = document.createElement('button');
         btn.className = BTN_CLASS;
         btn.type = 'button';
-        btn.textContent = '✏️ 출력물';
-        btn.title = '채팅 출력물 일괄 편집';
+        // ★ 라벨·title에 다른 스크립트의 탐색 키워드를 넣지 말 것.
+        //   모바일 유틸은 textContent/aria-label/title/data-tooltip/data-label을 한 덩어리로 묶어
+        //   느슨한 정규식으로 버튼을 찾아 대신 누른다. 예전 라벨 '✏️ 출력물'이 사이드바
+        //   [출력량 조절]의 2차 패턴 /출력/에 걸려서, 그 버튼이 이 편집기를 열어버렸다.
+        //   피해야 할 단어: 출력 · 가이드 · 프로필 · 노트 · 보관함 · 번역기 · 이미지
+        //                  메모리+편집 · 요약+편집 · AI 요약 · '메시지 옵션' · '메시지 메뉴'
+        btn.textContent = '✏️ 메시지 편집';
+        btn.title = '메시지 본문 일괄 편집';
         btn.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
