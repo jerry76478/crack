@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ✨ 크랙 초월 번역기 (맥락 참고)
 // @namespace    http://tampermonkey.net/
-// @version      3.5
+// @version      3.6
 // @description  최신 메시지를 자동 감지·번역·수정 삽입. 이미지 링크 마스킹 보호 · 이전 턴 맥락 읽기 전용 참고 · Gemini 3.8/3.6 Flash 지원.
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-translator.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-translator.user.js
@@ -83,10 +83,10 @@
   }
 
   // 이전 턴 맥락 기본값. 0턴이면 맥락을 아예 붙이지 않는다.
-  const DEFAULT_CONTEXT_TURNS = 4;
-  const MAX_CONTEXT_TURNS = 10;
-  const CONTEXT_MSG_CHAR_LIMIT = 1200;
-  const CONTEXT_TOTAL_CHAR_LIMIT = 12000;
+  // 여기서 '턴'은 메시지 1개를 뜻한다. '유저 + AI 전체' 모드에서 20턴이면 유저 10 + AI 10이다.
+  // 글자 수 상한은 두지 않는다. 중간에서 잘라내면 맥락이 끊겨 오히려 번역 일관성이 나빠진다.
+  const DEFAULT_CONTEXT_TURNS = 8;
+  const MAX_CONTEXT_TURNS = 40;
 
   const CONTEXT_GUIDE = `[이전 대화 맥락 운용 규칙]
 - 사용자 메시지에 [이전 대화 맥락] 블록이 들어오면 그것은 번역 대상이 아니라 읽기 전용 참고 자료입니다.
@@ -331,7 +331,6 @@
 #trans-firebase-script,
 #trans-model-select,
 #trans-mode-select,
-#trans-context-turns,
 #trans-context-scope,
 #trans-custom-prompt,
 #trans-replace-find,
@@ -357,7 +356,6 @@
 #trans-firebase-script:focus,
 #trans-model-select:focus,
 #trans-mode-select:focus,
-#trans-context-turns:focus,
 #trans-context-scope:focus,
 #trans-custom-prompt:focus,
 #g-think-val:focus,
@@ -419,6 +417,35 @@
   color: var(--t-tx3);
   font-size: 11px;
   line-height: 1.45;
+}
+
+.t-range-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.t-range-row .trans-label {
+  margin-bottom: 0;
+}
+
+.t-range-val {
+  color: var(--t-accent);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#trans-context-turns {
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  background: transparent;
+  accent-color: var(--t-accent);
+  cursor: pointer;
+  /* 슬라이더를 가로로 끌 때 페이지가 같이 스크롤되지 않도록 세로 제스처만 넘긴다. */
+  touch-action: pan-y;
 }
 
 .t-field-desc {
@@ -908,16 +935,12 @@
       </select>
     </div>
     <div class="t-field">
-      <label class="trans-label" for="trans-context-turns">이전 턴 맥락 참고</label>
-      <select id="trans-context-turns" class="t-select-arrow">
-        <option value="0">사용 안 함</option>
-        <option value="2">최근 2턴</option>
-        <option value="4">최근 4턴</option>
-        <option value="6">최근 6턴</option>
-        <option value="8">최근 8턴</option>
-        <option value="10">최근 10턴</option>
-      </select>
-      <span class="t-field-desc">번역 대상 앞의 대화를 읽기 전용으로 같이 넘겨, 호칭·말투·고유명사 표기가 이전 턴과 어긋나지 않게 합니다. 턴이 많을수록 입력 토큰과 비용이 늘어납니다.</span>
+      <div class="t-range-row">
+        <label class="trans-label" for="trans-context-turns">이전 턴 맥락 참고</label>
+        <span class="t-range-val" id="trans-context-turns-val">8턴</span>
+      </div>
+      <input type="range" id="trans-context-turns" min="0" max="${MAX_CONTEXT_TURNS}" step="1">
+      <span class="t-field-desc">번역 대상 앞의 대화를 읽기 전용으로 같이 넘겨, 호칭·말투·고유명사 표기가 이전 턴과 어긋나지 않게 합니다. 1턴 = 메시지 1개예요. 아래를 '유저 + AI 전체'로 두면 20턴이 유저 10 + AI 10이 됩니다. 턴이 많을수록 입력 토큰과 비용이 늘어납니다.</span>
     </div>
     <div class="t-field">
       <label class="trans-label" for="trans-context-scope">맥락 참고 대상</label>
@@ -1051,6 +1074,7 @@
     modeSelect.value = savedMode;
     contextTurnsSelect.value = String(getContextTurns());
     contextScopeSelect.value = getContextScope();
+    renderContextTurnsLabel();
 
     let currentPrompts = {
       ko: GM_getValue('customPromptKo', promptKo),
@@ -1119,6 +1143,13 @@
       thinkContainer.setAttribute('data-current-model', currentModel);
     }
 
+    function renderContextTurnsLabel() {
+      const label = document.getElementById('trans-context-turns-val');
+      if (!label) return;
+      const turns = parseInt(contextTurnsSelect.value, 10) || 0;
+      label.textContent = turns === 0 ? '사용 안 함' : `${turns}턴`;
+    }
+
     const saveCurrentSettings = () => {
       saveThinkVal(thinkContainer.getAttribute('data-current-model'));
 
@@ -1153,7 +1184,12 @@
     });
 
     instantApplyInput.addEventListener('change', saveCurrentSettings);
-    contextTurnsSelect.addEventListener('change', saveCurrentSettings);
+    // 드래그 중에는 숫자만 갱신하고, 손을 뗀 뒤(change)에 저장한다.
+    contextTurnsSelect.addEventListener('input', renderContextTurnsLabel);
+    contextTurnsSelect.addEventListener('change', () => {
+      renderContextTurnsLabel();
+      saveCurrentSettings();
+    });
     contextScopeSelect.addEventListener('change', saveCurrentSettings);
 
     addSlotBtn.addEventListener('click', () => {
@@ -1542,11 +1578,6 @@
       .trim();
   }
 
-  function truncateContextText(text) {
-    if (text.length <= CONTEXT_MSG_CHAR_LIMIT) return text;
-    return `${text.slice(0, CONTEXT_MSG_CHAR_LIMIT).trim()}\n…(이하 생략)`;
-  }
-
   /**
    * 번역 대상 메시지보다 앞선 턴을 읽기 전용 맥락 문자열로 만든다.
    * allMsgs는 최신순으로 내려오므로, 대상 메시지 뒤쪽(= 과거) 구간을 잘라 시간순으로 뒤집는다.
@@ -1565,26 +1596,18 @@
       const content = sanitizeContextText(getMessageContent(msg));
       if (!content) continue;
 
-      picked.push({ role, content: truncateContextText(content) });
-      const limit = scope === 'assistant' ? turns : turns * 2;
-      if (picked.length >= limit) break;
+      // turns는 메시지 개수다. 'AI 답변만'이면 AI 메시지 N개, '전체'면 역할 무관 N개.
+      picked.push({ role, content });
+      if (picked.length >= turns) break;
     }
 
     if (!picked.length) return '';
 
-    // 오래된 것부터 읽히도록 시간순으로 되돌리고, 총량이 넘치면 가장 오래된 것부터 버린다.
-    const chronological = picked.reverse();
-    const lines = [];
-    let total = 0;
-    for (let i = chronological.length - 1; i >= 0; i -= 1) {
-      const { role, content } = chronological[i];
-      const line = `[${role === 'assistant' ? 'AI 답변' : '유저 입력'}]\n${content}`;
-      if (total + line.length > CONTEXT_TOTAL_CHAR_LIMIT && lines.length) break;
-      total += line.length;
-      lines.unshift(line);
-    }
-
-    return lines.join('\n\n');
+    // 오래된 것부터 읽히도록 시간순으로 되돌린다. 길이는 자르지 않는다.
+    return picked
+      .reverse()
+      .map(({ role, content }) => `[${role === 'assistant' ? 'AI 답변' : '유저 입력'}]\n${content}`)
+      .join('\n\n');
   }
 
   function composeUserContent(contextText, maskedText) {
@@ -1783,7 +1806,7 @@ ${maskedText}`;
 
   async function fetchLatestBotMessage(chatId) {
     // 이전 턴 맥락을 켜면 대상 메시지보다 앞선 대화까지 필요하므로 조회량을 늘린다.
-    const limit = Math.min(100, 30 + getActiveContextTurns() * 4);
+    const limit = Math.min(100, 20 + getActiveContextTurns() * 2);
     const res = await fetch(`${API_BASE}/v3/chats/${chatId}/messages?limit=${limit}`, {
       headers: buildHeaders(),
       credentials: 'include',
