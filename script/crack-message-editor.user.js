@@ -4,6 +4,8 @@
 // @version      0.6.3
 // @description  채팅방의 AI 답변과 내 메시지를 섹션별로 훑어보고, 원문과 나란히 비교하며 수정·찾기바꾸기·JSON 일괄적용으로 고친 뒤 저장한다. 기본값은 읽기 전용이며 저장 직전 원본을 자동 백업한다.
 // @author       Gia
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-message-editor.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-message-editor.user.js
 // @match        https://crack.wrtn.ai/*
 // @grant        none
 // @run-at       document-idle

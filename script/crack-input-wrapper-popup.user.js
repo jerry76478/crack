@@ -4,6 +4,8 @@
 // @version      0.1.9
 // @description  크랙 채팅 입력창/수정창에서 드래그 선택한 텍스트를 따옴표·괄호·마크다운 기호로 감싸는 선택 팝업 도구입니다. 모바일 터치에서 버튼이 눌리지 않던 문제를 수정했습니다.
 // @author       Assistant
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-input-wrapper-popup.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-input-wrapper-popup.user.js
 // @match        https://crack.wrtn.ai/*
 // @match        https://*.crack.wrtn.ai/*
 // @grant        GM_addStyle

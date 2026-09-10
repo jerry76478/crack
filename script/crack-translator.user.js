@@ -3,6 +3,8 @@
 // @namespace    http://tampermonkey.net/
 // @version      3.5
 // @description  최신 메시지를 자동 감지·번역·수정 삽입. 이미지 링크 마스킹 보호 · 이전 턴 맥락 읽기 전용 참고 · Gemini 3.8/3.6 Flash 지원.
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-translator.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-translator.user.js
 // @match        https://crack.wrtn.ai/*
 // @grant        GM_setValue
 // @grant        GM_getValue

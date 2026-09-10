@@ -4,6 +4,8 @@
 // @version      1.0.0
 // @description  로어 인젝터가 폴백으로 만든 떠다니는 버튼을 크랙 헤더 버튼 줄로 옮긴다. 인젝터 코드는 수정하지 않으므로 인젝터가 자동 업데이트돼도 유지된다.
 // @author       Gia
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-lore-button-relocator.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-lore-button-relocator.user.js
 // @match        https://crack.wrtn.ai/*
 // @grant        none
 // @run-at       document-idle

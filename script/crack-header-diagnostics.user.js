@@ -3,6 +3,8 @@
 // @namespace    https://crack.wrtn.ai/
 // @version      1.0.0
 // @description  모바일에서 뷰포트 크기와 헤더 앵커 판정을 화면에 직접 표시한다. 확인이 끝나면 삭제해도 되는 임시 도구.
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-header-diagnostics.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-header-diagnostics.user.js
 // @match        https://crack.wrtn.ai/*
 // @grant        none
 // @run-at       document-idle

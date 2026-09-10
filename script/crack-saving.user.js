@@ -4,12 +4,12 @@
 // @version      1.0.7
 // @description  CrackSafe - 크랙 채팅 백업 (그룹 일괄 삭제 지원)
 // @author       zxklkj12
+// @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-saving.user.js
+// @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-saving.user.js
 // @match        https://crack.wrtn.ai/*
 // @connect      crack-api.wrtn.ai
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
-// @updateURL    https://gist.github.com/zxklkj12/7eff465357b2c511a9087589aa54f1c0/raw/crack-downloader-v3.3.user.js
-// @downloadURL  https://gist.github.com/zxklkj12/7eff465357b2c511a9087589aa54f1c0/raw/crack-downloader-v3.3.user.js
 // @require      https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js
 // @require      https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js
 // @license      MIT
