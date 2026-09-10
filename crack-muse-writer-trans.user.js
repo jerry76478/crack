@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ✨ Crack Muse Writer + 번역 (AI 답변 커스텀)
 // @namespace    muse writer
-// @version      5.3.3-multilang.1
+// @version      5.3.5-multilang.1
 // @description  Crack 캐릭터챗 입력을 맥락·프로필·참고자료·서사 나침반에 맞춰 다듬고, 단기·장기 기억과 최신 에리 로어를 읽기 전용으로 참고하는 AI 집필 보조 도구 + 단일 언어 번역과 문장별 [es]·[스페인어] 태그 번역
 // @author       Gia
 // @match        https://crack.wrtn.ai/*
@@ -28,6 +28,7 @@
   const REFERENCE_CACHE_MS = 30000;
   const TOKEN_RECOMMENDED = 80000;
   const TOKEN_MODEL_LIMITS = Object.freeze({
+    "gemini-3.8-flash": 1048576,
     "gemini-3.6-flash": 1048576,
     "gemini-3.5-flash": 1048576,
     "gemini-3.1-flash-lite": 1048576,
@@ -162,6 +163,9 @@
   // Gemini 가격은 기존 확프의 기준값을 USD 표시로 사용한다.
   // DeepSeek V4 가격은 공식 API 문서 기준: cache hit / cache miss / output.
   const MODEL_PRICING = {
+    // Gemini 3.8 Flash Standard introductory pricing through 2026-12-31:
+    // input $0.75, output/thinking $3.75, cached input $0.075 per 1M; cache storage $0.50 per 1M tokens/hour.
+    "gemini-3.8-flash": { input: 0.75, output: 3.75, cacheRead: 0.075, cacheWrite: 0.75, cacheStoragePerHour: 0.5 },
     // Gemini 3.6 Flash Standard: input $1.50, output/thinking $7.50, cached input $0.15 per 1M.
     // Cache storage is $1.00 per 1M tokens/hour, but this request-level estimator has no storage-duration data.
     "gemini-3.6-flash": { input: 1.5, output: 7.5, cacheRead: 0.15, cacheWrite: 1.5, cacheStoragePerHour: 1.0 },
@@ -184,8 +188,19 @@
     return MODEL_ID_MIGRATIONS[id] || id;
   }
 
+  const GEMINI_3_8_FLASH_ID = "gemini-3.8-flash";
+
+  function normalizeGeminiThinkingLevel(modelId, level) {
+    const value = String(level || "").trim().toLowerCase();
+    const allowed = modelId === GEMINI_3_8_FLASH_ID
+      ? ["low", "medium", "high"]
+      : ["minimal", "low", "medium", "high"];
+    return allowed.includes(value) ? value : "medium";
+  }
+
   const PROVIDER_MODEL_OPTIONS = {
     google: [
+      ["gemini-3.8-flash", "Gemini 3.8 Flash"],
       ["gemini-3.6-flash", "Gemini 3.6 Flash"],
       ["gemini-3.5-flash", "Gemini 3.5 Flash"],
       ["gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite"],
@@ -194,6 +209,7 @@
       ["gemini-2.5-flash", "Gemini 2.5 Flash"],
     ],
     firebase: [
+      ["gemini-3.8-flash", "Gemini 3.8 Flash"],
       ["gemini-3.6-flash", "Gemini 3.6 Flash"],
       ["gemini-3.5-flash", "Gemini 3.5 Flash"],
       ["gemini-3.1-flash-lite", "Gemini 3.1 Flash-Lite"],
@@ -248,7 +264,14 @@
     const cacheMissTokens = u.cacheMissInputTokens || 0;
     const totalInputTokens = u.inputTokens || cacheReadTokens + cacheMissTokens || 0;
     const totalOutputTokens = u.outputTokens || 0;
-    const actualOutputTokens = thoughtsTokens > 0 && totalOutputTokens >= thoughtsTokens ? totalOutputTokens - thoughtsTokens : totalOutputTokens;
+    // Gemini usageMetadata의 candidatesTokenCount는 최종 응답 토큰만 포함하고
+    // thoughtsTokenCount는 별도다. DeepSeek/OpenAI 호환 usage는 기존 중복 제거 로직을 유지한다.
+    const isGeminiUsage = String(modelIdRaw || modelOverride).startsWith("gemini-");
+    const actualOutputTokens = isGeminiUsage
+      ? totalOutputTokens
+      : thoughtsTokens > 0 && totalOutputTokens >= thoughtsTokens
+        ? totalOutputTokens - thoughtsTokens
+        : totalOutputTokens;
     const uncachedInputTokens = cacheMissTokens > 0 ? cacheMissTokens : Math.max(0, totalInputTokens - cacheReadTokens);
 
     const readCost = (cacheReadTokens * (pricing.cacheRead ?? pricing.input)) / 1000000;
@@ -952,6 +975,7 @@
       const isPro = modelId.includes("pro");
       let level;
       if (isPro) level = tokens <= 20000 ? "low" : tokens <= 80000 ? "medium" : "high";
+      else if (modelId === GEMINI_3_8_FLASH_ID) level = tokens <= 45000 ? "low" : tokens <= 100000 ? "medium" : "high";
       else level = tokens <= 12000 ? "minimal" : tokens <= 45000 ? "low" : tokens <= 100000 ? "medium" : "high";
       const labels = { minimal: "Minimal", low: "Low", medium: "Medium", high: "High" };
       return { value: level, label: labels[level], note: "토큰량 기준 추천 · 장면 복잡도에 따라 한 단계 조절 가능" };
@@ -1781,7 +1805,7 @@
   panel.id = "crack-ai-panel";
   panel.innerHTML = `
         <div class="panel-header" id="panel-drag-handle">
-            <div class="panel-title">✳ MUSE WRITER <span class="cmw-ver">V5.3.3+T</span></div>
+            <div class="panel-title">✳ MUSE WRITER <span class="cmw-ver">V5.3.5+T</span></div>
             <div class="cmw-live"><i></i><span id="cmw-live-token">—</span></div>
             <button type="button" class="cmw-help-btn" id="cmw-help-btn" aria-label="Muse 사용 방법" aria-expanded="false">?</button>
             <div class="panel-close" id="close-panel">✕</div>
@@ -2165,6 +2189,7 @@
                 <div class="setting-group">
                     <span class="setting-label">AI 모델 선택</span>
                     <select id="cfg-model" class="expand-input">
+                        <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
                         <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
                         <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
                         <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
@@ -2233,19 +2258,29 @@
       return;
     }
 
-    const savedLevel = GM_getValue("thinkLevel_" + currentModel, "medium");
+    const savedLevel = normalizeGeminiThinkingLevel(
+      currentModel,
+      GM_getValue("thinkLevel_" + currentModel, "medium"),
+    );
     let savedBudget = parseInt(GM_getValue("thinkBudget_" + currentModel, 1024));
     if (isNaN(savedBudget) || savedBudget < 128) savedBudget = 1024;
 
     if (currentModel.includes("gemini-3")) {
+      const minimalOption = currentModel === GEMINI_3_8_FLASH_ID
+        ? ""
+        : `<option value="minimal" ${savedLevel === "minimal" ? "selected" : ""}>Minimal</option>`;
+      const compatibilityNote = currentModel === GEMINI_3_8_FLASH_ID
+        ? `<div style="font-size:10px; color:var(--text_secondary); margin-top:4px;">Gemini 3.8 Flash는 Low / Medium / High만 지원하며 기본값은 Medium입니다.</div>`
+        : "";
       container.innerHTML = `
               <span class="setting-label" style="color: var(--text_action_blue_primary);">🧠 추론 강도 (Thinking Level)</span>
               <select id="cfg-think-val" class="expand-input" style="margin-top: 6px;">
-                  <option value="minimal" ${savedLevel === "minimal" ? "selected" : ""}>Minimal</option>
+                  ${minimalOption}
                   <option value="low" ${savedLevel === "low" ? "selected" : ""}>Low</option>
                   <option value="medium" ${savedLevel === "medium" ? "selected" : ""}>Medium</option>
                   <option value="high" ${savedLevel === "high" ? "selected" : ""}>High</option>
               </select>
+              ${compatibilityNote}
           `;
     } else {
       container.innerHTML = `
@@ -3886,7 +3921,7 @@
         if (currentModel.startsWith("deepseek-")) {
           addEntry("thinkDeepSeek_" + currentModel, thinkInput.value);
         } else if (currentModel.includes("gemini-3")) {
-          addEntry("thinkLevel_" + currentModel, thinkInput.value);
+          addEntry("thinkLevel_" + currentModel, normalizeGeminiThinkingLevel(currentModel, thinkInput.value));
         } else {
           let parsedBudget = parseInt(thinkInput.value, 10) || 1024;
           if (parsedBudget < 128) parsedBudget = 128;
@@ -4397,7 +4432,11 @@
 
   function advisorGenerationConfig(model) {
     if (model.includes("gemini-3")) {
-      return { thinkingConfig: { thinkingLevel: GM_getValue("thinkLevel_" + model, "medium") } };
+      const thinkingLevel = normalizeGeminiThinkingLevel(
+        model,
+        GM_getValue("thinkLevel_" + model, "medium"),
+      );
+      return { thinkingConfig: { thinkingLevel } };
     }
     return {
       temperature: 0.55,
@@ -4615,10 +4654,12 @@ ${conversation}`;
       if (!model.startsWith("deepseek-")) {
         const savedLevel = GM_getValue("thinkLevel_" + model, "medium");
         const savedBudget = parseInt(GM_getValue("thinkBudget_" + model, 1024), 10);
-        const applyLevel =
+        const applyLevel = normalizeGeminiThinkingLevel(
+          model,
           currentThinkingInput && model.includes("gemini-3")
             ? currentThinkingInput.value
-            : savedLevel;
+            : savedLevel,
+        );
         let applyBudget =
           currentThinkingInput && !model.includes("gemini-3")
             ? parseInt(currentThinkingInput.value, 10)
@@ -5178,10 +5219,12 @@ ${styleInstruction}`);
         const savedLevel = GM_getValue("thinkLevel_" + model, "medium");
         const savedBudget = parseInt(GM_getValue("thinkBudget_" + model, 1024));
 
-        const applyLevel =
+        const applyLevel = normalizeGeminiThinkingLevel(
+          model,
           currentThinkingInput && model.includes("gemini-3")
             ? currentThinkingInput.value
-            : savedLevel;
+            : savedLevel,
+        );
         let applyBudget =
           currentThinkingInput && !model.includes("gemini-3")
             ? parseInt(currentThinkingInput.value)
