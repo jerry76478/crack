@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ✏️ Crack Input Wrapper Popup (크랙 입력 감싸기 팝업) 모바일 대응
 // @namespace    crack-input-wrapper-popup
-// @version      0.1.9
+// @version      0.1.10
 // @description  크랙 채팅 입력창/수정창에서 드래그 선택한 텍스트를 따옴표·괄호·마크다운 기호로 감싸는 선택 팝업 도구입니다. 모바일 터치에서 버튼이 눌리지 않던 문제를 수정했습니다.
 // @author       Assistant
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-input-wrapper-popup.user.js
@@ -823,20 +823,37 @@
       setTimeout(handleSelectionEvent, 80);
     }, true);
 
-    document.addEventListener('mousedown', event => {
+    // 팝업 바깥을 누르면 팝업을 닫는다.
+    //
+    // 선택 해제는 마우스일 때만 한다. 안드로이드는 터치 뒤에 호환 마우스 이벤트를 만들어내는데,
+    // 여기서 선택을 지우면 OS의 선택 핸들과 복사·잘라내기 메뉴가 대상을 잃는다.
+    // 실제로 팝업이 한 번 뜬 뒤부터 더블탭 선택·복사·잘라내기가 모두 먹통이 됐다.
+    // 터치·펜에서는 팝업만 닫고 선택은 OS에 맡긴다. 탭 자체가 어차피 선택을 접는다.
+    function dismissSelectionBarOnPress(target, pointerType) {
       const bar = getSelectionBar();
       if (!bar || bar.style.display === 'none') return;
 
       // bar 자체(버튼/설정) 클릭은 유지 — savedRange 복원으로 감싸기 동작.
-      if (isOwnUiNode(event.target)) return;
+      if (isOwnUiNode(target)) return;
 
-      // 그 외 어디든(에디터 내부 재클릭 포함) 누르면 기존 선택을 즉시 해제.
-      // 선택을 안 지우면 80ms 뒤 handleSelectionEvent가 bar를 되살려 '깜빡임 + 미해제'가 생김.
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed) sel.removeAllRanges();
+      if (pointerType === 'mouse') {
+        // 선택을 안 지우면 80ms 뒤 handleSelectionEvent가 bar를 되살려 '깜빡임 + 미해제'가 생김.
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed) sel.removeAllRanges();
+      }
 
       bar.style.display = 'none';
-    }, true);
+    }
+
+    if (window.PointerEvent) {
+      document.addEventListener('pointerdown', event => {
+        dismissSelectionBarOnPress(event.target, event.pointerType || 'mouse');
+      }, true);
+    } else {
+      document.addEventListener('mousedown', event => {
+        dismissSelectionBarOnPress(event.target, 'mouse');
+      }, true);
+    }
 
     document.addEventListener('keydown', event => {
       if (!event.altKey || event.ctrlKey || event.metaKey) return;

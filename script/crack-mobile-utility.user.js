@@ -1,9 +1,10 @@
 // ==UserScript==
-// @name         📱 Crack Mobile Utility (모바일 유틸 합본) 번역기 연동
+// @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.2.4
-// @description  모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
-// @author       Assistant
+// @version      4.3.0.14.5
+// @description  모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager·AI 요약 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
+// @author       chu
+// @homepageURL https://github.com/Chapchu1/crack-userscripts
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @match        *://crack.wrtn.ai/*
@@ -11,6 +12,7 @@
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
+// @connect      old.rs.igx.kr
 // @connect      rs.igx.kr
 // @connect      claude-radiosonde.chyoyam.chatgpt.site
 // @connect      crack-api.wrtn.ai
@@ -23,7 +25,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.2.4';
+    const VERSION = '4.3.0.14.5';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -44,11 +46,140 @@
     catch (_) { }
     runtimeRoot?.setAttribute(CMU_RUNTIME_ATTR, VERSION);
     window.__CRACK_MOBILE_UTILITY_250_LOADED__ = true;
-    const CMU_RUNTIME = { version: VERSION, dispose: null };
+    const CMU_RUNTIME = { version: VERSION, disposed: false, cleanupVersion: 1, dispose: null };
     try {
         runtimeWindow[CMU_RUNTIME_KEY] = CMU_RUNTIME;
     }
     catch (_) { }
+    const CMU_RESOURCES = {
+        timeouts: new Set(), intervals: new Set(), frames: new Set(), observers: new Set(),
+        listeners: new Set(), controllers: new Set(), styles: new Set(), cleanups: [],
+    };
+    const CMU_NATIVE = {
+        setTimeout: window.setTimeout.bind(window), clearTimeout: window.clearTimeout.bind(window),
+        setInterval: window.setInterval.bind(window), clearInterval: window.clearInterval.bind(window),
+        requestAnimationFrame: window.requestAnimationFrame.bind(window), cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
+    };
+    function setTimeout(callback, delay = 0, ...args) {
+        if (CMU_RUNTIME.disposed)
+            return 0;
+        const id = CMU_NATIVE.setTimeout(() => {
+            CMU_RESOURCES.timeouts.delete(id);
+            if (!CMU_RUNTIME.disposed)
+                callback.apply(window, args);
+        }, delay);
+        CMU_RESOURCES.timeouts.add(id);
+        return id;
+    }
+    function clearTimeout(id) {
+        CMU_RESOURCES.timeouts.delete(id);
+        CMU_NATIVE.clearTimeout(id);
+    }
+    function setInterval(callback, delay = 0, ...args) {
+        if (CMU_RUNTIME.disposed)
+            return 0;
+        const id = CMU_NATIVE.setInterval(() => {
+            if (!CMU_RUNTIME.disposed)
+                callback.apply(window, args);
+        }, delay);
+        CMU_RESOURCES.intervals.add(id);
+        return id;
+    }
+    function clearInterval(id) {
+        CMU_RESOURCES.intervals.delete(id);
+        CMU_NATIVE.clearInterval(id);
+    }
+    function requestAnimationFrame(callback) {
+        if (CMU_RUNTIME.disposed)
+            return 0;
+        const id = CMU_NATIVE.requestAnimationFrame(time => {
+            CMU_RESOURCES.frames.delete(id);
+            if (!CMU_RUNTIME.disposed)
+                callback(time);
+        });
+        CMU_RESOURCES.frames.add(id);
+        return id;
+    }
+    function cancelAnimationFrame(id) {
+        CMU_RESOURCES.frames.delete(id);
+        CMU_NATIVE.cancelAnimationFrame(id);
+    }
+    function cmuTrackedObserver(NativeObserver) {
+        if (typeof NativeObserver !== 'function')
+            return undefined;
+        return class extends NativeObserver {
+            constructor(callback) {
+                super((entries, observer) => {
+                    if (!CMU_RUNTIME.disposed)
+                        callback(entries, observer);
+                });
+            }
+            observe(...args) {
+                if (CMU_RUNTIME.disposed)
+                    return;
+                super.observe(...args);
+                CMU_RESOURCES.observers.add(this);
+            }
+            disconnect() {
+                CMU_RESOURCES.observers.delete(this);
+                super.disconnect();
+            }
+        };
+    }
+    const MutationObserver = cmuTrackedObserver(window.MutationObserver);
+    const ResizeObserver = cmuTrackedObserver(window.ResizeObserver);
+    function cmuListen(target, type, listener, options = false) {
+        if (CMU_RUNTIME.disposed || !target?.addEventListener)
+            return;
+        const capture = typeof options === 'boolean' ? options : !!options?.capture;
+        for (const entry of CMU_RESOURCES.listeners) {
+            if (entry.target === target && entry.type === type && entry.listener === listener && entry.capture === capture)
+                return;
+        }
+        target.addEventListener(type, listener, options);
+        CMU_RESOURCES.listeners.add({ target, type, listener, capture });
+    }
+    function cmuUnlisten(target, type, listener, options = false) {
+        const capture = typeof options === 'boolean' ? options : !!options?.capture;
+        target?.removeEventListener?.(type, listener, options);
+        for (const entry of CMU_RESOURCES.listeners) {
+            if (entry.target === target && entry.type === type && entry.listener === listener && entry.capture === capture)
+                CMU_RESOURCES.listeners.delete(entry);
+        }
+    }
+    function cmuOwnMethod(target, key, previous) {
+        const owned = target[key];
+        CMU_RESOURCES.cleanups.push(() => {
+            // A later extension may wrap us; leave that wrapper intact.
+            if (target[key] !== owned)
+                return;
+            if (previous === undefined)
+                delete target[key];
+            else
+                target[key] = previous;
+        });
+    }
+    function cmuDisposeResources() {
+        for (const observer of CMU_RESOURCES.observers)
+            try { observer.disconnect(); } catch (_) { }
+        CMU_RESOURCES.observers.clear();
+        for (const entry of CMU_RESOURCES.listeners)
+            try { entry.target.removeEventListener(entry.type, entry.listener, entry.capture); } catch (_) { }
+        CMU_RESOURCES.listeners.clear();
+        for (const controller of CMU_RESOURCES.controllers)
+            try { controller.abort(); } catch (_) { }
+        CMU_RESOURCES.controllers.clear();
+        for (const [key, cancel] of [['timeouts', CMU_NATIVE.clearTimeout], ['intervals', CMU_NATIVE.clearInterval], ['frames', CMU_NATIVE.cancelAnimationFrame]]) {
+            for (const id of CMU_RESOURCES[key])
+                cancel(id);
+            CMU_RESOURCES[key].clear();
+        }
+        for (const cleanup of CMU_RESOURCES.cleanups.splice(0).reverse())
+            try { cleanup(); } catch (_) { }
+        for (const style of CMU_RESOURCES.styles)
+            try { style.remove(); } catch (_) { }
+        CMU_RESOURCES.styles.clear();
+    }
     const LOG = '[CMU]';
     const ID = {
         topZone: 'cmu-top-reveal-zone',
@@ -88,6 +219,7 @@
         autoHideHeader: true,
         emptySendGuard: true,
         hideEndingHint: true,
+        hideImageGenerateButton: false,
         wideView: true,
         fontScale: 100,
         imageScale: 100,
@@ -178,13 +310,24 @@
         sideDirty: false,
         statDirty: false,
         fullResume: false,
-        suppressMessageUntil: 0,
+
         messageGroups: new Set(),
         markdownNodes: new Set(),
     };
     const CMU_CHAT_INPUT_CACHE_TTL = 2500;
+    const CMU_DOM_WATCH = {
+        textObserver: null, textRoots: new Set(), themeObserver: null, themeSignature: '',
+        attributeKey: '', ownedRecords: new WeakMap(), nativeModeTimer: 0,
+        thumbNodes: new Set(), thumbFull: false, thumbEnabled: null,
+        roomPanelMissUntil: 0, roomPanelSearchRoot: null,
+    };
     let routeKey = location.href;
     let headerHideTimer = 0;
+    const CMU_HEADER_SHELL = {
+        element: null,
+        paddingTop: '',
+        paddingTopPriority: '',
+    };
     let dashboardTimer = 0;
     let rsTimer = 0;
     let badgeScanTimer = 0;
@@ -227,9 +370,15 @@
         editorObserver: null,
         editorHandlers: null,
         updateFrame: 0,
+        delayedTimer: 0,
+        alertTimer: 0,
         previousCount: null,
+        renderedElement: null,
         host: null,
         hostPosition: null,
+        hostPaddingTop: null,
+        resizeObserver: null,
+        disposed: false,
     };
     let cachedCmuMobileChatListToggle = null;
     let cachedCmuRoomMenuToggle = null;
@@ -325,6 +474,8 @@
         cmuInstallGestureRecord(record);
     }
     function cmuResumeGlobalGestures(reason = 'resume') {
+        if (!shouldRun())
+            return false;
         if (cmuUserNoteGuardActive()) {
             CMU_GESTURE_HUB.suspended = true;
             return false;
@@ -357,13 +508,18 @@
         catch (_) { }
     }
     function addStyle(css) {
+        if (!shouldRun())
+            return;
         if (typeof GM_addStyle === 'function') {
-            GM_addStyle(css);
+            const style = GM_addStyle(css);
+            if (style?.remove)
+                CMU_RESOURCES.styles.add(style);
             return;
         }
         const style = document.createElement('style');
         style.textContent = css;
         document.head.appendChild(style);
+        CMU_RESOURCES.styles.add(style);
     }
     function readLS(key, fallback = null) {
         try {
@@ -566,7 +722,7 @@
         }
     }
     function shouldRun() {
-        return true;
+        return !CMU_RUNTIME.disposed;
     }
     function isEpisodePath() {
         return /^\/stories\/[^/?#]+\/episodes\/[^/?#]+/.test(location.pathname || '');
@@ -618,12 +774,16 @@
     const CMU_API_TIMEOUT_MS = 18000;
     const CMU_API_INFLIGHT = new Map();
     async function apiGet(url, { timeoutMs = CMU_API_TIMEOUT_MS, dedupe = true } = {}) {
+        if (!shouldRun())
+            throw new Error('runtime disposed');
         const requestUrl = String(url || '');
         const requestKey = `GET:${requestUrl}`;
         if (dedupe && CMU_API_INFLIGHT.has(requestKey))
             return CMU_API_INFLIGHT.get(requestKey);
         const task = (async () => {
             const controller = typeof AbortController === 'function' ? new AbortController() : null;
+            if (controller)
+                CMU_RESOURCES.controllers.add(controller);
             const timeoutId = controller && timeoutMs > 0
                 ? setTimeout(() => controller.abort(), timeoutMs)
                 : 0;
@@ -644,6 +804,7 @@
                 throw error;
             }
             finally {
+                CMU_RESOURCES.controllers.delete(controller);
                 if (timeoutId)
                     clearTimeout(timeoutId);
             }
@@ -662,6 +823,8 @@
         return String(msg?._id || msg?.id || msg?.messageId || msg?.messageID || msg?.uuid || '');
     }
     function gmGetJson(url, timeoutMs = 15000) {
+        if (!shouldRun())
+            return Promise.reject(new Error('runtime disposed'));
         return new Promise((resolve, reject) => {
             if (typeof GM_xmlhttpRequest !== 'function') {
                 fetch(url, { headers: { accept: 'application/json' } })
@@ -782,6 +945,12 @@
       will-change: transform !important;
     }
 
+    /* 글로벌 56px 헤더의 실제 레이아웃 예약 공간.
+       헤더 자체만 fixed/transform 하면 부모의 pt-[56px]가 남으므로 정확한 부모만 접는다. */
+    html.cmu-enabled.cmu-auto-hide [data-cmu-global-header-shell="1"] {
+      padding-top: 0 !important;
+    }
+
     html.cmu-enabled.cmu-auto-hide.cmu-header-reveal [data-cmu-global-header="1"],
     html.cmu-enabled.cmu-panel-open [data-cmu-global-header="1"] {
       transform: translateY(0) !important;
@@ -825,6 +994,16 @@
 
     html.cmu-enabled.cmu-auto-hide body .css-swctim {
       flex-grow: 1 !important;
+    }
+
+    html.cmu-enabled.cmu-hide-image-gen [data-cmu-hide-image-gen="1"] {
+      display: none !important;
+    }
+
+    /* 표시를 달기 전 한순간 보이는 것을 막는 즉시 규칙. :has 미지원 브라우저에서는 이 규칙만 무시된다. */
+    html.cmu-enabled.cmu-hide-image-gen [data-message-group-id] button:not([aria-label]):has(svg path[d^="m17.01 2.2-.25.75"]),
+    html.cmu-enabled.cmu-hide-image-gen [data-message-group-id] button:not([aria-label]):has(svg path[d^="M18.63 1.44c.06-.17"]) {
+      display: none !important;
     }
 
     html.cmu-enabled.cmu-hide-ending button[aria-label="엔딩 힌트"],
@@ -1418,15 +1597,15 @@
     #${ID.inputCounterWrap} {
       position: absolute !important;
       z-index: 2 !important;
-      top: var(--cmu-input-counter-top, 50%) !important;
+      top: var(--cmu-input-counter-top, 20px) !important;
       left: var(--cmu-input-counter-left, 100%) !important;
       right: auto !important;
-      transform: translate(-100%, -50%) !important;
+      transform: translate(-50%, -100%) !important;
       display: inline-flex !important;
       align-items: center !important;
       justify-content: center !important;
       min-width: 30px !important;
-      height: 28px !important;
+      height: 18px !important;
       margin: 0 !important;
       padding: 0 4px !important;
       box-sizing: border-box !important;
@@ -1943,6 +2122,13 @@
       color: var(--ac);
     }
     .qputil .chip.ck .ci { opacity: 1; }
+    #cmu-settings-panel .qputil .chip .cmu-side-setting-icon {
+      width: 15px !important;
+      height: 15px !important;
+      flex: 0 0 15px !important;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .qputil .chip:disabled,
     .qputil .chip[aria-disabled="true"] {
       opacity: .38;
@@ -2527,11 +2713,12 @@
     #chud-side-content {
       display: flex;
       align-items: center;
-      overflow: hidden;
+      overflow: visible;
       white-space: nowrap;
       flex: 1 1 auto;
       min-width: 0;
-      max-width: calc(100vw - 120px);
+      width: 100%;
+      max-width: none;
     }
     .chud-action-btn {
       all: unset;
@@ -2565,10 +2752,307 @@
     .chud-btn-icon { flex: 0 0 auto; display: block; width: 16.5px; height: 16.5px; pointer-events: none; }
     .chud-lore-icon { width: 17px; height: 17px; transform: scale(1.04); transform-origin: center; }
 
+    /* 큐브 버튼용 소형 모델 선택기: 원본 메뉴는 실제 선택 동작만 담당한다. */
+    html.cmu-compact-model-probing :is([data-radix-popper-content-wrapper], [data-radix-menu-content]),
+    html.cmu-compact-model-selecting :is([data-radix-popper-content-wrapper], [data-radix-menu-content]),
+    [data-cmu-compact-model-native="1"] {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    #cmu-compact-model-menu {
+      position: fixed !important;
+      z-index: 2147483647 !important;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: min(176px, calc(100vw - 20px));
+      max-height: calc(100vh - 24px);
+      max-height: calc(100dvh - 24px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      box-sizing: border-box;
+      padding: 5px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 11px;
+      background: rgba(28,28,30,.97);
+      color: rgba(255,255,255,.9);
+      box-shadow: 0 12px 34px rgba(0,0,0,.48);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      overscroll-behavior: contain;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+      scrollbar-width: thin;
+    }
+    #cmu-compact-model-menu button {
+      all: unset;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      box-sizing: border-box;
+      padding: 5px 7px;
+      border-radius: 8px;
+      color: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #cmu-compact-model-menu button:active { transform: scale(.98); }
+    #cmu-compact-model-menu button:disabled {
+      opacity: .42;
+      cursor: default;
+      transform: none;
+    }
+    #cmu-compact-model-menu button.is-selected {
+      background: rgba(255,255,255,.14);
+      color: #fff;
+    }
+    #cmu-compact-model-menu .cmu-compact-model-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 17px;
+      width: 17px;
+      height: 17px;
+      color: rgba(255,255,255,.62);
+    }
+    #cmu-compact-model-menu .cmu-compact-model-icon img {
+      display: block;
+      width: 17px;
+      height: 17px;
+      object-fit: contain;
+    }
+    #cmu-compact-model-menu .cmu-compact-model-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12.5px;
+      font-weight: 650;
+      line-height: 1.15;
+    }
+    #cmu-compact-model-menu .cmu-compact-model-check {
+      flex: 0 0 12px;
+      width: 12px;
+      color: #8fd69c;
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+    }
+    body[data-theme="light"] #cmu-compact-model-menu,
+    html[data-theme="light"] #cmu-compact-model-menu {
+      border-color: rgba(0,0,0,.16);
+      background: rgba(255,255,255,.98);
+      color: rgba(0,0,0,.76);
+      box-shadow: 0 12px 34px rgba(0,0,0,.22);
+    }
+    body[data-theme="light"] #cmu-compact-model-menu button.is-selected,
+    html[data-theme="light"] #cmu-compact-model-menu button.is-selected {
+      background: rgba(0,0,0,.09);
+      color: rgba(0,0,0,.9);
+    }
+
+
+    /* 4.3.0.8: 원본 행 직접 선택은 유지하고, 모델 팝업만 더 작고 단일 박스로 정리. */
+    [data-cmu-compact-native-live="1"] {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+      position: fixed !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: none !important;
+      min-width: 0 !important;
+      width: min(176px, calc(100vw - 18px)) !important;
+      max-width: calc(100vw - 18px) !important;
+      z-index: 2147483647 !important;
+      filter: none !important;
+      /* Radix 바깥 껍데기는 보이지 않게 해서 박스가 하나만 보이게 한다. */
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    [data-cmu-compact-native-live="1"] > :not([data-cmu-compact-native-live-root="1"]):has([data-cmu-compact-native-live-root="1"]) {
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+    }
+    [data-cmu-compact-native-live-branch="1"] {
+      box-sizing: border-box !important;
+      min-width: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      background-image: none !important;
+      box-shadow: none !important;
+      outline: 0 !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    [data-cmu-compact-native-live-root="1"] {
+      box-sizing: border-box !important;
+      display: block !important;
+      min-width: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      max-height: var(--cmu-compact-native-max-h, calc(100dvh - 24px)) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      padding: 4px !important;
+      border: 1px solid rgba(255,255,255,.13) !important;
+      border-radius: 10px !important;
+      background: rgba(28,28,30,.985) !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.03) !important;
+      backdrop-filter: blur(14px) saturate(112%) !important;
+      -webkit-backdrop-filter: blur(14px) saturate(112%) !important;
+      overscroll-behavior: contain !important;
+      scrollbar-width: none !important;
+      font-size: 11.5px !important;
+    }
+    [data-cmu-compact-native-live-root="1"]::-webkit-scrollbar { display: none !important; }
+    [data-cmu-compact-native-live-hide="1"],
+    [data-cmu-compact-native-live-row="1"] [data-cmu-compact-native-live-desc="1"] {
+      display: none !important;
+    }
+    [data-cmu-compact-native-live-row="1"] {
+      box-sizing: border-box !important;
+      position: relative !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 31px !important;
+      max-height: 34px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 7px !important;
+      overflow: hidden !important;
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    [data-cmu-compact-native-live-row="1"] + [data-cmu-compact-native-live-row="1"] {
+      margin-top: 1px !important;
+    }
+    [data-cmu-compact-native-live-action="1"] {
+      box-sizing: border-box !important;
+      display: flex !important;
+      align-items: center !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      min-height: 31px !important;
+      max-height: 34px !important;
+      margin: 0 !important;
+      padding: 4px 6px !important;
+      gap: 5px !important;
+      border: 0 !important;
+      border-radius: 7px !important;
+      overflow: hidden !important;
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
+      font-size: 11.5px !important;
+    }
+    [data-cmu-compact-native-live-action="1"] > *,
+    [data-cmu-compact-native-live-action="1"] > * > * {
+      min-width: 0 !important;
+    }
+    [data-cmu-compact-native-live-row="1"] :is(img[src*="model-icon"], img[srcset*="model-icon"]) {
+      flex: 0 0 16px !important;
+      width: 16px !important;
+      height: 16px !important;
+      object-fit: contain !important;
+      margin: 0 !important;
+    }
+    [data-cmu-compact-native-live-title="1"] {
+      flex: 0 1 auto !important;
+      min-width: 0 !important;
+      max-width: 86px !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      font-size: 11.5px !important;
+      font-weight: 700 !important;
+      line-height: 1.1 !important;
+      letter-spacing: -.015em !important;
+    }
+    [data-cmu-compact-native-live-badge="1"] {
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
+      font-size: 9.5px !important;
+      line-height: 1.05 !important;
+      opacity: .9 !important;
+    }
+    [data-cmu-compact-native-live-recommend="1"] {
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
+      max-width: none !important;
+      /* 4.3.0.10: 수량 배지와 권장 딱지가 붙어 보이지 않게 한 칸 여백. */
+      margin-left: 4px !important;
+      padding: 1px 3px !important;
+      border-radius: 4px !important;
+      font-size: 8.5px !important;
+      line-height: 1.1 !important;
+      letter-spacing: -.02em !important;
+    }
+    [data-cmu-compact-native-live-row="1"]:has([data-cmu-compact-native-live-recommend="1"]) [data-cmu-compact-native-live-title="1"] {
+      max-width: 68px !important;
+    }
+    [data-cmu-compact-native-live-row="1"] :is(span, p, div) {
+      line-height: 1.1 !important;
+    }
+    [data-cmu-compact-native-live-row="1"]:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"]),
+    [data-cmu-compact-native-live-row="1"]:has(:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"])) {
+      background: rgba(255,255,255,.105) !important;
+      box-shadow: inset 2px 0 0 rgba(255,255,255,.45) !important;
+    }
+    [data-cmu-compact-native-live-row="1"]:active {
+      background: rgba(255,255,255,.08) !important;
+    }
+    body[data-theme="light"] [data-cmu-compact-native-live-root="1"],
+    html[data-theme="light"] [data-cmu-compact-native-live-root="1"] {
+      border-color: rgba(0,0,0,.10) !important;
+      background: rgba(252,252,253,.985) !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.8) !important;
+    }
+    body[data-theme="light"] [data-cmu-compact-native-live-row="1"]:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"]),
+    html[data-theme="light"] [data-cmu-compact-native-live-row="1"]:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"]),
+    body[data-theme="light"] [data-cmu-compact-native-live-row="1"]:has(:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"])),
+    html[data-theme="light"] [data-cmu-compact-native-live-row="1"]:has(:is([aria-selected="true"], [aria-checked="true"], [data-state="checked"])) {
+      background: rgba(0,0,0,.065) !important;
+      box-shadow: inset 2px 0 0 rgba(0,0,0,.32) !important;
+    }
+
 @media (max-width: 520px) {
       #chud-infobar { font-size: 12px; }
       .chud-sep { margin: 0 2px; }
       .chud-part { padding: 1px; }
+      /* 좁은 화면에서도 설치된 바로가기 아이콘을 한 줄에 최대한 유지한다. */
+      #chud-sidebar { padding-right: 8px; }
+      #chud-side-content { width: 100%; max-width: none; overflow: visible; }
+      .chud-action-btn {
+        margin-left: 3px;
+        width: 18px;
+        min-width: 18px;
+        flex: 0 0 18px;
+      }
+      #chud-model-btn { margin-left: 0; }
+      .chud-btn-icon { width: 15px; height: 15px; }
+      .chud-lore-icon { width: 15.5px; height: 15.5px; }
     }
 
     .crack-ui-empty-send-blocked {
@@ -2657,7 +3141,6 @@
       overflow: hidden;
     }
     #igx-live-actions { display: flex; gap: 2px; align-items: center; flex: 0 0 auto; }
-    #igx-live-title, #igx-live-body, #igx-live-settings, #igx-live-popup .btn-layout, #igx-live-popup .btn-settings, #igx-live-popup .btn-pin { display: none !important; }
     .inline-icon {
       width: 13px;
       height: 13px;
@@ -2697,6 +3180,77 @@
       -ms-overflow-style: none;
     }
     #igx-live-barline::-webkit-scrollbar { display: none; }
+    #igx-live-popup.inline .bitem { flex: 0 0 auto; }
+
+    /* 라존데 모델 선택은 설정 패널 한 곳에서만 관리한다.
+       인라인 본체에는 모델 계열/설정용 보조 UI를 만들지 않는다. */
+    #cmu-settings-panel .qputil .qcard #g-rs .cmu-rs-setting-group {
+      display: block !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border-top: 1px solid var(--bd) !important;
+    }
+    #cmu-settings-panel .qputil .qcard #g-rs .cmu-rs-setting-group:first-child {
+      border-top: 0 !important;
+    }
+    #g-rs .cmu-rs-setting-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 50px;
+      padding: 10px 13px;
+      box-sizing: border-box;
+    }
+    #g-rs .cmu-rs-setting-title {
+      display: flex !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      line-height: 1.2;
+    }
+    #g-rs .cmu-rs-setting-title strong {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--tx);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    #g-rs .cmu-rs-setting-title small {
+      color: var(--sub);
+      font-size: 10.5px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    #g-rs .cmu-rs-setting-head .sw {
+      flex: 0 0 48px !important;
+      margin-left: auto;
+    }
+    #g-rs .cmu-rs-setting-models {
+      display: flex !important;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      margin: 0 !important;
+      padding: 0 13px 12px !important;
+      box-sizing: border-box;
+    }
+    #g-rs .cmu-rs-setting-models .chip {
+      min-height: 34px !important;
+      max-width: 100%;
+      padding: 7px 10px !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     #igx-live-popup.inline .bitem {
       --rs-score-color: var(--text-unknown);
       display: inline-flex;
@@ -2807,7 +3361,11 @@
         const layoutActive = active && !userNoteOpen;
         html.classList.toggle('cmu-enabled', layoutActive);
         html.classList.toggle('cmu-auto-hide', layoutActive && settings.autoHideHeader && isEpisodePath());
+        if (!html.classList.contains('cmu-auto-hide'))
+            restoreGlobalHeaderShellLayout();
         html.classList.toggle('cmu-hide-ending', active && settings.hideEndingHint);
+        html.classList.toggle('cmu-hide-image-gen', active && !!settings.hideImageGenerateButton);
+        syncCmuImageGenerateHider();
         html.classList.toggle('cmu-wide', layoutActive && settings.wideView);
         const cmuTheme = detectCmuTheme();
         const externalThemeProvider = detectCmuExternalThemeProvider();
@@ -2873,7 +3431,12 @@
         html.style.setProperty('--cmu-font-scale', String(clamp(settings.fontScale, 80, 130) / 100));
         html.style.setProperty('--cmu-image-scale', `${clamp(settings.imageScale, 50, 100)}%`);
         html.classList.toggle('cmu-pause-animated-thumbs', active && !!settings.pauseAnimatedThumbs);
-        scheduleAnimatedThumbState();
+        const thumbEnabled = active && !!settings.pauseAnimatedThumbs;
+        if (CMU_DOM_WATCH.thumbEnabled !== thumbEnabled) {
+            CMU_DOM_WATCH.thumbEnabled = thumbEnabled;
+            scheduleAnimatedThumbState();
+        }
+        syncCmuDomWatchOptions();
         scheduleCmuInputCounterSync();
     }
     function normalizeAnimatedThumbUrl(url) {
@@ -3189,23 +3752,46 @@
     function hasRestorableAnimatedThumbs() {
         return !!document.querySelector('img[data-cmu-animated-thumb="1"], img[data-cmu-animated-thumb-no-still]');
     }
-    function applyAnimatedThumbState() {
+    function applyAnimatedThumbState(images = null) {
         const enabled = shouldRun() && !!settings.pauseAnimatedThumbs;
-        document.querySelectorAll(getAnimatedThumbSelector(enabled)).forEach(img => {
+        (images || document.querySelectorAll(getAnimatedThumbSelector(enabled))).forEach(img => {
             if (enabled)
                 pauseAnimatedThumbImage(img);
             else
                 restoreAnimatedThumbImage(img);
         });
     }
-    function scheduleAnimatedThumbState() {
-        if (!settings.pauseAnimatedThumbs && !hasRestorableAnimatedThumbs())
+    function scheduleAnimatedThumbState(root = null) {
+        if (!shouldRun())
             return;
+        if (root) {
+            if (!settings.pauseAnimatedThumbs || !(root instanceof Element) || !root.isConnected)
+                return;
+            const selector = getAnimatedThumbSelector(true);
+            if (root instanceof HTMLImageElement) {
+                if (root.matches(selector))
+                    CMU_DOM_WATCH.thumbNodes.add(root);
+            }
+            else {
+                root.querySelectorAll(selector).forEach(img => CMU_DOM_WATCH.thumbNodes.add(img));
+            }
+            if (!CMU_DOM_WATCH.thumbFull && !CMU_DOM_WATCH.thumbNodes.size)
+                return;
+        }
+        else {
+            if (!settings.pauseAnimatedThumbs && !hasRestorableAnimatedThumbs())
+                return;
+            CMU_DOM_WATCH.thumbFull = true;
+        }
         if (animatedThumbRaf)
             return;
         animatedThumbRaf = requestAnimationFrame(() => {
             animatedThumbRaf = 0;
-            applyAnimatedThumbState();
+            const full = CMU_DOM_WATCH.thumbFull;
+            const images = Array.from(CMU_DOM_WATCH.thumbNodes).filter(img => img.isConnected);
+            CMU_DOM_WATCH.thumbFull = false;
+            CMU_DOM_WATCH.thumbNodes.clear();
+            applyAnimatedThumbState(full ? null : images);
         });
     }
     function resetAnimatedThumbRouteState() {
@@ -3371,7 +3957,7 @@
             catch (_) { }
             return true;
         }
-        CMU_USER_NOTE_STATE.settleTimer = window.setTimeout(() => {
+        CMU_USER_NOTE_STATE.settleTimer = setTimeout(() => {
             CMU_USER_NOTE_STATE.settleTimer = 0;
             if (cmuUserNoteGuardActive())
                 return;
@@ -3391,17 +3977,25 @@
         if (CMU_USER_NOTE_STATE.watchInstalled)
             return;
         CMU_USER_NOTE_STATE.watchInstalled = true;
-        const syncNow = () => syncCmuUserNoteDialogState();
+        let queued = false;
+        let earlyTimer = 0;
+        let lateTimer = 0;
+        const syncNow = () => { if (shouldRun()) syncCmuUserNoteDialogState(); };
         const syncSettled = () => {
-            queueMicrotask(syncNow);
-            window.setTimeout(syncNow, 40);
-            window.setTimeout(syncNow, 140);
+            if (!queued) {
+                queued = true;
+                queueMicrotask(() => { queued = false; syncNow(); });
+            }
+            if (!earlyTimer)
+                earlyTimer = setTimeout(() => { earlyTimer = 0; syncNow(); }, 40);
+            clearTimeout(lateTimer);
+            lateTimer = setTimeout(() => { lateTimer = 0; syncNow(); }, 140);
         };
-        document.addEventListener('focusin', event => {
+        cmuListen(document, 'focusin', event => {
             if (isCmuUserNoteEditor(event.target) || findCmuOpenUserNoteDialog())
                 syncNow();
         }, true);
-        document.addEventListener('focusout', event => {
+        cmuListen(document, 'focusout', event => {
             if (isCmuUserNoteEditor(event.target) || CMU_USER_NOTE_STATE.open)
                 syncSettled();
         }, true);
@@ -3435,7 +4029,7 @@
     function isInsideKnownPopup(el) {
         if (!(el instanceof Element))
             return false;
-        if (el.closest(`#${ID.panel}, [role="dialog"], [aria-modal="true"], [data-radix-popper-content-wrapper], [data-radix-dialog-content], [data-radix-dialog-content-wrapper]`))
+        if (el.closest(`#${ID.panel}, #rpcm-overlay, #csp-v35-root, [role="dialog"], [aria-modal="true"], [data-radix-popper-content-wrapper], [data-radix-dialog-content], [data-radix-dialog-content-wrapper]`))
             return true;
         // React UI의 role/portal 구조가 바뀌어도 유저노트 같은 보조 편집창을
         // 채팅 composer로 오인하지 않도록 편집 목적을 뜻하는 힌트도 함께 본다.
@@ -4199,16 +4793,16 @@
             }
             scheduleComposerExpandSync();
         };
-        document.addEventListener('input', scheduleForChatInput, true);
-        document.addEventListener('keyup', scheduleForChatInput, true);
-        document.addEventListener('compositionend', scheduleForChatInput, true);
-        document.addEventListener('focusin', scheduleForChatInput, true);
-        document.addEventListener('paste', (e) => {
+        cmuListen(document, 'input', scheduleForChatInput, true);
+        cmuListen(document, 'keyup', scheduleForChatInput, true);
+        cmuListen(document, 'compositionend', scheduleForChatInput, true);
+        cmuListen(document, 'focusin', scheduleForChatInput, true);
+        cmuListen(document, 'paste', (e) => {
             if (!isChatInputElement(e.target))
                 return;
             setTimeout(scheduleComposerExpandSync, 0);
         }, true);
-        document.addEventListener('cut', (e) => {
+        cmuListen(document, 'cut', (e) => {
             if (!isChatInputElement(e.target))
                 return;
             setTimeout(scheduleComposerExpandSync, 0);
@@ -4217,6 +4811,9 @@
     function cmuInputCounterRestoreHost() {
         const host = CMU_INPUT_COUNTER.host;
         const saved = CMU_INPUT_COUNTER.hostPosition;
+        const savedPadding = CMU_INPUT_COUNTER.hostPaddingTop;
+        CMU_INPUT_COUNTER.resizeObserver?.disconnect();
+        CMU_INPUT_COUNTER.resizeObserver = null;
         if (host instanceof HTMLElement) {
             host.removeAttribute('data-cmu-input-counter-host');
             if (saved && host.style.getPropertyValue('position') === 'relative' && host.style.getPropertyPriority('position') === 'important') {
@@ -4225,13 +4822,28 @@
                 else
                     host.style.removeProperty('position');
             }
+            // 다른 테마가 이후에 바꾼 값은 덮어쓰지 않는다.
+            if (savedPadding && host.style.getPropertyValue('padding-top') === savedPadding.applied && host.style.getPropertyPriority('padding-top') === 'important') {
+                if (savedPadding.value)
+                    host.style.setProperty('padding-top', savedPadding.value, savedPadding.priority || '');
+                else
+                    host.style.removeProperty('padding-top');
+            }
         }
         CMU_INPUT_COUNTER.host = null;
         CMU_INPUT_COUNTER.hostPosition = null;
+        CMU_INPUT_COUNTER.hostPaddingTop = null;
     }
     function cmuInputCounterUnbindEditor() {
         const editor = CMU_INPUT_COUNTER.editor;
         const handlers = CMU_INPUT_COUNTER.editorHandlers;
+        clearTimeout(CMU_INPUT_COUNTER.delayedTimer);
+        clearTimeout(CMU_INPUT_COUNTER.alertTimer);
+        CMU_INPUT_COUNTER.delayedTimer = 0;
+        CMU_INPUT_COUNTER.alertTimer = 0;
+        CMU_INPUT_COUNTER.renderedElement?.classList.remove('cmu-input-counter-over-pulse');
+        if (editor instanceof HTMLElement)
+            CMU_INPUT_COUNTER.resizeObserver?.unobserve(editor);
         if (editor instanceof HTMLElement && handlers) {
             editor.removeEventListener('input', handlers.schedule, true);
             editor.removeEventListener('keyup', handlers.schedule, true);
@@ -4244,6 +4856,7 @@
         CMU_INPUT_COUNTER.editorObserver = null;
         CMU_INPUT_COUNTER.editorHandlers = null;
         CMU_INPUT_COUNTER.previousCount = null;
+        CMU_INPUT_COUNTER.renderedElement = null;
     }
     function cleanupCmuInputCounter() {
         if (CMU_INPUT_COUNTER.updateFrame) {
@@ -4273,7 +4886,11 @@
         return text;
     }
     function cmuInputCounterLength(text) {
-        return Array.from(String(text || '')).length;
+        // 기존과 동일하게 유니코드 코드 포인트를 세되 중간 배열은 만들지 않는다.
+        let count = 0;
+        for (const character of String(text || ''))
+            count += 1;
+        return count;
     }
     function cmuInputCounterVisible(el) {
         if (!(el instanceof HTMLElement))
@@ -4311,16 +4928,23 @@
     function cmuInputCounterFindActionRow(editor) {
         if (!(editor instanceof HTMLElement))
             return null;
-        let node = editor;
-        for (let depth = 0; depth < 10 && node; depth += 1, node = node.parentElement) {
+        const boundary = editor.closest('form') || editor.closest('main');
+        const isCandidate = row => !isInsideKnownPopup(row) && cmuInputCounterActionRowCandidate(row);
+        const cached = CMU_INPUT_COUNTER.host;
+        if (cached?.isConnected && boundary?.contains(cached) && isCandidate(cached))
+            return cached;
+        let node = editor.parentElement;
+        for (let depth = 0; depth < 10 && node && node !== document.body && node !== document.documentElement; depth += 1, node = node.parentElement) {
             if (!(node instanceof HTMLElement))
                 continue;
-            if (cmuInputCounterActionRowCandidate(node))
+            if (isCandidate(node))
                 return node;
             const rows = Array.from(node.querySelectorAll?.('div.flex.items-center.justify-between') || [])
-                .filter(cmuInputCounterActionRowCandidate);
+                .filter(isCandidate);
             if (rows.length)
                 return rows[rows.length - 1];
+            if (node === boundary)
+                break;
         }
         return null;
     }
@@ -4333,7 +4957,18 @@
         CMU_INPUT_COUNTER.host = host;
         host.setAttribute('data-cmu-input-counter-host', '1');
         try {
-            if (getComputedStyle(host).position === 'static') {
+            const css = getComputedStyle(host);
+            // 카운터 높이 18px + 버튼과의 간격 2px. 기존 여백이 더 크면 유지한다.
+            const paddingTop = Math.max(20, parseFloat(css.paddingTop) || 0);
+            if ((parseFloat(css.paddingTop) || 0) < paddingTop) {
+                CMU_INPUT_COUNTER.hostPaddingTop = {
+                    value: host.style.getPropertyValue('padding-top'),
+                    priority: host.style.getPropertyPriority('padding-top'),
+                    applied: `${paddingTop}px`,
+                };
+                host.style.setProperty('padding-top', `${paddingTop}px`, 'important');
+            }
+            if (css.position === 'static') {
                 CMU_INPUT_COUNTER.hostPosition = {
                     value: host.style.getPropertyValue('position'),
                     priority: host.style.getPropertyPriority('position'),
@@ -4342,9 +4977,18 @@
             }
         }
         catch (_) { }
+        if (typeof ResizeObserver === 'function') {
+            CMU_INPUT_COUNTER.resizeObserver = new ResizeObserver(scheduleCmuInputCounterSync);
+            CMU_INPUT_COUNTER.resizeObserver.observe(host);
+            if (CMU_INPUT_COUNTER.editor instanceof HTMLElement)
+                CMU_INPUT_COUNTER.resizeObserver.observe(CMU_INPUT_COUNTER.editor);
+        }
     }
     function cmuInputCounterRemovePlacement() {
         document.getElementById(ID.inputCounterWrap)?.remove?.();
+        CMU_INPUT_COUNTER.renderedElement = null;
+        clearTimeout(CMU_INPUT_COUNTER.alertTimer);
+        CMU_INPUT_COUNTER.alertTimer = 0;
         cmuInputCounterRestoreHost();
     }
     function ensureCmuInputCounterPlacement(editor) {
@@ -4376,55 +5020,48 @@
         const leftToolbar = directChildren.find(child => {
             return child.classList.contains('space-x-2') || !!child.querySelector?.('.space-x-2');
         }) || null;
-        let rightButtons = Array.from(actionRow.querySelectorAll('button')).filter(button => {
-            if (!(button instanceof HTMLElement) || !cmuInputCounterVisible(button) || wrap.contains(button))
-                return false;
-            return !(leftToolbar && leftToolbar.contains(button));
-        });
-        if (rightButtons.length) {
-            const rightmost = rightButtons.reduce((best, button) => {
-                if (!best)
-                    return button;
-                return button.getBoundingClientRect().right > best.getBoundingClientRect().right ? button : best;
-            }, null);
-            const rect = rightmost.getBoundingClientRect();
-            const centerY = rect.top + rect.height / 2;
-            const sameRow = rightButtons.filter(button => {
-                const buttonRect = button.getBoundingClientRect();
-                return Math.abs(buttonRect.top + buttonRect.height / 2 - centerY) <= 12;
-            });
-            if (sameRow.length)
-                rightButtons = sameRow;
-        }
-        if (!rightButtons.length) {
-            cmuInputCounterRemovePlacement();
-            return null;
-        }
-        let rowRect;
-        try {
-            rowRect = actionRow.getBoundingClientRect();
-        }
-        catch (_) {
-            cmuInputCounterRemovePlacement();
-            return null;
-        }
-        let leftEdge = Infinity;
-        let rightmostEdge = -Infinity;
-        let centerY = null;
-        rightButtons.forEach(button => {
+        // 버튼마다 크기를 한 번만 읽고 실제 전송 버튼을 우선 기준으로 삼는다.
+        const rightButtons = [];
+        for (const button of actionRow.querySelectorAll('button')) {
+            if (!(button instanceof HTMLElement) || wrap.contains(button) || leftToolbar?.contains(button))
+                continue;
             const rect = button.getBoundingClientRect();
-            leftEdge = Math.min(leftEdge, rect.left);
-            if (rect.right > rightmostEdge) {
-                rightmostEdge = rect.right;
-                centerY = rect.top + rect.height / 2;
-            }
-        });
-        if (!Number.isFinite(leftEdge) || !Number.isFinite(centerY)) {
+            if (rect.width <= 0 || rect.height <= 0)
+                continue;
+            const css = getComputedStyle(button);
+            if (css.display === 'none' || css.visibility === 'hidden')
+                continue;
+            rightButtons.push({ button, rect });
+        }
+        const sendButtons = rightButtons.filter(item => isRawSendButton(item.button));
+        const candidates = sendButtons.length ? sendButtons : rightButtons;
+        const anchor = candidates.reduce((best, item) => !best || item.rect.right > best.rect.right ? item : best, null);
+        if (!anchor) {
             cmuInputCounterRemovePlacement();
             return null;
         }
-        wrap.style.setProperty('--cmu-input-counter-left', `${Math.max(0, leftEdge - rowRect.left - 4)}px`);
-        wrap.style.setProperty('--cmu-input-counter-top', `${Math.max(0, centerY - rowRect.top)}px`);
+        const rowRect = actionRow.getBoundingClientRect();
+        // border/스크롤/테마의 배율을 반영해 화면 좌표를 호스트 내부 좌표로 환산한다.
+        const scaleX = actionRow.offsetWidth > 0 ? rowRect.width / actionRow.offsetWidth : 1;
+        const scaleY = actionRow.offsetHeight > 0 ? rowRect.height / actionRow.offsetHeight : 1;
+        if (!(scaleX > 0) || !(scaleY > 0)) {
+            cmuInputCounterRemovePlacement();
+            return null;
+        }
+        const centerX = (anchor.rect.left + anchor.rect.width / 2 - rowRect.left) / scaleX - actionRow.clientLeft + actionRow.scrollLeft;
+        const top = (anchor.rect.top - rowRect.top) / scaleY - actionRow.clientTop + actionRow.scrollTop - 2;
+        if (!Number.isFinite(centerX) || !Number.isFinite(top)) {
+            cmuInputCounterRemovePlacement();
+            return null;
+        }
+        const positions = {
+            '--cmu-input-counter-left': `${Math.max(0, centerX).toFixed(2)}px`,
+            '--cmu-input-counter-top': `${Math.max(18, top).toFixed(2)}px`,
+        };
+        for (const [property, value] of Object.entries(positions)) {
+            if (wrap.style.getPropertyValue(property) !== value)
+                wrap.style.setProperty(property, value);
+        }
         return countEl;
     }
     function cmuInputCounterLerp(a, b, t) {
@@ -4446,10 +5083,14 @@
         return `hsl(${hue.toFixed(1)} 91% ${Math.max(48, light).toFixed(1)}%)`;
     }
     function cmuInputCounterAlert(countEl) {
+        clearTimeout(CMU_INPUT_COUNTER.alertTimer);
         countEl.classList.remove('cmu-input-counter-over-pulse');
         void countEl.offsetWidth;
         countEl.classList.add('cmu-input-counter-over-pulse');
-        window.setTimeout(() => countEl.classList.remove('cmu-input-counter-over-pulse'), 560);
+        CMU_INPUT_COUNTER.alertTimer = window.setTimeout(() => {
+            CMU_INPUT_COUNTER.alertTimer = 0;
+            countEl.classList.remove('cmu-input-counter-over-pulse');
+        }, 560);
         try {
             navigator.vibrate?.([35, 30, 55]);
         }
@@ -4460,8 +5101,16 @@
             return;
         cmuInputCounterUnbindEditor();
         CMU_INPUT_COUNTER.editor = editor;
+        CMU_INPUT_COUNTER.resizeObserver?.observe(editor);
         const schedule = () => scheduleCmuInputCounterSync();
-        const delayed = () => setTimeout(scheduleCmuInputCounterSync, 0);
+        const delayed = () => {
+            clearTimeout(CMU_INPUT_COUNTER.delayedTimer);
+            CMU_INPUT_COUNTER.delayedTimer = setTimeout(() => {
+                CMU_INPUT_COUNTER.delayedTimer = 0;
+                if (CMU_INPUT_COUNTER.editor === editor && editor.isConnected)
+                    scheduleCmuInputCounterSync();
+            }, 0);
+        };
         CMU_INPUT_COUNTER.editorHandlers = { schedule, delayed };
         editor.addEventListener('input', schedule, true);
         editor.addEventListener('keyup', schedule, true);
@@ -4479,7 +5128,7 @@
     }
     function renderCmuInputCounter() {
         CMU_INPUT_COUNTER.updateFrame = 0;
-        if (cmuUserNoteGuardActive())
+        if (CMU_INPUT_COUNTER.disposed || cmuUserNoteGuardActive())
             return;
         if (!shouldRun() || !settings.inputCharacterCounter || !isChatRoomPath()) {
             cleanupCmuInputCounter();
@@ -4495,6 +5144,9 @@
         if (!(countEl instanceof HTMLElement))
             return;
         const count = cmuInputCounterLength(cmuInputCounterText(editor));
+        // 위치만 바뀐 프레임에서는 동일한 텍스트/속성을 다시 쓰지 않는다.
+        if (CMU_INPUT_COUNTER.previousCount === count && CMU_INPUT_COUNTER.renderedElement === countEl)
+            return;
         const formattedCount = count.toLocaleString('ko-KR');
         countEl.textContent = formattedCount;
         countEl.title = `현재 ${formattedCount}자 · 최대 ${CMU_INPUT_COUNTER.limit.toLocaleString('ko-KR')}자`;
@@ -4509,9 +5161,10 @@
         if (CMU_INPUT_COUNTER.previousCount !== null && CMU_INPUT_COUNTER.previousCount <= CMU_INPUT_COUNTER.limit && count > CMU_INPUT_COUNTER.limit)
             cmuInputCounterAlert(countEl);
         CMU_INPUT_COUNTER.previousCount = count;
+        CMU_INPUT_COUNTER.renderedElement = countEl;
     }
     function scheduleCmuInputCounterSync() {
-        if (CMU_INPUT_COUNTER.updateFrame || cmuUserNoteGuardActive())
+        if (CMU_INPUT_COUNTER.disposed || CMU_INPUT_COUNTER.updateFrame || cmuUserNoteGuardActive())
             return;
         CMU_INPUT_COUNTER.updateFrame = requestAnimationFrame(renderCmuInputCounter);
     }
@@ -4532,7 +5185,7 @@
         }
         return input.parentElement || null;
     }
-    function ensureToolbarButton() {
+    function ensureToolbarButton({ syncInline = true } = {}) {
         if (!isChatRoomPath())
             return false;
         const input = findChatInput();
@@ -4611,7 +5264,8 @@
         }
         ensureComposerExpandButton(input);
         watchComposerScope(info?.scope || fallbackHost || input.closest?.('form') || input.parentElement);
-        ensureInlineBlocks(input);
+        if (syncInline)
+            ensureInlineBlocks(input);
         ensureCmuMenuSwipeZone(input);
         return true;
     }
@@ -5644,7 +6298,13 @@
         document.body.appendChild(root);
         return root;
     }
-    function cmuLogCaptureClearOutput() {
+    function cmuLogCaptureClearOutput(invalidate = true) {
+        if (invalidate) {
+            LOG_CAPTURE.renderSeq = (LOG_CAPTURE.renderSeq || 0) + 1;
+            LOG_CAPTURE.rendering = false;
+            LOG_CAPTURE.renderHost?.remove?.();
+            LOG_CAPTURE.renderHost = null;
+        }
         const output = LOG_CAPTURE.output;
         if (output?.url) {
             try { URL.revokeObjectURL(output.url); } catch (_) { }
@@ -6081,12 +6741,14 @@
     function lcFitSingleImageConfig(base, node) {
         const width = Math.max(1, Number(base.width) || 700);
         const height = Math.max(1, Number(node?.scrollHeight || node?.offsetHeight || 1));
-        let pixelRatio = Math.max(.5, Number(base.pixelRatio) || 1);
-        const byPixels = Math.sqrt(Math.max(1, Number(base.maxPixels) || 14000000) / (width * height));
-        const byHeight = Math.max(.5, Number(base.maxDimension) || 16000) / height;
-        pixelRatio = Math.min(pixelRatio, byPixels, byHeight);
-        pixelRatio = Math.max(.5, Math.floor(pixelRatio * 100) / 100);
-        return { ...base, pixelRatio };
+        const maxPixels = Math.max(1, Number(base.maxPixels) || 14000000);
+        const maxDimension = Math.max(1, Number(base.maxDimension) || 16000);
+        const pixelRatio = Math.min(Math.max(.5, Number(base.pixelRatio) || 1),
+            Math.sqrt(maxPixels / (width * height)), maxDimension / width, maxDimension / height);
+        // Keep readable output; reject oversized selections instead of violating the memory limit.
+        if (!Number.isFinite(pixelRatio) || pixelRatio < .5)
+            throw new Error('canvas size exceeds limit');
+        return { ...base, pixelRatio: Math.floor(pixelRatio * 100) / 100 };
     }
     function lcCanvasToBlob(canvas, mime, quality) {
         return new Promise((resolve, reject) => {
@@ -6145,11 +6807,13 @@
             return response.blob();
         });
     }
-    async function lcPrepareCaptureImages(root) {
+    async function lcPrepareCaptureImages(root, isCurrent = () => true) {
         if (!(root instanceof HTMLElement))
             return;
         const images = Array.from(root.querySelectorAll('img'));
-        await Promise.all(images.map(async img => {
+        const prepare = async img => {
+            if (!isCurrent())
+                return;
             const source = lcCaptureImageSource(img);
             if (!source)
                 return;
@@ -6170,6 +6834,11 @@
             catch (_) {
                 img.src = source;
             }
+        };
+        let next = 0;
+        await Promise.all(Array.from({ length: Math.min(4, images.length) }, async () => {
+            while (isCurrent() && next < images.length)
+                await prepare(images[next++]);
         }));
     }
     async function lcRenderCaptureCanvas(lib, page, config, theme) {
@@ -6196,7 +6865,9 @@
             fallback.querySelectorAll?.('img,video,canvas,svg image').forEach(el => el.remove());
             page.parentElement?.appendChild(fallback);
             try {
-                return await lib.toCanvas(fallback, { ...options, fontEmbedCSS: '' });
+                const canvas = await lib.toCanvas(fallback, { ...options, fontEmbedCSS: '' });
+                canvas.cmuMediaOmitted = true;
+                return canvas;
             }
             catch (_) {
                 throw firstError;
@@ -6255,7 +6926,7 @@
             <div class="cmu-lcp-output-help">이미지를 길게 눌러 저장하세요.</div>
           </div>
           <div class="cmu-lcp-foot">
-            <div class="cmu-lcp-inline-status">${output.width} × ${output.height}px</div>
+            <div class="cmu-lcp-inline-status">${output.width} × ${output.height}px${output.mediaOmitted ? ' · 일부 이미지 제외됨' : ''}</div>
           </div>`;
         cmuLogCaptureBindPreviewEvents(root);
         cmuLogCaptureMountOutputFrame(panel, output);
@@ -6263,6 +6934,8 @@
     async function cmuLogCaptureRenderLongImage(format = 'png') {
         if (!LOG_CAPTURE.previewState || !LOG_CAPTURE.previewOpen || LOG_CAPTURE.rendering)
             return;
+        const renderSeq = LOG_CAPTURE.renderSeq = (LOG_CAPTURE.renderSeq || 0) + 1;
+        const isCurrent = () => shouldRun() && LOG_CAPTURE.previewOpen && LOG_CAPTURE.renderSeq === renderSeq;
         const cleanFormat = format === 'webp' ? 'webp' : 'png';
         const stateSnapshot = lcCloneState(LOG_CAPTURE.previewState);
         const theme = normalizeLogCaptureTheme(settings.logCaptureTheme);
@@ -6271,9 +6944,13 @@
         cmuLogCaptureSetInlineStatus('긴 이미지 만드는 중…');
         cmuLogCaptureUpdateSaveButtons();
         let host = null;
+        let canvas = null;
         try {
             const lib = await loadHtmlToImageLib();
+            if (!isCurrent())
+                return;
             host = document.createElement('div');
+            LOG_CAPTURE.renderHost = host;
             host.style.position = 'fixed';
             host.style.left = '0';
             host.style.top = '0';
@@ -6298,9 +6975,17 @@
                 ]);
             }
             catch (_) { }
-            await lcPrepareCaptureImages(shell.root);
+            if (!isCurrent())
+                return;
+            await lcPrepareCaptureImages(shell.root, isCurrent);
+            if (!isCurrent())
+                return;
             const config = lcFitSingleImageConfig(baseConfig, shell.root);
-            const canvas = await lcRenderCaptureCanvas(lib, shell.root, config, theme);
+            canvas = await lcRenderCaptureCanvas(lib, shell.root, config, theme);
+            if (!isCurrent())
+                return;
+            if (canvas.width > baseConfig.maxDimension || canvas.height > baseConfig.maxDimension || canvas.width * canvas.height > baseConfig.maxPixels)
+                throw new Error('canvas size exceeds limit');
             const quality = clamp(Number(settings.logCaptureWebpQuality || 90) / 100, 0.1, 1);
             let mime = cleanFormat === 'webp' ? 'image/webp' : 'image/png';
             let blob = await lcCanvasToBlob(canvas, mime, cleanFormat === 'webp' ? quality : 1);
@@ -6308,11 +6993,13 @@
                 mime = 'image/png';
                 blob = await lcCanvasToBlob(canvas, mime, 1);
             }
-            cmuLogCaptureClearOutput();
+            if (!isCurrent())
+                return;
+            cmuLogCaptureClearOutput(false);
             const ext = mime === 'image/webp' ? 'webp' : 'png';
             const name = `crack_log_capture_${new Date().toISOString().slice(0,19).replace(/[-:T]/g, '')}.${ext}`;
             const url = URL.createObjectURL(blob);
-            if (!LOG_CAPTURE.previewOpen) {
+            if (!isCurrent()) {
                 try { URL.revokeObjectURL(url); } catch (_) { }
                 canvas.width = 1;
                 canvas.height = 1;
@@ -6324,20 +7011,28 @@
                 a.download = name;
                 document.body.appendChild(a);
                 a.click();
-                setTimeout(() => {
+                cmuLogCaptureSetInlineStatus(canvas.cmuMediaOmitted ? '일부 이미지를 제외한 캡처를 저장했어요. 원본 이미지가 필요하면 선택을 줄여 다시 만들어 주세요.' : '이미지 저장을 시작했어요.');
+                const releaseDownload = () => {
                     try { URL.revokeObjectURL(url); } catch (_) { }
                     a.remove();
-                }, 900);
+                    const index = CMU_RESOURCES.cleanups.indexOf(releaseDownload);
+                    if (index >= 0)
+                        CMU_RESOURCES.cleanups.splice(index, 1);
+                };
+                CMU_RESOURCES.cleanups.push(releaseDownload);
+                setTimeout(releaseDownload, 900);
                 canvas.width = 1;
                 canvas.height = 1;
                 return;
             }
-            LOG_CAPTURE.output = { url, width: canvas.width, height: canvas.height };
+            LOG_CAPTURE.output = { url, width: canvas.width, height: canvas.height, mediaOmitted: !!canvas.cmuMediaOmitted };
             canvas.width = 1;
             canvas.height = 1;
             cmuLogCaptureShowOutput();
         }
         catch (err) {
+            if (!isCurrent())
+                return;
             try { console.warn(`${LOG} log capture render failed`, err); } catch (_) { }
             const message = String(err?.message || '');
             if (/load|library|html-to-image|unavailable/i.test(message))
@@ -6351,8 +7046,16 @@
         }
         finally {
             host?.remove?.();
-            LOG_CAPTURE.rendering = false;
-            cmuLogCaptureUpdateSaveButtons();
+            if (canvas) {
+                canvas.width = 1;
+                canvas.height = 1;
+            }
+            if (LOG_CAPTURE.renderHost === host)
+                LOG_CAPTURE.renderHost = null;
+            if (LOG_CAPTURE.renderSeq === renderSeq) {
+                LOG_CAPTURE.rendering = false;
+                cmuLogCaptureUpdateSaveButtons();
+            }
         }
     }
     function installLogCaptureHandlers() {
@@ -6373,11 +7076,11 @@
             e.stopImmediatePropagation?.();
             cmuLogCaptureHandleGroupPick(group);
         };
-        document.addEventListener('click', LOG_CAPTURE.clickHandler, true);
+        cmuListen(document, 'click', LOG_CAPTURE.clickHandler, true);
     }
     function uninstallLogCaptureHandlers() {
         if (LOG_CAPTURE.clickHandler)
-            document.removeEventListener('click', LOG_CAPTURE.clickHandler, true);
+            cmuUnlisten(document, 'click', LOG_CAPTURE.clickHandler, true);
         LOG_CAPTURE.clickHandler = null;
     }
 
@@ -6443,7 +7146,7 @@
     const CMU_TAB_ICONONLY_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>`;
     const CMU_SEARCH_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>`;
     const CMU_TABS = Object.freeze([
-        { id: 'ui', icon: Q_ICONS.ui, label: 'UI', keys: ['autoHideHeader', 'wideView', 'hideStatBar', 'fullscreenButton', 'composerExpandButton', 'inputCharacterCounter', 'mobileMenuSwipeZone', 'mobileLeftMenuButton', 'mobileRightMenuButton', 'emptySendGuard', 'draftAutoSave', 'hideEndingHint'] },
+        { id: 'ui', icon: Q_ICONS.ui, label: 'UI', keys: ['autoHideHeader', 'wideView', 'hideStatBar', 'fullscreenButton', 'composerExpandButton', 'inputCharacterCounter', 'mobileMenuSwipeZone', 'mobileLeftMenuButton', 'mobileRightMenuButton', 'emptySendGuard', 'draftAutoSave', 'hideEndingHint', 'hideImageGenerateButton'] },
         { id: 'message', icon: Q_ICONS.message, label: '길게 누르기', keys: ['messageLongPressMenu'] },
         { id: 'theme', icon: Q_ICONS.theme, label: '테마', keys: ['themeSkin'] },
         { id: 'radiosonde', icon: Q_ICONS.radio, label: '라존데', keys: ['radiosonde'] },
@@ -6568,8 +7271,8 @@
         </div>
       </div>`;
     }
-    function qChip(action, key, label, checked, disabled = false) {
-        return `<button type="button" class="chip ${checked ? 'ck' : ''}" data-action="${action}" data-key="${key}" ${disabled ? 'disabled aria-disabled="true"' : ''}>${Q_CHECK_ICON}${label}</button>`;
+    function qChip(action, key, label, checked, disabled = false, iconHtml = Q_CHECK_ICON) {
+        return `<button type="button" class="chip ${checked ? 'ck' : ''}" data-action="${action}" data-key="${key}" ${disabled ? 'disabled aria-disabled="true"' : ''}>${iconHtml || Q_CHECK_ICON}${label}</button>`;
     }
     function qChipWrap(id, chips, enabled = true) {
         return `<div class="chips ${enabled ? '' : 'off'}" id="${id}">${chips || ''}</div>`;
@@ -6826,9 +7529,12 @@
             observeCmuRoomPanelState(cachedCmuRoomPanel);
             return cachedCmuRoomPanel;
         }
+        const root = document.querySelector('main') || document;
+        if (CMU_DOM_WATCH.roomPanelSearchRoot === root && Date.now() < CMU_DOM_WATCH.roomPanelMissUntil)
+            return null;
+        CMU_DOM_WATCH.roomPanelSearchRoot = root;
         let best = null;
         let bestScore = -1;
-        const root = document.querySelector('main') || document;
         root.querySelectorAll('div').forEach(el => {
             const score = scoreCmuRoomPanel(el);
             if (score > bestScore) {
@@ -6837,6 +7543,7 @@
             }
         });
         cachedCmuRoomPanel = bestScore >= 10 ? best : null;
+        CMU_DOM_WATCH.roomPanelMissUntil = cachedCmuRoomPanel ? 0 : Date.now() + 250;
         observeCmuRoomPanelState(cachedCmuRoomPanel);
         return cachedCmuRoomPanel;
     }
@@ -7098,6 +7805,18 @@
             return true;
         return !!target.closest?.(`#${ID.panel}, #${ID.toolbarWrapper}, #${ID.leftMenuZone}, #${ID.rightMenuZone}, #${ID.toast}, #${ID.logCaptureBar}, #${ID.logCapturePreview}, input, textarea, select, [contenteditable="true"]`);
     }
+    // 터치 지점 아래에 가로로 넘길 수 있는 영역(라디오존데 모델 상태 줄 등)이 있으면 그 요소를 돌려준다.
+    function cmuFindHorizontalScroller(target) {
+        let el = target instanceof Element ? target : null;
+        for (let i = 0; el && el !== document.body && i < 14; i++, el = el.parentElement) {
+            if (!(el instanceof HTMLElement) || el.scrollWidth <= el.clientWidth + 4)
+                continue;
+            const overflowX = getComputedStyle(el).overflowX;
+            if (overflowX === 'auto' || overflowX === 'scroll')
+                return el;
+        }
+        return null;
+    }
     function bindCmuMenuSwipeZone(zone) {
         if (!(zone instanceof HTMLElement))
             return;
@@ -7154,6 +7873,7 @@
                     lastX: event.clientX,
                     lastY: event.clientY,
                     at: Date.now(),
+                    scroller: cmuFindHorizontalScroller(event.target),
                 };
             }, { capture: true, passive: true });
             cmuGestureListen(signal, document, 'pointermove', event => {
@@ -7166,6 +7886,44 @@
                 tracking.lastX = event.clientX;
                 tracking.lastY = event.clientY;
             }, { capture: true, passive: true });
+            // 크로미움(엣지·크롬)은 터치가 스크롤 제스처로 판정되는 순간 pointercancel을 보내고
+            // 이후 pointer 이벤트를 끊는다. 스와이프 존은 pointer-events:none이라 실제 터치 대상은
+            // 아래의 채팅 본문이고, 본문은 가로 팬이 허용되어 있어 가로 스와이프가 곧바로 취소됐다.
+            // 추적 중 첫 이동이 가로 우세일 때만 기본 동작을 막아 스크롤 판정을 차단한다.
+            // 세로 우세면 막지 않고 추적만 취소해 평소 스크롤은 그대로 둔다. (파이어폭스는 영향 없음)
+            cmuGestureListen(signal, document, 'touchmove', event => {
+                if (!tracking)
+                    return;
+                const touch = event.touches && event.touches[0];
+                if (!touch)
+                    return;
+                const dx = Math.abs(touch.clientX - tracking.x);
+                const dy = Math.abs(touch.clientY - tracking.y);
+                if (!tracking.axis) {
+                    if (dx < 4 && dy < 4)
+                        return;
+                    tracking.axis = dx >= dy ? 'x' : 'y';
+                }
+                if (tracking.axis === 'x') {
+                    // 가로로 넘길 수 있는 영역 위에서 시작했고 그 방향으로 아직 넘길 내용이 남아 있으면
+                    // 스와이프를 포기하고 영역의 스크롤에 양보한다. 끝까지 넘긴 상태에서만 사이드바 스와이프로 본다.
+                    const scroller = tracking.scroller;
+                    if (scroller instanceof HTMLElement && scroller.isConnected) {
+                        const movingLeft = touch.clientX < tracking.x;
+                        const max = scroller.scrollWidth - scroller.clientWidth;
+                        const canScroll = movingLeft ? scroller.scrollLeft < max - 1 : scroller.scrollLeft > 1;
+                        if (canScroll) {
+                            cancel();
+                            return;
+                        }
+                    }
+                    if (event.cancelable)
+                        event.preventDefault();
+                }
+                else {
+                    cancel();
+                }
+            }, { capture: true, passive: false });
             cmuGestureListen(signal, document, 'pointercancel', event => {
                 if (!tracking || event.pointerId !== tracking.id)
                     return;
@@ -7424,6 +8182,37 @@
         }
         catch (_) { }
     }
+    // 크랙 기본 '상황 이미지 생성' 버튼 숨기기.
+    // AI 답변 아래 왼쪽에 혼자 있는 반짝이 아이콘 버튼이며 글자·aria-label이 없어서 아이콘 path로 식별한다(2026-09 실측).
+    // 버튼을 지우지 않고 표시만 달아 CSS로 가리므로 스위치를 끄면 바로 돌아온다.
+    const CMU_IMAGE_GEN_PATH_SELECTOR = '[data-message-group-id] svg path[d^="m17.01 2.2-.25.75"], [data-message-group-id] svg path[d^="M18.63 1.44c.06-.17"]';
+    let cmuImageGenHiderTimer = 0;
+    function markCmuImageGenerateButtons() {
+        try {
+            if (!settings.hideImageGenerateButton || !shouldRun() || !isChatRoomPath())
+                return;
+            document.querySelectorAll(CMU_IMAGE_GEN_PATH_SELECTOR).forEach(path => {
+                const button = path.closest('button');
+                if (!(button instanceof HTMLElement) || button.hasAttribute('data-cmu-hide-image-gen'))
+                    return;
+                if (button.hasAttribute('aria-label') || button.hasAttribute('title') || isOwnElement(button))
+                    return;
+                button.setAttribute('data-cmu-hide-image-gen', '1');
+            });
+        }
+        catch (_) { }
+    }
+    function syncCmuImageGenerateHider() {
+        if (settings.hideImageGenerateButton) {
+            markCmuImageGenerateButtons();
+            if (!cmuImageGenHiderTimer)
+                cmuImageGenHiderTimer = window.setInterval(markCmuImageGenerateButtons, 1200);
+        }
+        else if (cmuImageGenHiderTimer) {
+            clearInterval(cmuImageGenHiderTimer);
+            cmuImageGenHiderTimer = 0;
+        }
+    }
     function scheduleCmuStatBarMark(delay = 40) {
         clearTimeout(cmuStatBarMarkTimer);
         cmuStatBarMarkTimer = window.setTimeout(markCmuStatBar, Math.max(0, Number(delay) || 0));
@@ -7617,11 +8406,38 @@
         ['deducted', '차감']
     ];
     const SIDE_PART_LABELS = [
-        ['modelButton', '모델'], ['guideButton', '가이드'], ['profileButton', '프로필'], ['noteButton', '노트'],
+        ['modelButton', '모델'], ['guideButton', '가이드'], ['profileButton', '프로필'], ['profileBoxButton', '프로필 박스'], ['noteButton', '노트'],
         ['outputButton', '출력'], ['summaryButton', '요약'], ['imageButton', '이미지'], ['archiveButton', '보관함'],
-        ['roomBackgroundButton', '이미지 테마'], ['sceneBlurButton', 'CSP 테마'],
+        ['roomBackgroundButton', '이미지 테마'], ['scenePainterButton', '모바일 삽화'], ['wishManagerButton', 'Wish RP'], ['guideManagerButton', '지침 관리'], ['sceneBlurButton', 'CSP 테마'],
         ['startButton', '시작'], ['loreButton', '로어'], ['translatorButton', '번역'], ['aiSummaryButton', 'AI 요약'], ['gameHudButton', '게임 HUD']
     ];
+    const SIDE_PART_ICON_KEYS = Object.freeze({
+        modelButton: 'model',
+        guideButton: 'guide',
+        profileButton: 'profile',
+        profileBoxButton: 'profileBox',
+        noteButton: 'note',
+        outputButton: 'output',
+        summaryButton: 'summary',
+        imageButton: 'image',
+        archiveButton: 'archive',
+        roomBackgroundButton: 'roomBackground',
+        scenePainterButton: 'scenePainter',
+        wishManagerButton: 'wishManager',
+        guideManagerButton: 'guideManager',
+        sceneBlurButton: 'sceneBlur',
+        startButton: 'start',
+        loreButton: 'lore',
+        translatorButton: 'translator',
+        aiSummaryButton: 'aiSummary',
+        gameHudButton: 'gameHud',
+    });
+    function sidePartSettingIcon(key) {
+        const icon = SIDE_ICON[SIDE_PART_ICON_KEYS[key]];
+        if (!icon)
+            return Q_CHECK_ICON;
+        return String(icon).replace(/class="[^"]*chud-btn-icon[^"]*"/, 'class="ci cmu-side-setting-icon"');
+    }
     function renderDashboardPartRows() {
         const visible = getDashVisible();
         return DASH_PART_LABELS.map(([key, label]) => qChip('q-dash-chip', key, label, visible[key] !== false)).join('');
@@ -7635,12 +8451,17 @@
     }
     function renderSidebarPartRows() {
         const visible = sideLoadVisible();
-        return getAvailableSideEntries().map(([key, label]) => qChip('q-side-chip', key, label, visible[key] !== false)).join('');
+        return getAvailableSideEntries().map(([key, label]) =>
+            qChip('q-side-chip', key, label, visible[key] !== false, false, sidePartSettingIcon(key))
+        ).join('');
     }
     function loadRsVisibility() {
         try {
             const parsed = JSON.parse(localStorage.getItem(LS.rsVisibility) || '{}');
-            return parsed && typeof parsed === 'object' ? parsed : {};
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+            delete parsed['yame-opus5'];
+            delete parsed['yame-opus48'];
+            return parsed;
         }
         catch (_) {
             return {};
@@ -7652,25 +8473,64 @@
         }
         catch (_) { }
     }
-    function isRsModelVisible(slug) {
-        const visibility = loadRsVisibility();
-        return visibility[slug] !== false;
-    }
     function setRsModelVisible(slug, value) {
         const visibility = loadRsVisibility();
         visibility[slug] = !!value;
         saveRsVisibility(visibility);
+        syncRsModelSettings();
         renderRsLine();
         scheduleRadiosondeRefresh(true);
     }
     function getRsVisibleModels() {
         const models = RS.models.length ? RS.models : DEFAULT_RS_MODELS;
-        const visible = models.filter(m => isRsModelVisible(m.slug));
-        return visible.length ? visible : models;
+        const visibility = loadRsVisibility();
+        return models.filter(m => visibility[m.slug] !== false);
+    }
+    const RS_GROUPS = [
+        ['fable', 'Fable'], ['opus', 'Opus'], ['gpt', 'GPT'], ['gemini', 'Gemini'],
+        ['sonnet', 'Sonnet'], ['haiku', 'Haiku'], ['other', '기타'],
+    ];
+    function rsModelGroup(model) {
+        const text = `${model.slug} ${model.label || ''}`.toLowerCase();
+        return RS_GROUPS.find(([id]) => id !== 'other' && text.includes(id))?.[0]
+            || (text.includes('openai') ? 'gpt' : 'other');
     }
     function renderRsModelRows() {
         const models = RS.models.length ? RS.models : DEFAULT_RS_MODELS;
-        return models.map(model => qChip('q-rs-chip', model.slug, model.label || model.short || model.slug, isRsModelVisible(model.slug))).join('');
+        const visibility = loadRsVisibility();
+        const disabled = !settings.radiosonde;
+        return RS_GROUPS.map(([id, label]) => {
+            const members = models.filter(m => rsModelGroup(m) === id);
+            if (!members.length)
+                return '';
+            const count = members.filter(m => visibility[m.slug] !== false).length;
+            const allOn = count === members.length;
+            const groupSwitch = `<button type="button" class="sw ${allOn ? 'on' : ''} ${disabled ? 'disabled' : ''}" data-action="q-rs-group" data-key="${id}" role="switch" aria-checked="${allOn ? 'true' : 'false'}" aria-disabled="${disabled ? 'true' : 'false'}" ${disabled ? 'disabled' : ''} title="${allOn ? '이 그룹 전체 끄기' : '이 그룹 전체 켜기'}"></button>`;
+            const chips = members.map(m => qChip('q-rs-chip', escapeHtml(m.slug), escapeHtml(m.label || m.short || m.slug), visibility[m.slug] !== false, disabled)).join('');
+            return `<div class="subrow cmu-rs-setting-group" data-rs-group="${id}"><div class="cmu-rs-setting-head"><div class="lbl cmu-rs-setting-title"><strong>${label}</strong><small>${count}/${members.length}개 표시</small></div>${groupSwitch}</div><div class="cmu-rs-setting-models">${chips}</div></div>`;
+        }).join('');
+    }
+    function syncRsModelSettings() {
+        const root = document.getElementById('g-rs');
+        if (!root)
+            return;
+        root.innerHTML = renderRsModelRows();
+        const panel = document.getElementById(ID.panel);
+        if (panel) {
+            cmuIndexSettingsSearch(panel);
+            cmuApplySettingsSearch(panel);
+        }
+    }
+    function setRsGroupVisible(group) {
+        const models = (RS.models.length ? RS.models : DEFAULT_RS_MODELS).filter(m => rsModelGroup(m) === group);
+        if (!models.length) return;
+        const visibility = loadRsVisibility();
+        const enabled = !models.every(m => visibility[m.slug] !== false);
+        for (const model of models) visibility[model.slug] = enabled;
+        saveRsVisibility(visibility);
+        syncRsModelSettings();
+        renderRsLine();
+        scheduleRadiosondeRefresh(true);
     }
     function cmuThemeUiModeForSettings() {
         try {
@@ -7725,7 +8585,7 @@
         ${qSwitch('mobileLeftMenuButton', '좌측 메뉴 버튼', '모바일 왼쪽 손잡이로 순정 채팅 목록 열기')}
         ${qSwitch('mobileRightMenuButton', '우측 메뉴 버튼', '모바일 오른쪽 손잡이로 방 설정 패널 열기')}
         ${qSwitch('composerExpandButton', '입력창 펼치기 버튼', '스크롤이 생기면 입력창 오른쪽 위에 표시')}
-        ${qSwitch('inputCharacterCounter', '입력 글자수 표시', '전송 버튼 묶음 왼쪽 · 2,000자 경고')}
+        ${qSwitch('inputCharacterCounter', '입력 글자수 표시', '전송 버튼 위쪽 · 2,000자 경고')}
         ${qSwitch('emptySendGuard', '빈 메시지 전송 막기')}
       `)}
 
@@ -7734,6 +8594,9 @@
 
       <div class="sec">알림</div>
       ${qCard(qSwitch('hideEndingHint', '엔딩 힌트/알림 점 숨기기'))}
+
+      <div class="sec">상황 이미지</div>
+      ${qCard(qSwitch('hideImageGenerateButton', '이미지 생성 버튼 숨기기', 'AI 답변 아래의 상황 이미지 생성(크래커 차감) 아이콘을 화면에서만 숨김'))}
     `);
     }
     function renderSettingsMessagePage() {
@@ -7782,7 +8645,7 @@
       `)}
 
       <div class="sec">표시할 모델</div>
-      ${qCard(qChipWrap('g-rs', renderRsModelRows(), !!settings.radiosonde))}
+      ${qCard(`<div id="g-rs">${renderRsModelRows()}</div>`)}
     `);
     }
     function renderSettingsDashboardPage() {
@@ -7791,7 +8654,7 @@
             ? `
         <div class="sec">미니 사이드바</div>
         ${qCard(`
-          ${qSwitch('dashboardSidebar', '미니사이드바 표시', '모델 · 가이드 · 노트 · 로어 · 게임 HUD', { group: 'g-side' })}
+          ${qSwitch('dashboardSidebar', '미니사이드바 표시', '모델 · 가이드 · 노트 · 로어 · 모바일 삽화 · Wish RP · 게임 HUD', { group: 'g-side' })}
           ${qChipWrap('g-side', sideRows, !!settings.dashboardSidebar)}
         `)}`
             : '';
@@ -8022,7 +8885,12 @@
                 syncSideMenu();
                 return true;
             }
+            if (action === 'q-rs-group' && key) {
+                if (settings.radiosonde) setRsGroupVisible(key);
+                return true;
+            }
             if (action === 'q-rs-chip' && key) {
+                if (!settings.radiosonde) return true;
                 const next = !target.classList.contains('ck');
                 target.classList.toggle('ck', next);
                 setRsModelVisible(key, next);
@@ -8247,11 +9115,72 @@
         });
         return found || null;
     }
+    function restoreGlobalHeaderShellLayout() {
+        const shell = CMU_HEADER_SHELL.element;
+        if (shell instanceof HTMLElement) {
+            try {
+                if (shell.getAttribute('data-cmu-global-header-shell') === '1') {
+                    if (CMU_HEADER_SHELL.paddingTop)
+                        shell.style.setProperty('padding-top', CMU_HEADER_SHELL.paddingTop, CMU_HEADER_SHELL.paddingTopPriority || '');
+                    else
+                        shell.style.removeProperty('padding-top');
+                    shell.removeAttribute('data-cmu-global-header-shell');
+                }
+            }
+            catch (_) { }
+        }
+        CMU_HEADER_SHELL.element = null;
+        CMU_HEADER_SHELL.paddingTop = '';
+        CMU_HEADER_SHELL.paddingTopPriority = '';
+    }
+    function findGlobalHeaderShell(header) {
+        if (!(header instanceof HTMLElement))
+            return null;
+        const shell = header.parentElement;
+        if (!(shell instanceof HTMLElement) || shell === document.body || shell === document.documentElement)
+            return null;
+        const cls = String(shell.className || '');
+        const hasKnownPaddingClass = cls.includes('pt-[56px]');
+        let computedPadding = 0;
+        try {
+            computedPadding = parseFloat(getComputedStyle(shell).paddingTop) || 0;
+        }
+        catch (_) { }
+        const looksViewportShell = /(?:^|\s)(?:h-screen|min-h-screen|h-dvh|min-h-dvh)(?:\s|$)/.test(cls) ||
+            !!shell.querySelector?.(':scope > .relative.flex.h-full, :scope > main');
+        if (!looksViewportShell)
+            return null;
+        if (!hasKnownPaddingClass && !(computedPadding >= 48 && computedPadding <= 64))
+            return null;
+        return shell;
+    }
+    function syncGlobalHeaderShellLayout(header = findGlobalHeader()) {
+        const shouldCollapse = shouldRun() && settings.autoHideHeader && isEpisodePath() &&
+            document.documentElement.classList.contains('cmu-auto-hide') && !cmuUserNoteGuardActive();
+        if (!shouldCollapse) {
+            restoreGlobalHeaderShellLayout();
+            return null;
+        }
+        const shell = findGlobalHeaderShell(header);
+        if (!(shell instanceof HTMLElement)) {
+            restoreGlobalHeaderShellLayout();
+            return null;
+        }
+        if (CMU_HEADER_SHELL.element !== shell) {
+            restoreGlobalHeaderShellLayout();
+            CMU_HEADER_SHELL.element = shell;
+            CMU_HEADER_SHELL.paddingTop = shell.style.getPropertyValue('padding-top');
+            CMU_HEADER_SHELL.paddingTopPriority = shell.style.getPropertyPriority('padding-top');
+        }
+        shell.setAttribute('data-cmu-global-header-shell', '1');
+        shell.style.setProperty('padding-top', '0px', 'important');
+        return shell;
+    }
     function markGlobalHeader() {
         const header = findGlobalHeader();
-        if (header && !header.closest(`#${ID.panel}`)) {
+        if (header && !header.closest(`#${ID.panel}`))
             header.setAttribute('data-cmu-global-header', '1');
-        }
+        syncGlobalHeaderShellLayout(header);
     }
     function ensureTopRevealZone() {
         let zone = document.getElementById(ID.topZone);
@@ -8429,7 +9358,7 @@
         if (document.documentElement.dataset.cmuSendGuardBound === '1')
             return;
         document.documentElement.dataset.cmuSendGuardBound = '1';
-        document.addEventListener('click', (e) => {
+        cmuListen(document, 'click', (e) => {
             if (!shouldRun() || !settings.emptySendGuard)
                 return;
             const btn = e.target.closest?.('button');
@@ -8443,7 +9372,7 @@
             e.stopImmediatePropagation();
             updateEmptySendGuardState();
         }, true);
-        document.addEventListener('keydown', (e) => {
+        cmuListen(document, 'keydown', (e) => {
             if (!shouldRun() || !settings.emptySendGuard)
                 return;
             if (e.isComposing || e.keyCode === 229)
@@ -8459,35 +9388,35 @@
             e.stopPropagation();
             updateEmptySendGuardState();
         }, true);
-        document.addEventListener('beforeinput', (e) => {
+        cmuListen(document, 'beforeinput', (e) => {
             const input = e.target.closest?.('textarea, [contenteditable="true"]');
             if (!input || !isChatInputElement(input))
                 return;
             scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('compositionstart', (e) => {
+        cmuListen(document, 'compositionstart', (e) => {
             if (!isChatInputElement(e.target))
                 return;
             scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('compositionend', (e) => {
+        cmuListen(document, 'compositionend', (e) => {
             if (!isChatInputElement(e.target))
                 return;
             scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('input', (e) => {
+        cmuListen(document, 'input', (e) => {
             if (isChatInputElement(e.target))
                 scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('keyup', (e) => {
+        cmuListen(document, 'keyup', (e) => {
             if (isChatInputElement(e.target))
                 scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('focusin', (e) => {
+        cmuListen(document, 'focusin', (e) => {
             if (isChatInputElement(e.target))
                 scheduleEmptySendGuardUiUpdate();
         }, true);
-        document.addEventListener('focusout', (e) => {
+        cmuListen(document, 'focusout', (e) => {
             if (isChatInputElement(e.target))
                 scheduleEmptySendGuardUiUpdate();
         }, true);
@@ -8514,7 +9443,7 @@
         installed: false,
     };
     function cmuDraftEnabled() {
-        return !!settings.draftAutoSave && isChatRoomPath();
+        return shouldRun() && !!settings.draftAutoSave && isChatRoomPath();
     }
     function cmuDraftRoomId() {
         return getChatId() || '';
@@ -9049,18 +9978,18 @@
             return;
         CMU_DRAFT.installed = true;
         cmuDraftCleanupOld();
-        document.addEventListener('compositionstart', e => {
+        cmuListen(document, 'compositionstart', e => {
             if (isChatInputElement(e.target))
                 CMU_DRAFT.composing = true;
         }, true);
-        document.addEventListener('compositionend', e => {
+        cmuListen(document, 'compositionend', e => {
             if (!isChatInputElement(e.target))
                 return;
             CMU_DRAFT.composing = false;
             CMU_DRAFT.input = getEditableTarget(e.target);
             cmuDraftScheduleSave('composition-end');
         }, true);
-        document.addEventListener('input', e => {
+        cmuListen(document, 'input', e => {
             const input = getEditableTarget(e.target);
             if (!(input instanceof Element) || !isChatInputElement(input))
                 return;
@@ -9087,7 +10016,7 @@
                 cmuDraftScheduleSave('input');
             }
         }, true);
-        document.addEventListener('keydown', e => {
+        cmuListen(document, 'keydown', e => {
             if (e.isComposing || e.keyCode === 229 || e.key !== 'Enter' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)
                 return;
             const input = getEditableTarget(e.target);
@@ -9119,21 +10048,21 @@
                     cmuDraftStartPossibleSend('button', input);
             }, true);
         });
-        document.addEventListener('submit', e => {
+        cmuListen(document, 'submit', e => {
             const root = e.target instanceof Element ? e.target : null;
             const input = findChatInputInsideComposerRoot(root) || findChatInput();
             if (input)
                 cmuDraftStartPossibleSend('submit', input);
         }, true);
-        window.addEventListener('pagehide', () => cmuDraftFlush('pagehide'), true);
-        window.addEventListener('beforeunload', () => cmuDraftFlush('beforeunload'), true);
-        document.addEventListener('visibilitychange', () => {
+        cmuListen(window, 'pagehide', () => cmuDraftFlush('pagehide'), true);
+        cmuListen(window, 'beforeunload', () => cmuDraftFlush('beforeunload'), true);
+        cmuListen(document, 'visibilitychange', () => {
             if (document.visibilityState === 'hidden')
                 cmuDraftFlush('visibility-hidden');
             else
                 cmuDraftSync();
         }, true);
-        document.addEventListener('focusin', e => {
+        cmuListen(document, 'focusin', e => {
             if (isChatInputElement(e.target))
                 cmuDraftSync();
         }, true);
@@ -9221,6 +10150,7 @@
         modelButton: true,
         guideButton: true,
         profileButton: true,
+        profileBoxButton: true,
         noteButton: true,
         outputButton: true,
         summaryButton: true,
@@ -9228,6 +10158,9 @@
         archiveButton: true,
         externalArchiveButton: false,
         roomBackgroundButton: true,
+        scenePainterButton: true,
+        wishManagerButton: true,
+        guideManagerButton: true,
         sceneBlurButton: true,
         startButton: true,
         loreButton: true,
@@ -9244,11 +10177,39 @@
         available: null,
         btns: {},
     };
+    // SPA 채팅방 이동 순간 외부 확장 DOM이 잠깐 사라져도, 이미 감지한 연동 버튼은 숨기지 않는다.
+    // Wish RP Manager는 새 방 진입 뒤 자체 DOM을 다시 붙이는 동안 짧은 공백이 생길 수 있다.
+    const CMU_INTEGRATION_SEEN = {
+        wishManager: false,
+        profileBox: false,
+        guideManager: false,
+    };
+    const COMPACT_MODEL = {
+        menu: null,
+        nativeShell: null,
+        nativeButton: null,
+        anchor: null,
+        seq: 0,
+        outsideHandler: null,
+        keyHandler: null,
+        resizeHandler: null,
+        revealTimer: 0,
+        closeTimer: 0,
+        opening: false,
+        toggleLockUntil: 0,
+    };
+    CMU_RESOURCES.cleanups.push(() => closeCompactModelPicker({ closeNative: true }));
     function sideLoadVisible() {
         if (DASH_SIDE.visible)
             return DASH_SIDE.visible;
         try {
-            DASH_SIDE.visible = { ...DASH_SIDE_DEFAULT_VISIBLE, ...JSON.parse(localStorage.getItem(LS.sidebarVisible) || '{}') };
+            const saved = JSON.parse(localStorage.getItem(LS.sidebarVisible) || '{}');
+            if (saved && typeof saved === 'object' && !Array.isArray(saved) &&
+                !Object.prototype.hasOwnProperty.call(saved, 'wishManagerButton') &&
+                Object.prototype.hasOwnProperty.call(saved, 'rpManagerButton')) {
+                saved.wishManagerButton = saved.rpManagerButton;
+            }
+            DASH_SIDE.visible = { ...DASH_SIDE_DEFAULT_VISIBLE, ...(saved || {}) };
         }
         catch (_) {
             DASH_SIDE.visible = { ...DASH_SIDE_DEFAULT_VISIBLE };
@@ -9265,6 +10226,7 @@
         model: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3.5 6.5v11L12 22l8.5-4.5v-11L12 2Zm0 2.2 5.9 3.1L12 10.4 6.1 7.3 12 4.2ZM5.5 9l5.5 2.9v7.2l-5.5-2.9V9Zm13 0v7.2L13 19.1v-7.2L18.5 9Z"/></svg>',
         guide: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>',
         profile: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 22c1.8-4 4.4-6 8-6s6.2 2 8 6"/></svg>',
+        profileBox: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2.25"/><path d="M5.8 16c.55-2.05 1.65-3.1 3.2-3.1s2.65 1.05 3.2 3.1"/><path d="M15 8h3"/><path d="M15 12h3"/><path d="M15 16h2"/></svg>',
         note: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
         output: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h10M4 17h16"/></svg>',
         summary: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5h14v14H5z"/><path d="M8 9h8M8 13h5"/></svg>',
@@ -9278,9 +10240,12 @@
         translator: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h10M9 5c0 5-2 8-5 10"/><path d="M6 10c1 2 3 4 6 5"/><path d="M14 19l4-9 4 9M15.5 16h5"/></svg>',
         aiSummary: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 7l8 4 8-4-8-4Z"/><path d="M4 12l8 4 8-4"/><path d="M4 17l8 4 8-4"/></svg>',
         gameHud: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 7.6h9.6c2.15 0 3.62 1.42 4.12 4l.7 3.62c.36 1.88-.54 3.18-1.9 3.18-.8 0-1.5-.38-2.08-1.06l-1.24-1.44H7.6l-1.24 1.44c-.58.68-1.28 1.06-2.08 1.06-1.36 0-2.26-1.3-1.9-3.18l.7-3.62c.5-2.58 1.97-4 4.12-4z"/><path d="M7.2 10.2v3.6M5.4 12h3.6"/><circle cx="16.25" cy="10.9" r=".82" fill="currentColor" stroke="none"/><circle cx="18.2" cy="13.05" r=".82" fill="currentColor" stroke="none"/></svg>',
+        scenePainter: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 4.2 19.8 9.3"/><path d="m13.5 5.4 5.1 5.1-8.35 8.35-5.95 1.2 1.2-5.95z"/><path d="m5.5 14.1 4.4 4.4"/><path d="M15.8 3.1c.74-.74 1.94-.74 2.68 0l2.42 2.42c.74.74.74 1.94 0 2.68l-2.3 2.3-5.1-5.1z"/></svg>',
+        wishManager: '<svg class="chud-btn-icon chud-wish-heart-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35 10.55 20.03C5.4 15.36 2 12.27 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.77-3.4 6.86-8.55 11.54L12 21.35Z"/></svg>',
+        guideManager: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5h6v2.2a.8.8 0 0 1-.8.8H9.8a.8.8 0 0 1-.8-.8z"/><path d="M8.5 12h7"/><path d="M8.5 16h5"/></svg>',
     };
     function isOwnElement(el) {
-        return !!el?.closest?.(`#${ID.panel}, #${ID.toolbarWrapper}, #chud-infobar, #chud-sidebar, #chud-info-menu, #chud-side-menu, #igx-live-popup`);
+        return !!el?.closest?.(`#${ID.panel}, #${ID.toolbarWrapper}, #chud-infobar, #chud-sidebar, #chud-info-menu, #chud-side-menu, #igx-live-popup, #cmu-compact-model-menu, #rpcm-overlay, #csp-v35-root`);
     }
     function fireClickSequence(el) {
         if (!el)
@@ -9404,8 +10369,11 @@
         return !!(document.getElementById('trans-setting-panel') || document.getElementById('trans-menu-btn') || document.querySelector('.trans-bubble-btn'));
     }
     function isAiSummaryInstalledLite() {
-        return !!(document.querySelector('.crack-ext-header-ai-btn, button[data-ce-ai-summary="true"]') ||
-            findExternalClickable([/AI\s*요약/], false));
+        const root = document.documentElement;
+        return !!(root?.getAttribute('data-crack-ai-summary-ready') ||
+            document.getElementById('crack-ext-ai-sidebar-menu') ||
+            document.querySelector('.crack-ext-header-ai-btn, [data-ce-ai-summary="true"]') ||
+            findExternalClickable([/AI\s*요약(?:·메모리)?/], false));
     }
     function isLoreToolsInstalledLite() {
         const w = getPublicWindow();
@@ -9535,6 +10503,207 @@
         showToast('게임 HUD 준비 중 · 잠시 후 자동으로 열림');
         return true;
     }
+    function getMobileScenePainterTriggerLite(visibleOnly = true) {
+        const row = document.getElementById('csp-scene-painter-row');
+        if (!row)
+            return null;
+        const trigger = row.querySelector('[role="button"]') || row;
+        if (!(trigger instanceof HTMLElement))
+            return null;
+        if (visibleOnly && !visibleClickable(trigger))
+            return null;
+        return trigger;
+    }
+    function isMobileScenePainterInstalledLite() {
+        // 모바일 Scene Painter는 시작 시 고유 스타일을 항상 주입하므로,
+        // 우측 설정 메뉴가 닫혀 있어 row가 DOM에 없어도 설치 여부를 판별할 수 있다.
+        return !!(document.getElementById('csp-scene-painter-style') ||
+            document.getElementById('csp-scene-painter-row') ||
+            document.getElementById('csp-v35-root'));
+    }
+    function tryOpenMobileScenePainterLite() {
+        // 이미 Studio/설정 UI가 열려 있으면 중복으로 새 진입을 만들지 않는다.
+        if (document.getElementById('csp-v35-root'))
+            return true;
+        const trigger = getMobileScenePainterTriggerLite(true) || getMobileScenePainterTriggerLite(false);
+        return trigger ? fireClickSequence(trigger) : false;
+    }
+    function openMobileScenePainterLite() {
+        if (tryOpenMobileScenePainterLite())
+            return true;
+        if (!isMobileScenePainterInstalledLite()) {
+            showToast('모바일 삽화 확프를 찾지 못함');
+            return false;
+        }
+
+        // 모바일판은 설정 메뉴가 열릴 때 #csp-scene-painter-row를 주입한다.
+        // Scene Painter 원본에 브리지를 추가하지 않고 크랙 우측 메뉴를 잠깐 열어 기존 행을 호출한다.
+        const openRoomMenu = () => {
+            if (isCmuRoomPanelOpen())
+                return true;
+            const toggle = findCmuRoomMenuToggle();
+            if (!toggle)
+                return false;
+            const ok = fireClickSequence(toggle);
+            if (ok)
+                scheduleCmuEdgeMenuStateSync();
+            return ok;
+        };
+        openRoomMenu();
+
+        let opened = false;
+        const waits = [100, 220, 420, 700, 1050, 1500, 2200, 3200];
+        waits.forEach((ms, index) => setTimeout(() => {
+            if (opened)
+                return;
+            if (!document.getElementById('csp-scene-painter-row') && index === 2)
+                openRoomMenu();
+            opened = tryOpenMobileScenePainterLite();
+            if (!opened && index === waits.length - 1)
+                showToast('모바일 삽화 설정 진입점을 찾지 못함');
+        }, ms));
+        showToast('모바일 삽화 준비 중 · 설정창을 여는 중');
+        return true;
+    }
+    function getWishRpManagerTriggerLite(visibleOnly = true) {
+        const mobileHost = document.getElementById('rpcm-mobile-button-host');
+        const trigger = document.getElementById('wish-rp-toolbar-launcher') ||
+            document.querySelector('[data-rpcm-open-manager="1"]') ||
+            document.getElementById('rpcm-fab') ||
+            mobileHost?.shadowRoot?.querySelector('#rpcm-fab, button');
+        if (!(trigger instanceof HTMLElement))
+            return null;
+        if (visibleOnly && !visibleClickable(trigger))
+            return null;
+        return trigger;
+    }
+    function dispatchWishRpManagerOpen() {
+        if (!document.documentElement?.getAttribute('data-wish-rp-manager-ready'))
+            return false;
+        try {
+            document.dispatchEvent(new Event('wish-rp-manager:open'));
+            return true;
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function isProfileBoxInstalledLite() {
+        const w = getPublicWindow();
+        let hooked = false;
+        try {
+            hooked = !!(w?.__CPM_NETWORK_HOOKED__ || w?.__CPM_XHR_HOOKED__ || window?.__CPM_NETWORK_HOOKED__ || window?.__CPM_XHR_HOOKED__);
+        }
+        catch (_) { }
+        const detected = !!(hooked ||
+            document.getElementById('cpm-root') ||
+            document.getElementById('cpm-launcher') ||
+            document.getElementById('cpm-embedded-launcher') ||
+            document.querySelector('[data-cpm-profile-fallback="true"]') ||
+            document.querySelector('.cpm-external-profile-launcher:not(#chud-profile-box-btn)'));
+        if (detected)
+            CMU_INTEGRATION_SEEN.profileBox = true;
+        return detected || CMU_INTEGRATION_SEEN.profileBox;
+    }
+    function getProfileBoxTriggerLite() {
+        return document.getElementById('cpm-launcher') ||
+            document.getElementById('cpm-embedded-launcher') ||
+            document.querySelector('[data-cpm-profile-fallback="true"]') ||
+            document.querySelector('.cpm-external-profile-launcher:not(#chud-profile-box-btn)');
+    }
+    function openProfileBoxLite() {
+        if (document.getElementById('cpm-root'))
+            return true;
+        const tryOpen = () => {
+            const trigger = getProfileBoxTriggerLite();
+            return trigger ? fireClickSequence(trigger) : false;
+        };
+        if (tryOpen())
+            return true;
+        let opened = false;
+        const waits = [160, 420, 800, 1300];
+        waits.forEach((ms, index) => setTimeout(() => {
+            if (opened)
+                return;
+            opened = !!document.getElementById('cpm-root') || tryOpen();
+            if (!opened && index === waits.length - 1)
+                showToast('프로필 박스 버튼을 찾지 못함');
+        }, ms));
+        return true;
+    }
+    function isWishRpManagerInstalledLite() {
+        const detected = !!(document.documentElement?.getAttribute('data-wish-rp-manager-ready') ||
+            document.getElementById('wish-rp-toolbar-launcher') ||
+            document.querySelector('[data-rpcm-open-manager="1"]') ||
+            document.getElementById('rpcm-fab') ||
+            document.getElementById('rpcm-mobile-button-host') ||
+            document.getElementById('rpcm-overlay'));
+        if (detected)
+            CMU_INTEGRATION_SEEN.wishManager = true;
+        return detected || CMU_INTEGRATION_SEEN.wishManager;
+    }
+    function openWishRpManagerLite() {
+        const tryOpen = () => {
+            if (document.getElementById('rpcm-overlay'))
+                return true;
+            if (dispatchWishRpManagerOpen())
+                return true;
+            const trigger = getWishRpManagerTriggerLite(true) || getWishRpManagerTriggerLite(false);
+            return trigger ? fireClickSequence(trigger) : false;
+        };
+        if (tryOpen())
+            return true;
+        let opened = false;
+        const waits = [160, 420, 800, 1300, 2000];
+        waits.forEach((ms, index) => setTimeout(() => {
+            if (opened)
+                return;
+            opened = tryOpen();
+            if (!opened && index === waits.length - 1)
+                showToast('Wish RP Manager 버튼을 찾지 못함');
+        }, ms));
+        showToast('Wish RP Manager 준비 중 · 잠시 후 자동으로 열림');
+        return true;
+    }
+    // 📋 크랙 지침 관리 연동: 지침 관리가 노출하는 ready 속성·열기 이벤트·런처 id를 그대로 사용한다.
+    function isGuideManagerInstalledLite() {
+        const detected = !!(document.documentElement?.getAttribute('data-crack-guide-manager-ready') ||
+            document.getElementById('cgm-launcher') ||
+            document.getElementById('cgm-embedded-launcher') ||
+            document.querySelector('[data-cgm-open="1"]') ||
+            document.getElementById('cgm-root'));
+        if (detected)
+            CMU_INTEGRATION_SEEN.guideManager = true;
+        return detected || CMU_INTEGRATION_SEEN.guideManager;
+    }
+    function openGuideManagerLite() {
+        const tryOpen = () => {
+            if (document.getElementById('cgm-root')?.classList.contains('open'))
+                return true;
+            if (document.documentElement?.getAttribute('data-crack-guide-manager-ready')) {
+                try {
+                    document.dispatchEvent(new Event('crack-guide-manager:open'));
+                    return true;
+                }
+                catch (_) { }
+            }
+            const trigger = document.querySelector('[data-cgm-open="1"]') || document.getElementById('cgm-launcher');
+            return trigger ? fireClickSequence(trigger) : false;
+        };
+        if (tryOpen())
+            return true;
+        let opened = false;
+        const waits = [160, 420, 800, 1300, 2000];
+        waits.forEach((ms, index) => setTimeout(() => {
+            if (opened)
+                return;
+            opened = tryOpen();
+            if (!opened && index === waits.length - 1)
+                showToast('지침 관리 버튼을 찾지 못함');
+        }, ms));
+        showToast('지침 관리 준비 중 · 잠시 후 자동으로 열림');
+        return true;
+    }
     function refreshSideAvailability(force = false) {
         const now = Date.now();
         const age = now - Number(DASH_SIDE.availableAt || 0);
@@ -9546,6 +10715,7 @@
             modelButton: true,
             guideButton: true,
             profileButton: true,
+            profileBoxButton: isProfileBoxInstalledLite(),
             noteButton: true,
             outputButton: true,
             summaryButton: true,
@@ -9554,9 +10724,12 @@
             translatorButton: isTranslatorInstalledLite(),
             aiSummaryButton: isAiSummaryInstalledLite(),
             gameHudButton: isGameHudInstalledLite(),
+            scenePainterButton: isMobileScenePainterInstalledLite(),
+            wishManagerButton: isWishRpManagerInstalledLite(),
+            guideManagerButton: isGuideManagerInstalledLite(),
             roomBackgroundButton: isCustomRoomBackgroundInstalledLite(),
             sceneBlurButton: isScenePainterBackgroundInstalledLite(),
-            imageButton: !!findClickableByTextOrLabel([/상황\s*이미지\s*보기/, /상황.*이미지/, /이미지.*보기/]),
+            imageButton: !!findNativeSituationImageToggleRowLite(),
             archiveButton: !!getNativeImageArchiveTriggerLite(),
             externalArchiveButton: false,
         };
@@ -9588,38 +10761,38 @@
         }
         return null;
     }
+    // 크랙 기본 메뉴의 '상황 이미지 보기' 스위치 행만 찾는다.
+    // 예전의 느슨한 글자 검색(/상황.*이미지/, /이미지.*보기/)은 화면에서 먼저 나오는 아무 버튼이나 잡기 때문에,
+    // 이미지 테마 확프처럼 '이미지'와 '보기'가 들어간 외부 버튼을 이미지 ON/OFF로 오인할 수 있었다.
+    function findNativeSituationImageToggleRowLite() {
+        for (const row of document.querySelectorAll('[role="button"], button')) {
+            if (!(row instanceof HTMLElement) || isOwnElement(row))
+                continue;
+            if (row.closest('[role="dialog"], #eic-modal-content, #chud-sidebar, #chud-side-menu, #chud-side-dropdown, #chud-infobar, #cmu-settings-panel'))
+                continue;
+            const text = String(row.textContent || '').replace(/\s+/g, ' ').trim();
+            if (text.length > 60 || !/상황\s*이미지\s*보기/.test(text))
+                continue;
+            if (!row.querySelector('button[role="switch"], [role="switch"]'))
+                continue;
+            if (visibleClickable(row))
+                return row;
+        }
+        return findClickableByTextOrLabel([/상황\s*이미지\s*보기/]);
+    }
+    function clickNativeSituationImageToggleLite() {
+        const row = findNativeSituationImageToggleRowLite();
+        if (row)
+            return fireClickSequence(row);
+        showToast('이미지 버튼 못 찾음');
+        return false;
+    }
     function clickFirst(patterns, failLabel = '') {
         const btn = findClickableByTextOrLabel(patterns);
         if (btn)
             return fireClickSequence(btn);
         if (failLabel)
             showToast(`${failLabel} 버튼 못 찾음`);
-        return false;
-    }
-    function openTranslatorLite() {
-        // 초월 번역기는 화면 어디에도 '번역기'라는 글자를 쓰지 않고(사이드바 항목은 '초월 번역 설정'),
-        // 그 항목도 button이 아닌 div라서 clickFirst의 텍스트 검색으로는 절대 찾을 수 없다.
-        // isTranslatorInstalledLite()가 쓰는 것과 같은 ID로 직접 연다.
-        const menuBtn = document.getElementById('trans-menu-btn');
-        if (menuBtn)
-            // 번역기 자신의 핸들러가 돌아 패널 표시와 테마 동기화까지 원래대로 처리된다.
-            // 사이드바가 접혀 화면에 안 보여도 click()은 정상 동작한다.
-            return fireClickSequence(menuBtn);
-        // 사이드바 항목이 아직 안 만들어진 경우엔 패널을 직접 연다.
-        // 패널은 position:fixed로 body에 붙어 있어 사이드바와 무관하게 뜬다.
-        const panel = document.getElementById('trans-setting-panel');
-        if (panel) {
-            panel.style.display = 'block';
-            // 번역기의 MutationObserver는 body의 class/data-theme만 감시하므로 style 변경으로는
-            // 테마 동기화가 안 돌 수 있다. body class를 한 번 건드려 깨워준다.
-            try {
-                document.body.classList.add('cmu-trans-theme-poke');
-                document.body.classList.remove('cmu-trans-theme-poke');
-            }
-            catch (_) { }
-            return true;
-        }
-        showToast('초월 번역기를 찾을 수 없음');
         return false;
     }
     function getClickableLabelLite(el) {
@@ -9631,9 +10804,9 @@
         if (!(el instanceof Element))
             return false;
         const clickable = el.closest?.('button, [role="button"], a') || el;
-        if (clickable.matches?.('.crack-ext-header-ai-btn, button[data-ce-ai-summary="true"]'))
+        if (clickable.matches?.('.crack-ext-header-ai-btn, [data-ce-ai-summary="true"], #crack-ext-ai-sidebar-menu, #crack-ext-ai-sidebar-menu [role="button"]'))
             return true;
-        return /AI\s*요약/i.test(getClickableLabelLite(clickable));
+        return /AI\s*요약(?:·메모리)?/i.test(getClickableLabelLite(clickable));
     }
     function findSummaryMemoryTriggerLite() {
         const regs = [
@@ -9661,15 +10834,114 @@
         showToast('요약 메모리 버튼 못 찾음');
         return false;
     }
+    function dispatchAiSummaryOpenLite() {
+        if (!document.documentElement?.getAttribute('data-crack-ai-summary-ready'))
+            return false;
+        try {
+            document.dispatchEvent(new Event('crack-ai-summary:open'));
+            return true;
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    function findAiSummaryTriggerLite() {
+        return document.querySelector('.crack-ext-header-ai-btn, [data-ce-ai-summary="true"]') ||
+            document.querySelector('#crack-ext-ai-sidebar-menu [role="button"], #crack-ext-ai-sidebar-menu button') ||
+            document.getElementById('crack-ext-ai-sidebar-menu') ||
+            findExternalClickable([/AI\s*요약(?:·메모리)?/i, /요약\s*및\s*장기기억\s*도구/i], false);
+    }
     function openAiSummaryLite() {
-        const direct = Array.from(document.querySelectorAll('.crack-ext-header-ai-btn, button[data-ce-ai-summary="true"]'))
-            .find(visibleClickable);
-        const btn = direct || findExternalClickable([/AI\s*요약/i], true);
+        if (dispatchAiSummaryOpenLite())
+            return true;
+        const btn = findAiSummaryTriggerLite();
         if (btn)
             return fireClickSequence(btn);
-        showToast('AI 요약 버튼 못 찾음');
-        return false;
+
+        let opened = false;
+        [180, 500, 1000, 1800].forEach((ms, index, all) => setTimeout(() => {
+            if (opened)
+                return;
+            opened = dispatchAiSummaryOpenLite();
+            if (!opened) {
+                const lateBtn = findAiSummaryTriggerLite();
+                if (lateBtn)
+                    opened = fireClickSequence(lateBtn);
+            }
+            if (!opened && index === all.length - 1)
+                showToast('AI 요약 확장프로그램을 찾지 못함');
+        }, ms));
+        showToast('AI 요약 준비 중 · 잠시 후 자동으로 열림');
+        return true;
     }
+    function refreshIntegratedSideButtonsLite() {
+        try {
+            DASH_SIDE.availableAt = 0;
+            refreshSideAvailability(true);
+            ensureInlineBlocks();
+            applySideVisible();
+        }
+        catch (_) { }
+    }
+    document.addEventListener('crack-ai-summary:ready', refreshIntegratedSideButtonsLite);
+    document.addEventListener('wish-rp-manager:ready', refreshIntegratedSideButtonsLite);
+    function scheduleIntegratedSideButtonsRouteRefreshLite() {
+        // Crack은 SPA라 새 채팅방 진입 시 외부 확장 버튼이 본문보다 늦게 재주입될 수 있다.
+        // 새로고침 없이도 늦게 붙은 Wish RP/통합 버튼을 다시 감지해 사이드바에 복원한다.
+        [0, 120, 320, 700, 1300, 2200, 3600].forEach(ms => setTimeout(() => {
+            if (!isChatRoomPath())
+                return;
+            refreshIntegratedSideButtonsLite();
+        }, ms));
+    }
+    function getOutputSettingsTriggerLite() {
+        // 2026-09 Crack UI의 현재 명칭은 '답변 길이 및 생각 조절'.
+        // 구버전 명칭(출력량/출력 설정)도 함께 남겨 호환한다.
+        return findClickableByTextOrLabel([
+            /답변\s*길이\s*및\s*생각\s*조절/,
+            /답변\s*길이/,
+            /출력량(?:\s*(?:조절|설정))?/,
+            /출력\s*설정/,
+        ]);
+    }
+    function tryOpenOutputSettingsLite() {
+        const trigger = getOutputSettingsTriggerLite();
+        return trigger ? fireClickSequence(trigger) : false;
+    }
+    function openOutputSettingsLite() {
+        if (tryOpenOutputSettingsLite())
+            return true;
+
+        // 이 항목은 우측 '채팅방 설정' 메뉴가 닫혀 있으면 DOM에 없거나 비표시 상태다.
+        // 유틸 버튼에서 바로 누를 때 원본 메뉴를 잠깐 열고 원본 행을 그대로 클릭한다.
+        const openRoomMenu = () => {
+            if (isCmuRoomPanelOpen())
+                return true;
+            const toggle = findCmuRoomMenuToggle();
+            if (!toggle)
+                return false;
+            const ok = fireClickSequence(toggle);
+            if (ok)
+                scheduleCmuEdgeMenuStateSync();
+            return ok;
+        };
+        openRoomMenu();
+
+        let opened = false;
+        const waits = [80, 180, 340, 600, 950, 1450, 2100];
+        waits.forEach((ms, index) => setTimeout(() => {
+            if (opened)
+                return;
+            if (index === 2 && !isCmuRoomPanelOpen())
+                openRoomMenu();
+            opened = tryOpenOutputSettingsLite();
+            if (!opened && index === waits.length - 1)
+                showToast('답변 길이 및 생각 조절 버튼을 찾지 못함');
+        }, ms));
+        showToast('답변 길이 설정 준비 중 · 설정 메뉴를 여는 중');
+        return true;
+    }
+
     function getStartSettingTriggerLite() {
         const title = Array.from(document.querySelectorAll('p, span')).find((el) => {
             if (!(el instanceof HTMLElement))
@@ -9706,11 +10978,942 @@
         showToast('시작 설정 버튼 못 찾음');
         return false;
     }
-    function openNativeModelMenu() {
+    function getNativeModelMenuButton() {
         const topBar = findLoreRoomTopBar();
-        const btn = topBar?.querySelector('button[aria-haspopup="menu"]') ||
-            document.querySelector('img[src*="model-icon"]')?.closest('button') ||
-            Array.from(document.querySelectorAll('button[aria-haspopup="menu"]')).find(visibleClickable);
+        const topButton = topBar?.querySelector('button[aria-haspopup="menu"]') ||
+            topBar?.querySelector('img[src*="model-icon"]')?.closest('button');
+        if (topButton instanceof HTMLElement)
+            return topButton;
+        const iconButton = Array.from(document.querySelectorAll('img[src*="model-icon"]'))
+            .map(icon => icon.closest('button'))
+            .find(button => button instanceof HTMLElement &&
+            !button.closest(nmfNativeModelRootSelector()) && visibleClickable(button));
+        return iconButton || Array.from(document.querySelectorAll('button[aria-haspopup="menu"]')).find(visibleClickable) || null;
+    }
+    function compactModelImageSource(item, flatToken) {
+        if (!(item instanceof Element))
+            return '';
+        const flat = String(flatToken || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const images = Array.from(item.querySelectorAll('img[src*="model-icon"], img[srcset*="model-icon"]'));
+        const image = images.find(el => nmfFlatTokensFromElement(el).includes(flat)) || images[0];
+        if (!image)
+            return '';
+        const raw = image.currentSrc || image.getAttribute('src') || image.getAttribute('srcset') || '';
+        return String(raw).split(',')[0].trim().split(/\s+/)[0] || '';
+    }
+    function compactModelNativeActionTarget(item, token) {
+        if (!(item instanceof HTMLElement))
+            return null;
+        const selector = 'button, [role^="menuitem"], [role="option"], [data-radix-collection-item], a, li';
+        const expectedToken = String(token || '');
+        const expectedFlat = nmfIconFlatToken(expectedToken);
+        const icon = nmfNativeModelIconElements(item)
+            .find(el => nmfFlatTokensFromElement(el).includes(expectedFlat)) || null;
+        const candidates = [];
+        const seen = new Set();
+        const push = el => {
+            if (!(el instanceof HTMLElement) || seen.has(el) || !item.contains(el) && el !== item)
+                return;
+            if (icon && el !== item && !el.contains(icon))
+                return;
+            const tokens = nmfFlatTokensFromElement(el)
+                .map(flat => nmfTokenFromFlatIconToken(flat))
+                .filter(Boolean);
+            if (tokens.length && !tokens.includes(expectedToken))
+                return;
+            seen.add(el);
+            candidates.push(el);
+        };
+        push(item);
+        item.querySelectorAll(selector).forEach(push);
+        let current = icon;
+        while (current instanceof HTMLElement && item.contains(current)) {
+            if (current.matches(selector))
+                push(current);
+            if (current === item)
+                break;
+            current = current.parentElement;
+        }
+        const depth = el => {
+            let value = 0;
+            let node = el;
+            while (node && node !== item) {
+                value += 1;
+                node = node.parentElement;
+            }
+            return value;
+        };
+        const score = el => {
+            let value = depth(el) * 12;
+            if (el.matches('button'))
+                value += 700;
+            if (el.matches('[role^="menuitem"]'))
+                value += 620;
+            if (el.matches('[role="option"]'))
+                value += 580;
+            if (el.matches('[data-radix-collection-item]'))
+                value += 520;
+            if (el.hasAttribute('tabindex'))
+                value += 180;
+            if (icon && el.contains(icon))
+                value += 80;
+            return value;
+        };
+        return candidates.sort((a, b) => score(b) - score(a))[0] || item;
+    }
+    function compactModelSnapshot() {
+        const roots = nmfNativeModelRoots().filter(root => {
+            if (!root?.isConnected || root.getAttribute?.('data-state') === 'closed')
+                return false;
+            const shell = root.closest?.('[data-radix-popper-content-wrapper]') || root;
+            if (shell?.getAttribute?.('data-state') === 'closed')
+                return false;
+            try {
+                return getComputedStyle(shell).display !== 'none';
+            }
+            catch (_) {
+                return true;
+            }
+        });
+        const root = roots.find(el => el.matches?.('[data-radix-menu-content]')) || roots[0];
+        if (!(root instanceof HTMLElement))
+            return null;
+        const shell = root.closest('[data-radix-popper-content-wrapper]') || root;
+        const entries = [];
+        const used = new Set();
+        for (const item of nmfNativeModelItemCandidates()) {
+            if (!(item instanceof HTMLElement) || !item.isConnected || !shell.contains(item))
+                continue;
+            const tokenPairs = new Map();
+            for (const flat of nmfFlatTokensFromElement(item)) {
+                const token = nmfTokenFromFlatIconToken(flat);
+                if (token && !tokenPairs.has(token))
+                    tokenPairs.set(token, flat);
+            }
+            if (tokenPairs.size !== 1)
+                continue;
+            const [[token, flat]] = tokenPairs.entries();
+            if (used.has(token) || (settings.nativeModelFilter && !nmfIsVisible(token)))
+                continue;
+            try {
+                if (getComputedStyle(item).display === 'none')
+                    continue;
+            }
+            catch (_) { }
+            used.add(token);
+            const actionItem = compactModelNativeActionTarget(item, token) || item;
+            const label = nmfNativeModelLabelFromItem(item, flat, token) || cmiAutoLabel(token) || token;
+            const selected = item.matches('[aria-checked="true"], [aria-selected="true"], [data-state="checked"]') ||
+                !!item.querySelector('[aria-checked="true"], [aria-selected="true"], [data-state="checked"]');
+            const disabled = item.matches('[aria-disabled="true"], :disabled') || actionItem.matches('[aria-disabled="true"], :disabled') ||
+                !!item.querySelector('[aria-disabled="true"], :disabled');
+            entries.push({
+                token,
+                label,
+                item: actionItem,
+                iconSrc: compactModelImageSource(item, flat),
+                selected,
+                disabled,
+            });
+        }
+        return entries.length ? { root, shell, entries } : null;
+    }
+    function compactModelCurrentToken(nativeButton, entries) {
+        const marked = entries.find(entry => entry.selected);
+        if (marked)
+            return marked.token;
+        for (const flat of nmfFlatTokensFromElement(nativeButton)) {
+            const token = nmfTokenFromFlatIconToken(flat);
+            if (token && entries.some(entry => entry.token === token))
+                return token;
+        }
+        const normalize = value => String(value || '').toLowerCase().replace(/\s+/g, '');
+        const currentText = normalize(getClickableLabelLite(nativeButton));
+        return entries.find(entry => currentText.includes(normalize(entry.label)))?.token || '';
+    }
+    function compactModelClickOnce(el) {
+        if (!(el instanceof HTMLElement) || !el.isConnected)
+            return false;
+        try {
+            el.click();
+            return true;
+        }
+        catch (_) {
+            try {
+                el.dispatchEvent(new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    view: window,
+                }));
+                return true;
+            }
+            catch (_) {
+                return false;
+            }
+        }
+    }
+    function compactModelExactIcon(item, token) {
+        if (!(item instanceof Element))
+            return null;
+        const expectedFlat = nmfIconFlatToken(token);
+        return nmfNativeModelIconElements(item)
+            .find(el => nmfFlatTokensFromElement(el).includes(expectedFlat)) || null;
+    }
+    async function compactModelActivateNativeItem(item, token) {
+        /*
+         * 중요: 원본 Radix 메뉴에 pointermove/mousemove를 인위적으로 보내면
+         * hover 서브메뉴/강조행이 바뀌면서 다른 모델 행으로 대상이 이동할 수 있다.
+         * 따라서 좌표/hover를 전혀 만들지 않고, 요청한 모델 아이콘의 실제 DOM에서
+         * click을 버블링시켜 그 아이콘을 소유한 원본 행만 동작시킨다.
+         */
+        let sourceItem = item;
+        if (!(sourceItem instanceof HTMLElement) || !sourceItem.isConnected) {
+            sourceItem = compactModelSnapshot()?.entries?.find(entry => entry.token === token)?.item || null;
+        }
+        if (!(sourceItem instanceof HTMLElement) || !sourceItem.isConnected)
+            return false;
+
+        const expectedToken = String(token || '');
+        const sourceTokens = Array.from(new Set(
+            nmfFlatTokensFromElement(sourceItem)
+                .map(flat => nmfTokenFromFlatIconToken(flat))
+                .filter(Boolean)
+        ));
+        if (sourceTokens.length && !sourceTokens.includes(expectedToken))
+            return false;
+
+        const exactIcon = compactModelExactIcon(sourceItem, expectedToken);
+        const target = exactIcon || compactModelNativeActionTarget(sourceItem, expectedToken) || sourceItem;
+        if (!(target instanceof HTMLElement) || !target.isConnected)
+            return false;
+
+        try {
+            target.click();
+            return true;
+        }
+        catch (_) {
+            try {
+                target.dispatchEvent(new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    view: window,
+                    button: 0,
+                    buttons: 0,
+                    detail: 1,
+                }));
+                return true;
+            }
+            catch (_) {
+                return false;
+            }
+        }
+    }
+    function compactModelButtonToken(nativeButton) {
+        for (const flat of nmfFlatTokensFromElement(nativeButton)) {
+            const token = nmfTokenFromFlatIconToken(flat);
+            if (token)
+                return token;
+        }
+        return '';
+    }
+    function compactModelNormalizeLabel(value) {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/\s+/g, '')
+            .replace(/[·|()[\]{}:]/g, '');
+    }
+    function compactModelSelectionMatches(nativeButton, entry) {
+        const buttonToken = compactModelButtonToken(nativeButton);
+        if (buttonToken)
+            return buttonToken === entry.token;
+        const currentLabel = compactModelNormalizeLabel(getClickableLabelLite(nativeButton));
+        const wantedLabel = compactModelNormalizeLabel(entry.label);
+        return wantedLabel.length >= 2 && currentLabel.includes(wantedLabel);
+    }
+    function compactModelNativeIsOpen(nativeButton, nativeShell) {
+        const expanded = nativeButton?.getAttribute?.('aria-expanded');
+        if (expanded === 'true')
+            return true;
+        if (expanded === 'false')
+            return false;
+        if (!(nativeShell instanceof HTMLElement) || !nativeShell.isConnected)
+            return false;
+        const root = nativeShell.matches?.('[data-radix-menu-content]')
+            ? nativeShell
+            : nativeShell.querySelector?.('[data-radix-menu-content]');
+        if (nativeShell.getAttribute('data-state') === 'closed' || root?.getAttribute?.('data-state') === 'closed')
+            return false;
+        try {
+            return getComputedStyle(nativeShell).display !== 'none';
+        }
+        catch (_) {
+            return true;
+        }
+    }
+    function compactModelDispatchEscape(nativeShell) {
+        const root = nativeShell?.matches?.('[data-radix-menu-content]')
+            ? nativeShell
+            : nativeShell?.querySelector?.('[data-radix-menu-content]');
+        const target = root || nativeShell || document;
+        try {
+            target.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Escape',
+                code: 'Escape',
+                bubbles: true,
+                cancelable: true,
+                composed: true,
+            }));
+            return true;
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    async function compactModelWaitForSelection(nativeButton, entry) {
+        for (const delay of [0, 45, 90, 160, 260, 420, 650]) {
+            if (delay)
+                await new Promise(resolve => setTimeout(resolve, delay));
+            if (compactModelSelectionMatches(nativeButton, entry))
+                return true;
+            const selected = compactModelSnapshot()?.entries?.find(candidate => candidate.selected);
+            if (selected?.token === entry.token)
+                return true;
+        }
+        return false;
+    }
+    async function compactModelDismissNativeMenu(nativeButton, initialShell) {
+        const markedShells = new Set();
+        const mark = shell => {
+            if (!(shell instanceof HTMLElement))
+                return shell;
+            shell.setAttribute('data-cmu-compact-model-native', '1');
+            markedShells.add(shell);
+            return shell;
+        };
+        let nativeShell = mark(initialShell);
+        const refreshShell = () => {
+            try {
+                const fresh = compactModelSnapshot()?.shell;
+                if (fresh)
+                    nativeShell = mark(fresh);
+            }
+            catch (_) { }
+            return nativeShell;
+        };
+        await new Promise(resolve => setTimeout(resolve, 55));
+        refreshShell();
+        if (compactModelNativeIsOpen(nativeButton, nativeShell))
+            compactModelDispatchEscape(nativeShell);
+        await new Promise(resolve => setTimeout(resolve, 95));
+        refreshShell();
+        if (compactModelNativeIsOpen(nativeButton, nativeShell) &&
+            nativeButton?.getAttribute?.('aria-expanded') === 'true') {
+            compactModelClickOnce(nativeButton);
+        }
+        await new Promise(resolve => setTimeout(resolve, 180));
+        refreshShell();
+        if (compactModelNativeIsOpen(nativeButton, nativeShell)) {
+            compactModelDispatchEscape(nativeShell);
+            await new Promise(resolve => setTimeout(resolve, 140));
+            refreshShell();
+        }
+        const stillOpen = compactModelNativeIsOpen(nativeButton, nativeShell);
+        const reveal = () => {
+            document.documentElement.classList.remove('cmu-compact-model-selecting');
+            markedShells.forEach(shell => {
+                try { shell.removeAttribute('data-cmu-compact-model-native'); } catch (_) { }
+            });
+            document.querySelectorAll('[data-cmu-compact-model-native="1"]').forEach(shell => {
+                try { shell.removeAttribute('data-cmu-compact-model-native'); } catch (_) { }
+            });
+        };
+        if (!stillOpen) {
+            reveal();
+            return true;
+        }
+        setTimeout(() => {
+            const shell = refreshShell();
+            if (compactModelNativeIsOpen(nativeButton, shell)) {
+                compactModelDispatchEscape(shell);
+                if (nativeButton?.getAttribute?.('aria-expanded') === 'true')
+                    setTimeout(() => compactModelClickOnce(nativeButton), 80);
+            }
+            setTimeout(reveal, 260);
+        }, 420);
+        return false;
+    }
+    function positionCompactModelPicker() {
+        const menu = COMPACT_MODEL.menu;
+        const anchor = COMPACT_MODEL.anchor;
+        if (!(menu instanceof HTMLElement) || !(anchor instanceof HTMLElement) || !anchor.isConnected)
+            return;
+        const vv = window.visualViewport;
+        const viewportLeft = Number(vv?.offsetLeft || 0);
+        const viewportTop = Number(vv?.offsetTop || 0);
+        const viewportWidth = Math.max(1, Number(vv?.width || window.innerWidth || 1));
+        const viewportHeight = Math.max(1, Number(vv?.height || window.innerHeight || 1));
+        const rect = anchor.getBoundingClientRect();
+        const width = Math.min(176, Math.max(132, viewportWidth - 20));
+        const spaceAbove = Math.max(0, rect.top - viewportTop - 8);
+        const spaceBelow = Math.max(0, viewportTop + viewportHeight - rect.bottom - 8);
+        const placeAbove = spaceAbove >= 112 || spaceAbove >= spaceBelow;
+        const available = Math.max(92, Math.min(340, placeAbove ? spaceAbove : spaceBelow));
+        menu.style.width = `${Math.round(width)}px`;
+        menu.style.maxHeight = `${Math.round(available)}px`;
+        const measuredHeight = Math.min(menu.scrollHeight || available, available);
+        let top = placeAbove ? rect.top - measuredHeight - 8 : rect.bottom + 8;
+        top = Math.max(viewportTop + 8, Math.min(top, viewportTop + viewportHeight - measuredHeight - 8));
+        let left = rect.left;
+        left = Math.max(viewportLeft + 8, Math.min(left, viewportLeft + viewportWidth - width - 8));
+        menu.style.left = `${Math.round(left)}px`;
+        menu.style.top = `${Math.round(top)}px`;
+        menu.style.visibility = 'visible';
+    }
+    function unbindCompactModelPickerEvents() {
+        if (COMPACT_MODEL.outsideHandler)
+            document.removeEventListener('pointerdown', COMPACT_MODEL.outsideHandler, true);
+        if (COMPACT_MODEL.keyHandler)
+            document.removeEventListener('keydown', COMPACT_MODEL.keyHandler, true);
+        if (COMPACT_MODEL.resizeHandler) {
+            window.removeEventListener('resize', COMPACT_MODEL.resizeHandler);
+            window.visualViewport?.removeEventListener?.('resize', COMPACT_MODEL.resizeHandler);
+        }
+        COMPACT_MODEL.outsideHandler = COMPACT_MODEL.keyHandler = COMPACT_MODEL.resizeHandler = null;
+    }
+    function compactModelClearNativeLiveMarks(shell = null) {
+        const scope = shell instanceof HTMLElement ? shell : document;
+        const marked = [];
+        if (scope instanceof HTMLElement && (
+            scope.hasAttribute('data-cmu-compact-native-live') ||
+            scope.hasAttribute('data-cmu-compact-native-live-root') ||
+            scope.hasAttribute('data-cmu-compact-native-live-row') ||
+            scope.hasAttribute('data-cmu-compact-native-live-hide')
+        )) marked.push(scope);
+        scope.querySelectorAll?.('[data-cmu-compact-native-live], [data-cmu-compact-native-live-root], [data-cmu-compact-native-live-branch], [data-cmu-compact-native-live-row], [data-cmu-compact-native-live-hide], [data-cmu-compact-native-live-action], [data-cmu-compact-native-live-title], [data-cmu-compact-native-live-desc], [data-cmu-compact-native-live-badge], [data-cmu-compact-native-live-recommend]')
+            .forEach(el => marked.push(el));
+        marked.forEach(el => {
+            try {
+                el.removeAttribute('data-cmu-compact-native-live');
+                el.removeAttribute('data-cmu-compact-native-live-root');
+                el.removeAttribute('data-cmu-compact-native-live-branch');
+                el.removeAttribute('data-cmu-compact-native-live-row');
+                el.removeAttribute('data-cmu-compact-native-live-hide');
+                el.removeAttribute('data-cmu-compact-native-live-action');
+                el.removeAttribute('data-cmu-compact-native-live-title');
+                el.removeAttribute('data-cmu-compact-native-live-desc');
+                el.removeAttribute('data-cmu-compact-native-live-badge');
+                el.removeAttribute('data-cmu-compact-native-live-recommend');
+                el.style?.removeProperty?.('--cmu-compact-native-max-h');
+            }
+            catch (_) { }
+        });
+        if (shell instanceof HTMLElement) {
+            for (const prop of ['left', 'top', 'right', 'bottom', 'width', 'max-width', 'position', 'transform', 'z-index']) {
+                try { shell.style.removeProperty(prop); } catch (_) { }
+            }
+        }
+    }
+    function closeCompactModelPicker(options = {}) {
+        const closeNative = options.closeNative !== false;
+        const deferNativeReveal = options.deferNativeReveal === true;
+        const preserveNativeHidden = options.preserveNativeHidden === true;
+        COMPACT_MODEL.seq += 1;
+        COMPACT_MODEL.opening = false;
+        COMPACT_MODEL.toggleLockUntil = Math.max(COMPACT_MODEL.toggleLockUntil || 0, Date.now() + 180);
+        document.documentElement.classList.remove('cmu-compact-model-probing');
+        if (!preserveNativeHidden)
+            document.documentElement.classList.remove('cmu-compact-model-selecting');
+        COMPACT_MODEL.menu?.remove();
+        COMPACT_MODEL.menu = null;
+        unbindCompactModelPickerEvents();
+        if (COMPACT_MODEL.revealTimer) {
+            clearTimeout(COMPACT_MODEL.revealTimer);
+            COMPACT_MODEL.revealTimer = 0;
+        }
+        if (COMPACT_MODEL.closeTimer) {
+            clearTimeout(COMPACT_MODEL.closeTimer);
+            COMPACT_MODEL.closeTimer = 0;
+        }
+        let nativeShell = COMPACT_MODEL.nativeShell;
+        const nativeButton = COMPACT_MODEL.nativeButton;
+        const isLiveNative = nativeShell?.hasAttribute?.('data-cmu-compact-native-live');
+        if (!nativeShell?.isConnected) {
+            try {
+                nativeShell = compactModelSnapshot()?.shell || nativeShell;
+            }
+            catch (_) { }
+        }
+        if (isLiveNative || nativeShell?.hasAttribute?.('data-cmu-compact-native-live')) {
+            const wasOpen = compactModelNativeIsOpen(nativeButton, nativeShell);
+
+            /* 4.3.0.10:
+             * 두 번째 탭으로 닫을 때 compact CSS를 먼저 벗기면, Radix 원본 메뉴가
+             * 닫히기 전 1~수 프레임 동안 큰 메뉴로 그대로 노출된다. 기기에 따라
+             * 그 상태가 남기도 했다. 닫힘 요청이 끝날 때까지 원본 shell을 숨긴 뒤
+             * 마지막에만 compact 표식을 정리한다. */
+            if (closeNative && wasOpen && nativeButton?.isConnected) {
+                document.documentElement.classList.add('cmu-compact-model-selecting');
+                try { nativeShell?.setAttribute?.('data-cmu-compact-model-native', '1'); } catch (_) { }
+                compactModelDispatchEscape(nativeShell);
+                setTimeout(() => {
+                    try {
+                        if (compactModelNativeIsOpen(nativeButton, nativeShell) &&
+                            nativeButton.getAttribute('aria-expanded') === 'true') {
+                            compactModelClickOnce(nativeButton);
+                        }
+                    }
+                    catch (_) { }
+                }, 70);
+                COMPACT_MODEL.closeTimer = setTimeout(() => {
+                    compactModelClearNativeLiveMarks(nativeShell);
+                    try { nativeShell?.removeAttribute?.('data-cmu-compact-model-native'); } catch (_) { }
+                    document.documentElement.classList.remove('cmu-compact-model-selecting');
+                    COMPACT_MODEL.closeTimer = 0;
+                }, 280);
+            }
+            else {
+                compactModelClearNativeLiveMarks(nativeShell);
+                try { nativeShell?.removeAttribute?.('data-cmu-compact-model-native'); } catch (_) { }
+            }
+            COMPACT_MODEL.nativeShell = null;
+            COMPACT_MODEL.nativeButton = null;
+            COMPACT_MODEL.anchor = null;
+            return;
+        }
+        const revealNative = () => {
+            try { nativeShell?.removeAttribute('data-cmu-compact-model-native'); } catch (_) { }
+        };
+        if (closeNative && nativeButton?.isConnected &&
+            (nativeShell?.isConnected || nativeButton.getAttribute('aria-expanded') === 'true')) {
+            /* 닫는 동안 원본 메뉴가 순간적으로 커져 보이지 않게 계속 숨긴다. */
+            try { nativeShell?.setAttribute?.('data-cmu-compact-model-native', '1'); } catch (_) { }
+            document.documentElement.classList.add('cmu-compact-model-selecting');
+            compactModelDispatchEscape(nativeShell);
+            setTimeout(() => {
+                try {
+                    if (nativeButton.getAttribute('aria-expanded') === 'true')
+                        compactModelClickOnce(nativeButton);
+                }
+                catch (_) { }
+            }, 70);
+            COMPACT_MODEL.revealTimer = setTimeout(() => {
+                revealNative();
+                document.documentElement.classList.remove('cmu-compact-model-selecting');
+                COMPACT_MODEL.revealTimer = 0;
+            }, 280);
+        }
+        else if (deferNativeReveal) {
+            COMPACT_MODEL.revealTimer = setTimeout(() => {
+                revealNative();
+                COMPACT_MODEL.revealTimer = 0;
+            }, 320);
+        }
+        else if (!preserveNativeHidden) {
+            revealNative();
+        }
+        COMPACT_MODEL.nativeShell = null;
+        COMPACT_MODEL.nativeButton = null;
+        COMPACT_MODEL.anchor = null;
+    }
+    function bindCompactModelPickerEvents() {
+        COMPACT_MODEL.outsideHandler = event => {
+            if (!event.isTrusted)
+                return;
+            const target = event.target;
+            if (target instanceof Node &&
+                (COMPACT_MODEL.menu?.contains(target) || COMPACT_MODEL.anchor?.contains(target)))
+                return;
+            closeCompactModelPicker({ closeNative: true });
+        };
+        COMPACT_MODEL.keyHandler = event => {
+            if (event.key !== 'Escape')
+                return;
+            event.preventDefault();
+            closeCompactModelPicker({ closeNative: true });
+        };
+        COMPACT_MODEL.resizeHandler = () => closeCompactModelPicker({ closeNative: true });
+        document.addEventListener('pointerdown', COMPACT_MODEL.outsideHandler, true);
+        document.addEventListener('keydown', COMPACT_MODEL.keyHandler, true);
+        window.addEventListener('resize', COMPACT_MODEL.resizeHandler, { passive: true });
+        window.visualViewport?.addEventListener?.('resize', COMPACT_MODEL.resizeHandler, { passive: true });
+    }
+    function renderCompactModelPicker(snapshot, anchor, nativeButton) {
+        const menu = document.createElement('div');
+        menu.id = 'cmu-compact-model-menu';
+        menu.setAttribute('role', 'listbox');
+        menu.setAttribute('aria-label', '모델 빠른 선택');
+        menu.style.visibility = 'hidden';
+        const currentToken = compactModelCurrentToken(nativeButton, snapshot.entries);
+        for (const entry of snapshot.entries) {
+            const option = document.createElement('button');
+            option.type = 'button';
+            option.setAttribute('role', 'option');
+            option.setAttribute('aria-selected', entry.token === currentToken ? 'true' : 'false');
+            option.dataset.modelToken = entry.token;
+            option.classList.toggle('is-selected', entry.token === currentToken);
+            option.disabled = !!entry.disabled;
+            const icon = document.createElement('span');
+            icon.className = 'cmu-compact-model-icon';
+            if (entry.iconSrc) {
+                const image = document.createElement('img');
+                image.src = entry.iconSrc;
+                image.alt = '';
+                image.decoding = 'async';
+                icon.appendChild(image);
+            }
+            else {
+                icon.textContent = '◆';
+            }
+            const label = document.createElement('span');
+            label.className = 'cmu-compact-model-label';
+            label.textContent = entry.label;
+            const check = document.createElement('span');
+            check.className = 'cmu-compact-model-check';
+            check.textContent = entry.token === currentToken ? '✓' : '';
+            option.append(icon, label, check);
+            option.addEventListener('pointerdown', event => event.stopPropagation());
+            option.addEventListener('click', async event => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (option.dataset.selecting === '1')
+                    return;
+                option.dataset.selecting = '1';
+                menu.querySelectorAll('button').forEach(button => button.disabled = true);
+                /* 먼저 이 간편목록을 만들 때 잡아 둔 정확한 원본 행을 사용한다.
+                   재스냅샷을 우선하면 hover/다른 Radix 팝업이 생긴 순간 같은 토큰의
+                   엉뚱한 행을 집을 수 있으므로, 기존 행이 사라졌을 때만 재탐색한다. */
+                const freshSnapshot = compactModelSnapshot();
+                const nativeShell = snapshot.shell?.isConnected ? snapshot.shell : freshSnapshot?.shell;
+                document.documentElement.classList.add('cmu-compact-model-selecting');
+                nativeShell?.setAttribute?.('data-cmu-compact-model-native', '1');
+                const target = entry.item?.isConnected
+                    ? entry.item
+                    : (freshSnapshot?.entries?.find(candidate => candidate.token === entry.token)?.item || null);
+                const changed = await compactModelActivateNativeItem(target, entry.token);
+                closeCompactModelPicker({ closeNative: false, preserveNativeHidden: true });
+                if (!changed) {
+                    await compactModelDismissNativeMenu(nativeButton, nativeShell);
+                    showToast('모델 항목이 갱신됨 · 다시 눌러 주세요');
+                    return;
+                }
+                const confirmed = await compactModelWaitForSelection(nativeButton, entry);
+                await compactModelDismissNativeMenu(nativeButton, nativeShell);
+                if (!confirmed) {
+                    const actualToken = compactModelButtonToken(nativeButton);
+                    showToast(actualToken && actualToken !== entry.token
+                        ? '선택 모델 불일치 · 다시 눌러 주세요'
+                        : '모델 선택 확인이 늦어짐 · 상단 모델명을 확인해 주세요');
+                }
+                scheduleNmfScan([120, 320, 700]);
+                setTimeout(() => {
+                    scheduleDashboardUpdate(true);
+                    ensureInlineBlocks();
+                }, 180);
+            });
+            menu.appendChild(option);
+        }
+        (document.body || document.documentElement).appendChild(menu);
+        COMPACT_MODEL.menu = menu;
+        COMPACT_MODEL.anchor = anchor;
+        bindCompactModelPickerEvents();
+        positionCompactModelPicker();
+        requestAnimationFrame(positionCompactModelPicker);
+    }
+    function compactModelTokenSetOf(el) {
+        return Array.from(new Set(
+            nmfFlatTokensFromElement(el)
+                .map(flat => nmfTokenFromFlatIconToken(flat))
+                .filter(Boolean)
+        ));
+    }
+    function compactModelLiveRowFor(item, root, token) {
+        if (!(item instanceof HTMLElement) || !(root instanceof HTMLElement))
+            return null;
+        const wanted = String(token || '');
+        let node = item;
+        let best = item;
+        while (node instanceof HTMLElement && node !== root && root.contains(node)) {
+            const tokens = compactModelTokenSetOf(node);
+            if (tokens.length === 1 && tokens[0] === wanted)
+                best = node;
+            else if (tokens.length > 1 || (tokens.length === 1 && tokens[0] !== wanted))
+                break;
+            const parent = node.parentElement;
+            if (!(parent instanceof HTMLElement) || parent === root)
+                break;
+            const parentTokens = compactModelTokenSetOf(parent);
+            if (parentTokens.length !== 1 || parentTokens[0] !== wanted)
+                break;
+            node = parent;
+        }
+        return best;
+    }
+    function compactModelPolishNativeLiveRow(row, entry) {
+        if (!(row instanceof HTMLElement))
+            return;
+        const selector = 'button, [role^="menuitem"], [role="option"], [data-radix-collection-item]';
+        const action = row.matches(selector) ? row : (row.querySelector(selector) || row);
+        action.setAttribute('data-cmu-compact-native-live-action', '1');
+
+        const textNodes = Array.from(row.querySelectorAll('p, span, div')).filter(el => {
+            if (!(el instanceof HTMLElement))
+                return false;
+            const text = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+            if (!text)
+                return false;
+            return !Array.from(el.children).some(child => String(child.textContent || '').replace(/\s+/g, ' ').trim());
+        });
+        const wanted = compactModelNormalizeLabel(entry?.label || '');
+        let title = null;
+        if (wanted) {
+            title = textNodes
+                .map(el => ({ el, text: compactModelNormalizeLabel(el.textContent || '') }))
+                .filter(item => item.text === wanted || item.text.includes(wanted) || wanted.includes(item.text))
+                .sort((a, b) => Math.abs(a.text.length - wanted.length) - Math.abs(b.text.length - wanted.length))[0]?.el || null;
+        }
+        if (!title) {
+            title = textNodes.find(el => {
+                const t = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+                return t.length >= 3 && t.length <= 24 && !/[0-9][0-9,]*\s*개\s*$/.test(t);
+            }) || null;
+        }
+        title?.setAttribute('data-cmu-compact-native-live-title', '1');
+
+        textNodes.forEach(el => {
+            if (el === title)
+                return;
+            const text = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+            const compact = text.replace(/\s+/g, '');
+            if (!compact)
+                return;
+            if (/[0-9][0-9,]*개$/.test(compact) || /^\d+(?:[.,]\d+)?%$/.test(compact)) {
+                el.setAttribute('data-cmu-compact-native-live-badge', '1');
+                return;
+            }
+            if (/^(권장|추천|recommended)$/i.test(compact)) {
+                el.setAttribute('data-cmu-compact-native-live-recommend', '1');
+                return;
+            }
+            const normalized = compactModelNormalizeLabel(text);
+            if (wanted && (normalized === wanted || normalized.includes(wanted) || wanted.includes(normalized)))
+                return;
+            if (compact.length >= 11)
+                el.setAttribute('data-cmu-compact-native-live-desc', '1');
+        });
+    }
+    function compactModelPruneNativeTree(root, rows) {
+        if (!(root instanceof HTMLElement))
+            return;
+        const rowSet = new Set(rows.filter(row => row instanceof HTMLElement));
+        const branchContainsRow = node => {
+            if (!(node instanceof Element))
+                return false;
+            if (rowSet.has(node))
+                return true;
+            for (const row of rowSet) {
+                if (node.contains(row))
+                    return true;
+            }
+            return false;
+        };
+        const walk = node => {
+            if (!(node instanceof HTMLElement) || rowSet.has(node))
+                return;
+            Array.from(node.children).forEach(child => {
+                if (!(child instanceof HTMLElement))
+                    return;
+                if (!branchContainsRow(child)) {
+                    child.setAttribute('data-cmu-compact-native-live-hide', '1');
+                    return;
+                }
+                if (!rowSet.has(child))
+                    child.setAttribute('data-cmu-compact-native-live-branch', '1');
+                walk(child);
+            });
+        };
+        walk(root);
+    }
+    function positionCompactNativeLiveMenu() {
+        const shell = COMPACT_MODEL.nativeShell;
+        const anchor = COMPACT_MODEL.anchor;
+        if (!(shell instanceof HTMLElement) || !(anchor instanceof HTMLElement) || !shell.isConnected || !anchor.isConnected)
+            return;
+        const vv = window.visualViewport;
+        const viewportLeft = Number(vv?.offsetLeft || 0);
+        const viewportTop = Number(vv?.offsetTop || 0);
+        const viewportWidth = Math.max(1, Number(vv?.width || window.innerWidth || 1));
+        const viewportHeight = Math.max(1, Number(vv?.height || window.innerHeight || 1));
+        const rect = anchor.getBoundingClientRect();
+        const width = Math.min(176, Math.max(142, viewportWidth - 18));
+        const root = shell.matches?.('[data-radix-menu-content]') ? shell : shell.querySelector?.('[data-radix-menu-content]');
+        const spaceAbove = Math.max(0, rect.top - viewportTop - 8);
+        const spaceBelow = Math.max(0, viewportTop + viewportHeight - rect.bottom - 8);
+
+        /* 4.3.0.9: 켜진 모델 수가 많아도 286px로 잘라 버리지 않는다.
+           실제 목록의 전체 높이를 먼저 구한 뒤, 위/아래 중 전체 목록이 들어가는 쪽을 우선한다.
+           어느 쪽에도 전부 안 들어갈 때만 더 넓은 쪽을 사용하고 그때만 내부 스크롤한다. */
+        const naturalHeight = Math.max(40, Number(root?.scrollHeight || shell.scrollHeight || 0));
+        let placeAbove;
+        if (spaceAbove >= naturalHeight)
+            placeAbove = true;
+        else if (spaceBelow >= naturalHeight)
+            placeAbove = false;
+        else
+            placeAbove = spaceAbove >= spaceBelow;
+        const sideSpace = placeAbove ? spaceAbove : spaceBelow;
+        const available = Math.max(88, Math.min(naturalHeight, sideSpace));
+        root?.style?.setProperty?.('--cmu-compact-native-max-h', `${Math.round(available)}px`);
+        shell.style.setProperty('position', 'fixed', 'important');
+        shell.style.setProperty('width', `${Math.round(width)}px`, 'important');
+        shell.style.setProperty('max-width', `${Math.round(width)}px`, 'important');
+        shell.style.setProperty('right', 'auto', 'important');
+        shell.style.setProperty('bottom', 'auto', 'important');
+        shell.style.setProperty('transform', 'none', 'important');
+        shell.style.setProperty('z-index', '2147483647', 'important');
+        const measuredHeight = Math.min(naturalHeight, available);
+        let top = placeAbove ? rect.top - measuredHeight - 8 : rect.bottom + 8;
+        top = Math.max(viewportTop + 8, Math.min(top, viewportTop + viewportHeight - measuredHeight - 8));
+        let left = rect.left;
+        left = Math.max(viewportLeft + 8, Math.min(left, viewportLeft + viewportWidth - width - 8));
+        shell.style.setProperty('left', `${Math.round(left)}px`, 'important');
+        shell.style.setProperty('top', `${Math.round(top)}px`, 'important');
+    }
+    function compactModelUseNativeRows(snapshot, anchor, nativeButton) {
+        if (!snapshot?.entries?.length || !(snapshot.root instanceof HTMLElement) || !(snapshot.shell instanceof HTMLElement))
+            return false;
+        const { root, shell } = snapshot;
+        compactModelClearNativeLiveMarks();
+        shell.removeAttribute('data-cmu-compact-model-native');
+        shell.setAttribute('data-cmu-compact-native-live', '1');
+        root.setAttribute('data-cmu-compact-native-live-root', '1');
+        const rows = [];
+        const rowSeen = new Set();
+        snapshot.entries.forEach(entry => {
+            const row = compactModelLiveRowFor(entry.item, root, entry.token);
+            if (!(row instanceof HTMLElement) || rowSeen.has(row))
+                return;
+            rowSeen.add(row);
+            row.setAttribute('data-cmu-compact-native-live-row', '1');
+            row.dataset.cmuCompactModelToken = entry.token;
+            compactModelPolishNativeLiveRow(row, entry);
+            rows.push(row);
+        });
+        if (!rows.length) {
+            compactModelClearNativeLiveMarks(shell);
+            return false;
+        }
+        compactModelPruneNativeTree(root, rows);
+        COMPACT_MODEL.nativeShell = shell;
+        COMPACT_MODEL.nativeButton = nativeButton;
+        COMPACT_MODEL.anchor = anchor;
+        positionCompactNativeLiveMenu();
+        requestAnimationFrame(positionCompactNativeLiveMenu);
+        setTimeout(positionCompactNativeLiveMenu, 60);
+        setTimeout(positionCompactNativeLiveMenu, 180);
+
+        const onActualNativeChoice = event => {
+            const row = event.target?.closest?.('[data-cmu-compact-native-live-row="1"]');
+            if (!row || !root.contains(row))
+                return;
+            setTimeout(() => {
+                compactModelClearNativeLiveMarks(shell);
+                if (COMPACT_MODEL.nativeShell === shell) {
+                    COMPACT_MODEL.nativeShell = null;
+                    COMPACT_MODEL.nativeButton = null;
+                    COMPACT_MODEL.anchor = null;
+                }
+                scheduleNmfScan([80, 220, 520]);
+                scheduleDashboardUpdate(true);
+                ensureInlineBlocks();
+            }, 80);
+        };
+        root.addEventListener('click', onActualNativeChoice, { capture: true, once: true });
+        return true;
+    }
+    async function waitForCompactModelSnapshot(seq) {
+        for (const delay of [0, 45, 80, 130, 190, 280, 420]) {
+            if (delay)
+                await new Promise(resolve => setTimeout(resolve, delay));
+            if (seq !== COMPACT_MODEL.seq)
+                return null;
+            const snapshot = compactModelSnapshot();
+            if (snapshot?.entries?.length)
+                return snapshot;
+        }
+        return null;
+    }
+    async function openCompactModelPicker() {
+        const anchor = document.getElementById('chud-model-btn');
+        const nativeButton = getNativeModelMenuButton();
+        if (!(anchor instanceof HTMLElement) || !(nativeButton instanceof HTMLElement)) {
+            showToast('모델 버튼을 찾지 못함');
+            return false;
+        }
+
+        /* 4.3.0.10: 빠른 연속 탭이 비동기 open 과정을 두 번 시작하면
+           원본 Radix 버튼이 open→close→open으로 다시 토글되며 큰 원본 메뉴가
+           새어 나올 수 있다. 열기 진행 중/직후의 중복 탭은 무시한다. */
+        const now = Date.now();
+        if (COMPACT_MODEL.opening || now < Number(COMPACT_MODEL.toggleLockUntil || 0))
+            return true;
+
+        const liveShell = COMPACT_MODEL.nativeShell;
+        if (liveShell?.isConnected && liveShell.hasAttribute('data-cmu-compact-native-live') &&
+            compactModelNativeIsOpen(nativeButton, liveShell)) {
+            COMPACT_MODEL.toggleLockUntil = now + 220;
+            closeCompactModelPicker({ closeNative: true });
+            return true;
+        }
+
+        COMPACT_MODEL.opening = true;
+        COMPACT_MODEL.toggleLockUntil = now + 180;
+        try {
+            compactModelClearNativeLiveMarks(liveShell?.isConnected ? liveShell : null);
+            COMPACT_MODEL.nativeShell = null;
+            COMPACT_MODEL.nativeButton = null;
+            COMPACT_MODEL.anchor = null;
+
+            const seq = ++COMPACT_MODEL.seq;
+            COMPACT_MODEL.anchor = anchor;
+            COMPACT_MODEL.nativeButton = nativeButton;
+            let snapshot = compactModelSnapshot();
+            if (!snapshot) {
+                document.documentElement.classList.add('cmu-compact-model-probing');
+                if (!compactModelClickOnce(nativeButton)) {
+                    document.documentElement.classList.remove('cmu-compact-model-probing');
+                    COMPACT_MODEL.nativeButton = COMPACT_MODEL.anchor = null;
+                    showToast('모델 메뉴를 열지 못함');
+                    return false;
+                }
+                scheduleNmfScan([80, 180, 360, 700]);
+                snapshot = await waitForCompactModelSnapshot(seq);
+            }
+            if (seq !== COMPACT_MODEL.seq)
+                return true;
+            document.documentElement.classList.remove('cmu-compact-model-probing');
+            if (!snapshot?.entries?.length) {
+                COMPACT_MODEL.nativeButton = COMPACT_MODEL.anchor = null;
+                showToast('원본 모델 목록을 찾지 못함');
+                return true;
+            }
+            nmfScanNativeModelMenu();
+            if (!compactModelUseNativeRows(snapshot, anchor, nativeButton)) {
+                COMPACT_MODEL.nativeShell = COMPACT_MODEL.nativeButton = COMPACT_MODEL.anchor = null;
+                showToast('모델 목록을 작게 정리하지 못해 원본 메뉴를 표시함');
+            }
+            else {
+                COMPACT_MODEL.toggleLockUntil = Date.now() + 180;
+            }
+            return true;
+        }
+        finally {
+            COMPACT_MODEL.opening = false;
+        }
+    }
+    function openNativeModelMenu() {
+        const btn = getNativeModelMenuButton();
         if (btn) {
             const ok = fireClickSequence(btn);
             scheduleNmfScan([120, 300, 700, 1100]);
@@ -9829,24 +12032,32 @@
             content.id = 'chud-side-content';
             DASH_SIDE.content = content;
             const buttons = {
-                modelButton: makeSideButton('modelButton', 'chud-model-btn', '모델 변경', SIDE_ICON.model, openNativeModelMenu),
+                modelButton: makeSideButton('modelButton', 'chud-model-btn', '모델 빠른 선택', SIDE_ICON.model, openCompactModelPicker),
                 guideButton: makeSideButton('guideButton', 'chud-guide-btn', '플레이 가이드', SIDE_ICON.guide, () => clickFirst([/플레이\s*가이드/, /가이드/], '플레이 가이드')),
-                profileButton: makeSideButton('profileButton', 'chud-profile-btn', '대화 프로필', SIDE_ICON.profile, () => clickFirst([/대화\s*프로필/, /프로필/], '대화 프로필')),
+                profileButton: makeSideButton('profileButton', 'chud-native-profile-btn', '크랙 기본 프로필', SIDE_ICON.profile, () => clickFirst([/대화\s*프로필/, /프로필/], '대화 프로필')),
+                profileBoxButton: makeSideButton('profileBoxButton', 'chud-profile-box-btn', '프로필 박스', SIDE_ICON.profileBox, openProfileBoxLite),
                 noteButton: makeSideButton('noteButton', 'chud-note-btn', '유저 노트', SIDE_ICON.note, () => clickFirst([/유저\s*노트/, /노트/], '유저 노트')),
-                outputButton: makeSideButton('outputButton', 'chud-output-btn', '출력량 조절', SIDE_ICON.output, () => clickFirst([/출력량/, /출력/], '출력량')),
+                outputButton: makeSideButton('outputButton', 'chud-output-btn', '답변 길이 및 생각 조절', SIDE_ICON.output, openOutputSettingsLite),
                 summaryButton: makeSideButton('summaryButton', 'chud-summary-btn', '요약 메모리', SIDE_ICON.summary, openSummaryMemoryLite),
-                imageButton: makeSideButton('imageButton', 'chud-image-btn', '이미지 ON/OFF', SIDE_ICON.image, () => clickFirst([/상황\s*이미지\s*보기/, /상황.*이미지/, /이미지.*보기/], '이미지')),
+                imageButton: makeSideButton('imageButton', 'chud-image-btn', '이미지 ON/OFF', SIDE_ICON.image, clickNativeSituationImageToggleLite),
                 archiveButton: makeSideButton('archiveButton', 'chud-archive-btn', '이미지 보관함', SIDE_ICON.archive, () => clickFirst([/이미지\s*보관함/, /보관함/], '이미지 보관함')),
                 roomBackgroundButton: makeSideButton('roomBackgroundButton', 'chud-room-bg-btn', '일반 이미지 테마 설정', SIDE_ICON.roomBackground, () => openExternalThemeSettingsLite('custom-room')),
+                scenePainterButton: makeSideButton('scenePainterButton', 'chud-scene-painter-btn', 'AI 삽화 생성 · 모바일 Scene Painter', SIDE_ICON.scenePainter, openMobileScenePainterLite),
+                wishManagerButton: makeSideButton('wishManagerButton', 'chud-wish-manager-btn', 'Wish RP Manager', SIDE_ICON.wishManager, openWishRpManagerLite),
+                guideManagerButton: makeSideButton('guideManagerButton', 'chud-guide-manager-btn', '지침 관리', SIDE_ICON.guideManager, openGuideManagerLite),
                 sceneBlurButton: makeSideButton('sceneBlurButton', 'chud-scene-blur-btn', 'CSP 테마 설정', SIDE_ICON.sceneBlur, () => openExternalThemeSettingsLite('csp')),
                 startButton: makeSideButton('startButton', 'chud-start-btn', '시작 설정', SIDE_ICON.start, openStartSettingLite),
                 loreButton: makeSideButton('loreButton', 'chud-lore-btn', '에리 로어', SIDE_ICON.lore, openLoreToolsLite),
-                translatorButton: makeSideButton('translatorButton', 'chud-translator-btn', '초월 번역기', SIDE_ICON.translator, openTranslatorLite),
+                translatorButton: makeSideButton('translatorButton', 'chud-translator-btn', '초월 번역기', SIDE_ICON.translator, () => clickFirst([/초월\s*번역기/, /번역기/, /translator/i], '번역기')),
                 aiSummaryButton: makeSideButton('aiSummaryButton', 'chud-ai-summary-btn', 'AI 요약', SIDE_ICON.aiSummary, openAiSummaryLite),
                 gameHudButton: makeSideButton('gameHudButton', 'chud-game-hud-btn', '게임 HUD', SIDE_ICON.gameHud, openGameHudLite),
             };
+            // Profile Box 1.2.x는 기존 프로필 버튼을 외부 런처로 가로채므로,
+            // 크랙 기본 프로필은 해당 선택자에서 분리하고 전용 프로필 박스 버튼만 연동한다.
+            buttons.profileButton.dataset.sideKey = 'nativeProfileButton';
+            buttons.profileBoxButton.dataset.cpmExternalProfileLauncher = 'true';
             DASH_SIDE.btns = buttons;
-            content.append(buttons.modelButton, buttons.guideButton, buttons.profileButton, buttons.noteButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
+            content.append(buttons.modelButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
             bar.append(content);
         }
         if (bar.parentElement !== shell)
@@ -9857,6 +12068,7 @@
         applyDashboardLayout(shell, input);
     }
     function removeDashboardSidebar() {
+        closeCompactModelPicker({ closeNative: true });
         document.getElementById(ID.dashboardSidebar)?.remove();
         document.getElementById('chud-side-menu')?.remove();
         DASH_SIDE.el = DASH_SIDE.content = DASH_SIDE.menu = DASH_SIDE.settingsBtn = null;
@@ -9982,16 +12194,25 @@
         }
         scheduleDashboardScrollSync();
     }
-    function resetDashboardLayout(input = findChatInput()) {
+    const DASH_LAYOUT = { input: null, styles: new Map() };
+    function resetDashboardLayout(input = DASH_LAYOUT.input || findChatInput()) {
         stopDashboardScrollSync();
-        if (!input || input.dataset.cmuDashboardAdjusted !== '1')
+        if (!input || DASH_LAYOUT.input !== input)
             return;
-        input.style.removeProperty('padding-top');
-        input.style.removeProperty('min-height');
+        for (const [prop, snapshot] of DASH_LAYOUT.styles) {
+            if (input.style.getPropertyValue(prop) !== snapshot.applied || input.style.getPropertyPriority(prop) !== 'important')
+                continue;
+            if (snapshot.value)
+                input.style.setProperty(prop, snapshot.value, snapshot.priority);
+            else
+                input.style.removeProperty(prop);
+        }
         delete input.dataset.cmuDashboardAdjusted;
+        DASH_LAYOUT.input = null;
+        DASH_LAYOUT.styles.clear();
     }
     function setStyleIfChanged(el, prop, value, important = false) {
-        if (!el || el.style.getPropertyValue(prop) === value)
+        if (!el || (el.style.getPropertyValue(prop) === value && el.style.getPropertyPriority(prop) === (important ? 'important' : '')))
             return;
         el.style.setProperty(prop, value, important ? 'important' : '');
     }
@@ -10026,8 +12247,17 @@
             pad += 24;
         if (hasBar)
             pad += 22;
-        setStyleIfChanged(input, 'padding-top', `${pad}px`, true);
-        setStyleIfChanged(input, 'min-height', `${pad + 40}px`, true);
+        if (DASH_LAYOUT.input !== input) {
+            resetDashboardLayout();
+            DASH_LAYOUT.input = input;
+        }
+        for (const [prop, value] of [['padding-top', `${pad}px`], ['min-height', `${pad + 40}px`]]) {
+            const previous = DASH_LAYOUT.styles.get(prop);
+            if (!previous || input.style.getPropertyValue(prop) !== previous.applied || input.style.getPropertyPriority(prop) !== 'important')
+                DASH_LAYOUT.styles.set(prop, { value: input.style.getPropertyValue(prop), priority: input.style.getPropertyPriority(prop), applied: value });
+            DASH_LAYOUT.styles.get(prop).applied = value;
+            setStyleIfChanged(input, prop, value, true);
+        }
         input.dataset.cmuDashboardAdjusted = '1';
         startDashboardScrollSync(input, shell);
     }
@@ -10155,6 +12385,7 @@
     async function fetchRawMessagesUntilAnchor(chatId, anchorId = '', initialPage = null) {
         const rows = [];
         const seenIds = new Set();
+        const seenCursors = new Set();
         let cursor = '';
         let page = 0;
         let prefetched = initialPage;
@@ -10189,15 +12420,18 @@
             if (foundAnchor)
                 break;
             if (!cursor || !arr.length) {
-                complete = true;
+                complete = !cursor;
                 break;
             }
+            if (seenCursors.has(cursor))
+                break;
+            seenCursors.add(cursor);
             await sleep(20);
         }
         return { rows, foundAnchor, complete: complete || !cursor, pages: page };
     }
     function normalizeRoomStatsCache(raw, chatId, domCount = 0) {
-        if (!raw || typeof raw !== 'object')
+        if (!raw || typeof raw !== 'object' || raw.statsVersion !== 2)
             return null;
         const officialTurnCount = Math.max(0, Math.floor(Number(raw.officialTurnCount || raw.userTurnCount || 0)));
         const totalMessages = Math.max(0, Math.floor(Number(raw.totalMessages || 0)));
@@ -10213,7 +12447,9 @@
             currentAssistantCount: Math.max(0, Math.floor(Number(raw.currentAssistantCount ?? 0))),
             currentPrologueCount: Math.max(0, Math.floor(Number(raw.currentPrologueCount ?? 0))),
             userTurnCount: Math.max(0, Math.floor(Number(raw.userTurnCount ?? officialTurnCount))),
-            computed: true,
+            statsVersion: 2,
+            complete: raw.complete === true,
+            computed: raw.complete === true,
             cachedAt: Math.max(0, Number(raw.cachedAt || 0)),
             newestMessageId: String(raw.newestMessageId || ''),
             fullFetchedAt: Math.max(0, Number(raw.fullFetchedAt || 0)),
@@ -10274,10 +12510,12 @@
         }
     }
     function saveRoomStatsCache(chatId, result) {
-        if (!chatId || !result)
+        if (!shouldRun() || !chatId || !result)
             return;
         try {
             localStorage.setItem(roomStatsKey(chatId), JSON.stringify({
+                statsVersion: 2,
+                complete: result.complete === true,
                 cachedAt: Date.now(),
                 domCount: Math.max(0, Math.floor(Number(result.domCount || 0))),
                 chatCounts: Math.max(0, Math.floor(Number(result.chatCounts || 0))),
@@ -10295,7 +12533,7 @@
         }
         catch (_) { }
     }
-    function buildRawMessageStats(chatId, domCount, rows) {
+    function buildRawMessageStats(chatId, domCount, rows, { complete = true } = {}) {
         const userRows = rows.filter(isRawUserMessage);
         const userIds = new Set(userRows.map(rawMessageIdOf).filter(Boolean));
         const userIdlessRows = userRows.filter(msg => !rawMessageIdOf(msg)).length;
@@ -10317,10 +12555,12 @@
             userTurnCount,
             currentAssistantCount,
             currentPrologueCount,
-            computed: true,
+            statsVersion: 2,
+            complete,
+            computed: complete,
             cachedAt: Date.now(),
             newestMessageId: newestRawMessageId(rows),
-            fullFetchedAt: Date.now(),
+            fullFetchedAt: complete ? Date.now() : 0,
             source: 'rawMessages:userUniqueTurn',
         };
         saveRoomStatsCache(chatId, result);
@@ -10349,7 +12589,9 @@
             userTurnCount,
             currentAssistantCount,
             currentPrologueCount,
-            computed: true,
+            statsVersion: 2,
+            complete: stale.complete === true,
+            computed: stale.complete === true,
             cachedAt: Date.now(),
             newestMessageId: newestRawMessageId(rows) || stale.newestMessageId,
             fullFetchedAt: Math.max(0, Number(stale.fullFetchedAt || 0)),
@@ -10376,12 +12618,12 @@
             if (incremental.foundAnchor)
                 return applyRawMessageDelta(chatId, domCount, stale, incremental.rows);
             if (incremental.rows.length)
-                return buildRawMessageStats(chatId, domCount, incremental.rows);
+                return buildRawMessageStats(chatId, domCount, incremental.rows, { complete: incremental.complete });
         }
         const full = await fetchRawMessagesUntilAnchor(chatId, '', firstPage);
         if (!full.rows.length)
             throw new Error('raw messages empty');
-        return buildRawMessageStats(chatId, domCount, full.rows);
+        return buildRawMessageStats(chatId, domCount, full.rows, { complete: full.complete });
     }
     function fetchDashboardLogs(chatId) {
         if (DASH_LOGS_INFLIGHT.has(chatId))
@@ -10430,6 +12672,8 @@
                 return null;
             if (Date.now() - Number(raw.cachedAt || 0) > 5 * 60 * 1000)
                 return null;
+            if (raw.logs && raw.logs.statsVersion !== 2)
+                raw.logs = null;
             return raw;
         }
         catch (_) {
@@ -10521,13 +12765,13 @@
         try {
             const requestChatId = chatId;
             const [logs, balance] = await Promise.allSettled([fetchDashboardLogs(requestChatId), fetchBalance()]);
-            if (updateSeq !== DASH.updateSeq || getChatId() !== requestChatId || DASH.state.chatId !== requestChatId)
+            if (!shouldRun() || updateSeq !== DASH.updateSeq || getChatId() !== requestChatId || DASH.state.chatId !== requestChatId)
                 return;
             if (logs.status === 'fulfilled')
                 DASH.state.logs = logs.value;
             if (balance.status === 'fulfilled')
                 DASH.state.balance = balance.value;
-            if (updateSeq !== DASH.updateSeq || getChatId() !== requestChatId || DASH.state.chatId !== requestChatId)
+            if (!shouldRun() || updateSeq !== DASH.updateSeq || getChatId() !== requestChatId || DASH.state.chatId !== requestChatId)
                 return;
             saveDashboardSnapshot(requestChatId);
             DASH.lastHtml = '';
@@ -10564,10 +12808,10 @@
         const domGroups = justMoved ? 0 : document.querySelectorAll('div[data-message-group-id]').length;
         const turns = logs ? Math.max(0, Number(logs.officialTurnCount ?? logs.userTurnCount) || 0) : (justMoved ? null : Math.max(0, Math.floor(domGroups / 2) - 1));
         const parts = [];
-        const turnText = turns == null ? '—' : dashFmt(turns);
+        const turnText = turns == null ? '—' : `${dashFmt(turns)}${logs?.complete === false ? '+' : ''}`;
         const turnSummary = `${DASH_ICON.clock}<span style="font-weight:700;">${turnText}</span>턴`;
         let turnDetail = `${DASH_ICON.clock}<span style="opacity:.75;margin-right:2px;">진행</span><span style="font-weight:700;">${turnText}</span>턴`;
-        const hints = [];
+        const hints = logs?.complete === false ? ['일부 집계'] : [];
         if (logs?.userTurnCount > 0)
             hints.push(`유저 ${dashFmt(logs.userTurnCount)}개`);
         if (logs?.currentAssistantCount > 0)
@@ -10759,7 +13003,7 @@
     }
     async function claimConsumption(rec, chatId) {
         const amount = getConsumedCrackerAmount(rec);
-        if (!chatId || amount <= 0)
+        if (!shouldRun() || !chatId || amount <= 0)
             return 0;
         const key = makeHistoryKey(rec);
         const claimed = loadClaimedHistory();
@@ -10785,7 +13029,11 @@
             return;
         for (const delay of [800, 1600, 2600, 4200]) {
             await sleep(delay);
+            if (!shouldRun())
+                return;
             const candidates = findHistoryCandidates(await fetchRecentHistoryItems(20), session);
+            if (!shouldRun())
+                return;
             for (const rec of candidates) {
                 const added = await claimConsumption(rec, session.chatId);
                 if (added > 0)
@@ -10793,20 +13041,26 @@
             }
         }
     }
-    function finishDashboardGenerationSession({ forceFull = false } = {}) {
-        const chatId = getChatId();
+    function finishDashboardGenerationSession({ chatId = '', forceFull = false } = {}) {
+        if (!shouldRun())
+            return;
+        chatId = chatId || DASH.activeSession?.chatId || '';
+        if (!chatId)
+            return;
         const now = Date.now();
         const session = DASH.activeSession && DASH.activeSession.chatId === chatId && now - DASH.activeSession.startedAt <= 10 * 60 * 1000
             ? { ...DASH.activeSession, doneAt: now }
             : (chatId ? { chatId, startedAt: now - 60000, doneAt: now } : null);
-        DASH.activeSession = null;
+        if (DASH.activeSession?.chatId === chatId)
+            DASH.activeSession = null;
         if (chatId) {
             if (forceFull)
                 invalidateDashboardRoomStats(chatId);
             else
                 expireDashboardRoomStats(chatId);
         }
-        scheduleDashboardUpdate(true);
+        if (getChatId() === chatId)
+            scheduleDashboardUpdate(true);
         if (session)
             pollAndClaimConsumption(session).catch(err => console.debug(LOG, 'cracker claim failed', err));
     }
@@ -10820,8 +13074,11 @@
         composerSendWatchCleanup = null;
     }
     function compactComposerAfterSend(previousTarget = COMPOSER_EXPAND.target) {
+        const chatId = getChatId();
         collapseComposerInput({ immediate: true, scrollToEnd: false });
         const compactOnce = (force = false) => {
+            if (!shouldRun() || getChatId() !== chatId)
+                return;
             const currentInput = findChatInput();
             if (!force && currentInput instanceof HTMLElement && !isEmptyComposer())
                 return;
@@ -10862,6 +13119,7 @@
         if (!(sourceInput instanceof HTMLElement) || !getInputText(sourceInput))
             return;
         stopComposerSendWatch();
+        const chatId = getChatId();
         const previousTarget = COMPOSER_EXPAND.target;
         const probeId = ++composerEnterSendProbeId;
         const timers = [];
@@ -10878,8 +13136,8 @@
             observer = null;
             for (const timer of timers)
                 clearTimeout(timer);
-            document.removeEventListener('input', check, true);
-            document.removeEventListener('compositionend', check, true);
+            cmuUnlisten(document, 'input', check, true);
+            cmuUnlisten(document, 'compositionend', check, true);
             if (composerSendWatchCleanup === cleanup)
                 composerSendWatchCleanup = null;
         };
@@ -10889,18 +13147,17 @@
             startDashboardGenerationSession();
         };
         function check() {
-            if (done || probeId !== composerEnterSendProbeId) {
+            if (done || !shouldRun() || getChatId() !== chatId || probeId !== composerEnterSendProbeId) {
                 cleanup();
                 return;
             }
             const currentInput = findChatInput();
-            const sourceWasReplaced = !sourceInput.isConnected;
-            const composerWasCleared = !(currentInput instanceof HTMLElement) || !getInputText(currentInput);
-            if (sourceWasReplaced || composerWasCleared)
+            const composerWasCleared = currentInput instanceof HTMLElement && !getInputText(currentInput);
+            if (composerWasCleared)
                 confirmAndCompact();
         }
-        document.addEventListener('input', check, true);
-        document.addEventListener('compositionend', check, true);
+        cmuListen(document, 'input', check, true);
+        cmuListen(document, 'compositionend', check, true);
         const watchHost = findComposerShell(sourceInput) || sourceInput.parentElement || sourceInput;
         try {
             observer = new MutationObserver(check);
@@ -10913,7 +13170,7 @@
         timers.push(setTimeout(cleanup, 12500));
         composerSendWatchCleanup = cleanup;
     }
-    document.addEventListener('click', (e) => {
+    cmuListen(document, 'click', (e) => {
         if (isCmuProtectedEditorTarget(e.target))
             return;
         const btn = e.target.closest?.('button');
@@ -10925,7 +13182,7 @@
             startDashboardGenerationSession();
         }
     }, true);
-    document.addEventListener('keydown', (e) => {
+    cmuListen(document, 'keydown', (e) => {
         if (isCmuProtectedEditorTarget(e.target))
             return;
         if (!isChatRoomPath())
@@ -10978,14 +13235,16 @@
         }
     }
     function handleGenerateDoneEntry(entry) {
-        if (!isGenerateDoneEntry(entry))
+        if (!shouldRun() || !isGenerateDoneEntry(entry))
             return false;
         const w = getGenerateDoneWindow();
         const key = getGenerateDoneEntryKey(entry);
         if (w.__cmuLastGenerateDoneKey === key)
             return true;
         w.__cmuLastGenerateDoneKey = key;
-        finishDashboardGenerationSession({ forceFull: isGenerateDoneReroll(entry) });
+        const meta = ((Array.isArray(entry) || typeof entry?.length === 'number') && entry[0] === 'event') ? (entry[2] || {}) : (entry || {});
+        const eventChatId = String(meta.chat_id || meta.episode_id || '');
+        finishDashboardGenerationSession({ chatId: eventChatId, forceFull: isGenerateDoneReroll(entry) });
         try {
             cmiRecordGenerateDone(entry);
         }
@@ -10997,10 +13256,13 @@
         if (w.__CMU_DASH_GENERATE_DONE_HOOKED__)
             return;
         w.__CMU_DASH_GENERATE_DONE_HOOKED__ = true;
+        CMU_RESOURCES.cleanups.push(() => { delete w.__CMU_DASH_GENERATE_DONE_HOOKED__; });
         const dl = w.dataLayer = w.dataLayer || [];
         if (!Array.isArray(dl))
             return;
         const scanEntries = (entries, collectAnswerCost = false) => {
+            if (!shouldRun())
+                return;
             if (collectAnswerCost) {
                 for (const entry of entries) {
                     try {
@@ -11027,6 +13289,8 @@
         const orig = dl.push;
         dl.push = function (...items) {
             const ret = orig.apply(this, items);
+            if (!shouldRun())
+                return ret;
             try {
                 scanEntries(items, true);
                 w.__cmuDataLayerSeenLen = this.length;
@@ -11034,6 +13298,8 @@
             catch (_) { }
             return ret;
         };
+        cmuOwnMethod(dl, 'push', orig);
+        CMU_RESOURCES.cleanups.push(() => { delete dl.__cmuDashPushWrapped; });
         try {
             Object.defineProperty(dl, '__cmuDashPushWrapped', { value: true, configurable: true });
         }
@@ -11042,8 +13308,8 @@
         }
     }
     const RS = {
-        apiBase: 'https://rs.igx.kr/api/simple/',
-        statistics: 'https://rs.igx.kr/api/statistics',
+        apiBase: 'https://old.rs.igx.kr/api/simple/',
+        statistics: 'https://old.rs.igx.kr/api/statistics',
         yameStatus: 'https://claude-radiosonde.chyoyam.chatgpt.site/api/v1/status',
         activeWindowMs: 72 * 60 * 60 * 1000,
         validStatuses: new Set(['active', 'degraded', 'impacted']),
@@ -11051,11 +13317,10 @@
         last: new Map(),
         busy: false,
         discovered: false,
+        discoveryAt: 0,
     };
     const YAME_MODELS = [
-        { slug: 'yame-fable5', apiId: 'fable5', source: 'yame', label: 'Fable 5', short: 'F5' },
-        { slug: 'yame-opus5', apiId: 'opus5', source: 'yame', label: 'Claude Opus 5', short: 'O5' },
-        { slug: 'yame-opus48', apiId: 'opus48', source: 'yame', label: 'Claude Opus 4.8', short: 'O4.8' },
+        { slug: 'yame-fable5', apiId: 'fable5', source: 'yame', label: 'Fable 5.0', short: 'F5' },
     ];
     const FALLBACK_MODELS = [
         { slug: 'claude-opus-4.7', apiId: 'claude-opus-4.7', source: 'igx', label: 'Claude 4.7 Opus', short: 'O4.7' },
@@ -11164,8 +13429,8 @@
             if (!Array.isArray(arr))
                 return null;
             const models = arr
-                .filter(m => m && typeof m.slug === 'string' && typeof m.short === 'string' && !EXCLUDED_MODELS.has(m.slug) && !m.slug.startsWith('yame-'))
-                .map(m => ({ ...m, apiId: m.apiId || m.slug, source: 'igx' }));
+                .filter(m => m && typeof m.slug === 'string' && typeof m.short === 'string' && typeof m.label === 'string' && /^[a-z0-9][a-z0-9._-]*$/i.test(m.slug) && !EXCLUDED_MODELS.has(m.slug) && !m.slug.startsWith('yame-'))
+                .map(m => ({ ...m, apiId: m.slug, source: 'igx' }));
             return models.length ? models : null;
         }
         catch (_) {
@@ -11180,6 +13445,7 @@
     }
     async function discoverRsModels() {
         const cache = loadRsModelCache();
+        const previous = JSON.stringify(RS.models);
         try {
             const payload = await gmGetJson(RS.statistics, 30000);
             const models = modelsFromStatistics(payload);
@@ -11189,8 +13455,31 @@
             saveRsModelCache(models);
         }
         catch (_) {
-            RS.models = [...YAME_MODELS, ...(cache?.length ? cache : FALLBACK_MODELS)];
+            if (!RS.models.length) RS.models = [...YAME_MODELS, ...(cache?.length ? cache : FALLBACK_MODELS)];
         }
+        RS.discoveryAt = Date.now();
+        if (previous !== JSON.stringify(RS.models)) {
+            const active = new Set(RS.models.map(m => m.slug));
+            for (const slug of RS.last.keys()) if (!active.has(slug)) RS.last.delete(slug);
+            syncRsModelSettings();
+        }
+    }
+    async function fetchRsModelsLimited(models) {
+        const results = new Array(models.length);
+        let cursor = 0;
+        async function worker() {
+            while (cursor < models.length) {
+                if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) return;
+                const index = cursor++;
+                try {
+                    results[index] = { status: 'fulfilled', value: await fetchRsModel(models[index].apiId || models[index].slug) };
+                } catch (reason) {
+                    results[index] = { status: 'rejected', reason };
+                }
+            }
+        }
+        await Promise.all(Array.from({ length: Math.min(4, models.length) }, () => worker()));
+        return results;
     }
     function normalizeStatus(status) {
         const v = String(status || 'unknown').toLowerCase();
@@ -11286,16 +13575,19 @@
         RS.busy = true;
         renderRsLine('갱신중…');
         try {
-            if (!RS.models.length)
+            if (!RS.models.length || Date.now() - RS.discoveryAt >= 5 * 60 * 1000)
                 await discoverRsModels();
+            if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) return;
             const models = getRsVisibleModels();
             const yameModels = models.filter(model => model.source === 'yame');
             const igxModels = models.filter(model => model.source !== 'yame');
             const yameTask = yameModels.length
                 ? fetchYameStatus().then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }))
                 : Promise.resolve(null);
-            const igxTask = Promise.allSettled(igxModels.map(model => fetchRsModel(model.apiId || model.slug)));
+            const igxTask = fetchRsModelsLimited(igxModels);
             const [yameResult, igxResults] = await Promise.all([yameTask, igxTask]);
+            if (!shouldRun())
+                return;
             const resultsBySlug = new Map();
             if (yameResult?.status === 'fulfilled') {
                 const normalizedYame = normalizeYamePayload(yameResult.value);
@@ -11318,11 +13610,13 @@
                 const result = resultsBySlug.get(model.slug);
                 if (!result || result.status !== 'fulfilled' || result.value?.success !== true || !result.value?.data) {
                     const prev = RS.last.get(model.slug);
-                    RS.last.set(model.slug, prev || { status: 'unknown', score: '—', lat: '—', tps: '—' });
+                    RS.last.set(model.slug, { ...(prev || { status: 'unknown', score: '—', lat: '—', tps: '—' }), stale: true });
                     continue;
                 }
                 const d = result.value.data;
                 RS.last.set(model.slug, {
+                    stale: false,
+                    fetchedAt: Date.now(),
                     status: normalizeStatus(d.status),
                     score: fmt0(d.score) ?? '—',
                     lat: latencySeconds(d.latency) ?? '—',
@@ -11337,22 +13631,25 @@
         }
         finally {
             RS.busy = false;
+            const button = document.querySelector('#igx-live-popup .btn-refresh');
+            if (button) { button.disabled = false; button.setAttribute('aria-label', '라디오존데 갱신'); }
             restartRsAutoTimer();
         }
     }
     function restartRsAutoTimer() {
-        clearInterval(rsTimer);
-        rsTimer = 0;
-        if (!shouldRun() || !settings.radiosonde)
+        if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) {
+            clearInterval(rsTimer);
+            rsTimer = 0;
             return;
-        const sec = 60;
+        }
+        if (rsTimer)
+            return;
         rsTimer = setInterval(() => {
-            if (document.hidden)
-                return;
-            scheduleRadiosondeRefresh(true);
-        }, sec * 1000);
+            if (!document.hidden)
+                scheduleRadiosondeRefresh(true);
+        }, 60 * 1000);
     }
-    document.addEventListener('visibilitychange', () => {
+    cmuListen(document, 'visibilitychange', () => {
         if (!document.hidden) {
             scheduleDashboardUpdate(false);
             if (settings.radiosonde)
@@ -11379,6 +13676,9 @@
         if (BADGE.cacheKey === key)
             return;
         BADGE.cacheKey = key;
+        BADGE.generation = (BADGE.generation || 0) + 1;
+        BADGE.forcePromise = null;
+        BADGE.lastForceAt = 0;
         BADGE.apiCache = null;
         BADGE.apiPromise = null;
         BADGE.resultCache.clear();
@@ -11424,6 +13724,10 @@
         return '';
     }
     async function fetchBadgeMessagesOnce(force = false) {
+        if (!shouldRun())
+            throw new Error('runtime disposed');
+        resetBadgeCacheIfNeeded();
+        const generation = BADGE.generation;
         if (!force && BADGE.apiCache)
             return BADGE.apiCache;
         if (BADGE.apiPromise)
@@ -11432,7 +13736,7 @@
         if (!chatId)
             throw new Error('chatId not found');
         const url = `${BADGE.apiBase}/chats/${encodeURIComponent(chatId)}/messages?limit=${BADGE.messageLimit}`;
-        BADGE.apiPromise = apiGet(url).then(json => {
+        const task = apiGet(url).then(json => {
             const messages = json?.data?.messages || json?.messages || [];
             const list = Array.isArray(messages) ? messages : [];
             const idMap = new Map();
@@ -11442,16 +13746,22 @@
                     idMap.set(id, { msg, index });
             });
             const objectIds = [...idMap.keys()].filter(isObjectId).sort();
-            BADGE.apiCache = {
+            const cache = {
                 messages: list,
                 idMap,
                 oldestObjectId: objectIds[0] || '',
                 newestObjectId: objectIds[objectIds.length - 1] || '',
                 windowFull: list.length >= BADGE.messageLimit,
             };
-            return BADGE.apiCache;
-        }).finally(() => { BADGE.apiPromise = null; });
-        return BADGE.apiPromise;
+            if (shouldRun() && generation === BADGE.generation && getChatId() === chatId && BADGE.apiPromise === task)
+                BADGE.apiCache = cache;
+            return cache;
+        }).finally(() => {
+            if (BADGE.apiPromise === task)
+                BADGE.apiPromise = null;
+        });
+        BADGE.apiPromise = task;
+        return task;
     }
     function groupMessageId(group) {
         return group?.getAttribute?.('data-message-group-id') || '';
@@ -11508,6 +13818,10 @@
         return String(msg?.role || '').toLowerCase() === 'assistant';
     }
     async function resolveCurrentMessageInfo(group, force = false) {
+        resetBadgeCacheIfNeeded();
+        const generation = BADGE.generation;
+        const chatId = getChatId();
+        const key = makeBadgeCacheKey(group);
         const fallback = resolveByDomId(group);
         if (!fallback.messageId || !isObjectId(fallback.messageId) || (!anyBadgeEnabled() && !cmiWanted() && !cacWanted()))
             return fallback;
@@ -11516,6 +13830,8 @@
             return makeBadgeFinalMiss(fallback, knownMiss);
         try {
             const { messages, idMap } = await fetchBadgeMessagesOnce(force);
+            if (!shouldRun() || generation !== BADGE.generation || getChatId() !== chatId || makeBadgeCacheKey(group) !== key)
+                return fallback;
             const entry = idMap.get(fallback.messageId);
             const anchor = entry?.msg;
             if (!anchor && isBadgeOutsideApiWindow(fallback.messageId))
@@ -11638,18 +13954,27 @@
         badge.dataset.source = resolved?.source || 'dom';
     }
     function refreshBadgeApiCacheThrottled() {
+        resetBadgeCacheIfNeeded();
+        const generation = BADGE.generation;
+        const chatId = getChatId();
         if (BADGE.forcePromise)
             return BADGE.forcePromise;
-        BADGE.forcePromise = (async () => {
+        const task = (async () => {
             const elapsed = Date.now() - (BADGE.lastForceAt || 0);
             const wait = Math.max(0, 1600 - elapsed);
             if (wait > 0)
                 await sleep(wait);
+            if (!shouldRun() || generation !== BADGE.generation || getChatId() !== chatId)
+                return null;
             BADGE.lastForceAt = Date.now();
             BADGE.apiCache = null;
             return fetchBadgeMessagesOnce(true);
-        })().finally(() => { BADGE.forcePromise = null; });
-        return BADGE.forcePromise;
+        })().finally(() => {
+            if (BADGE.forcePromise === task)
+                BADGE.forcePromise = null;
+        });
+        BADGE.forcePromise = task;
+        return task;
     }
     function processBadgeGroup(group) {
         if (!group || !group.matches?.(BADGE.selector))
@@ -11660,7 +13985,11 @@
             group.querySelectorAll('.cac-answer-cost').forEach(el => el.remove());
             return;
         }
+        resetBadgeCacheIfNeeded();
+        const generation = BADGE.generation;
+        const chatId = getChatId();
         const key = makeBadgeCacheKey(group);
+        const isCurrent = () => shouldRun() && group.isConnected && generation === BADGE.generation && getChatId() === chatId && makeBadgeCacheKey(group) === key;
         if (!key)
             return;
         const cached = BADGE.resultCache.get(key);
@@ -11676,7 +14005,7 @@
         setModelIcon(group, fallback);
         cacSetAnswerCost(group, fallback);
         resolveCurrentMessageInfo(group).then(resolved => {
-            if (!group.isConnected)
+            if (!isCurrent())
                 return;
             const gotChars = typeof resolved?.charCount === 'number' && Number.isFinite(resolved.charCount);
             if (!settings.badgeChars || gotChars || resolved?.apiFinalMiss)
@@ -11687,12 +14016,12 @@
             if (settings.badgeChars && !gotChars && !resolved?.apiFinalMiss && group.isConnected) {
                 refreshBadgeApiCacheThrottled()
                     .then(() => {
-                    if (!group.isConnected || BADGE.resultCache.has(key))
+                    if (!isCurrent() || BADGE.resultCache.has(key))
                         return null;
                     return resolveCurrentMessageInfo(group, false);
                 })
                     .then(retryResolved => {
-                    if (!retryResolved || !group.isConnected)
+                    if (!retryResolved || !isCurrent())
                         return;
                     const retryGotChars = typeof retryResolved?.charCount === 'number' && Number.isFinite(retryResolved.charCount);
                     if (!settings.badgeChars || retryGotChars || retryResolved?.apiFinalMiss)
@@ -11899,13 +14228,14 @@
         return callback();
     }
     async function cacWithClaimLock(callback) {
+        const guardedCallback = () => shouldRun() ? callback() : undefined;
         try {
             if (navigator?.locks?.request) {
-                return await navigator.locks.request('cac-answer-cost-claim', { mode: 'exclusive' }, callback);
+                return await navigator.locks.request('cac-answer-cost-claim', { mode: 'exclusive' }, guardedCallback);
             }
         }
         catch (_) { }
-        return cacWithLocalStorageLock(callback);
+        return cacWithLocalStorageLock(guardedCallback);
     }
     function cacRefreshCurrentRoom(chatId = '') {
         if (!chatId || getChatId() === chatId) {
@@ -12193,7 +14523,7 @@
         if (document.documentElement.dataset.cmuAnswerCostBound === '1')
             return;
         document.documentElement.dataset.cmuAnswerCostBound = '1';
-        document.addEventListener('keydown', event => {
+        cmuListen(document, 'keydown', event => {
             if (isCmuProtectedEditorTarget(event.target))
                 return;
             if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.isComposing)
@@ -12218,7 +14548,7 @@
         });
     }
     function cacBindStorageListener() {
-        window.addEventListener('storage', event => {
+        cmuListen(window, 'storage', event => {
             const chatId = getChatId();
             if (!chatId)
                 return;
@@ -12377,12 +14707,12 @@
     }
     function nmfNativeModelIconSelector() {
         return [
-            `${nmfNativeModelRootSelector()} img[src*="model-icon"]`,
-            `${nmfNativeModelRootSelector()} img[srcset*="model-icon"]`,
-            `${nmfNativeModelRootSelector()} source[srcset*="model-icon"]`,
-            `${nmfNativeModelRootSelector()} [style*="model-icon"]`,
-            `${nmfNativeModelRootSelector()} [src*="model-icon"]`,
-            `${nmfNativeModelRootSelector()} [srcset*="model-icon"]`
+            `:is(${nmfNativeModelRootSelector()}) img[src*="model-icon"]`,
+            `:is(${nmfNativeModelRootSelector()}) img[srcset*="model-icon"]`,
+            `:is(${nmfNativeModelRootSelector()}) source[srcset*="model-icon"]`,
+            `:is(${nmfNativeModelRootSelector()}) [style*="model-icon"]`,
+            `:is(${nmfNativeModelRootSelector()}) [src*="model-icon"]`,
+            `:is(${nmfNativeModelRootSelector()}) [srcset*="model-icon"]`
         ].join(',');
     }
     function nmfElementSearchText(el) {
@@ -12510,21 +14840,21 @@
                 nextSeen[token] = label || cmiAutoLabel(token) || token;
             });
         });
-        const mergedSeen = nextSeen;
+        const mergedSeen = { ...prevSeen, ...nextSeen };
         const seenChanged = JSON.stringify(prevSeen) !== JSON.stringify(mergedSeen);
         if (seenChanged)
             nmfSaveSeen(mergedSeen);
-        const storesChanged = nmfSyncModelStoresToSeen(mergedSeen, { prune: true });
+        const storesChanged = nmfSyncModelStoresToSeen(mergedSeen, { prune: false });
         if (seenChanged || storesChanged) {
             const panel = document.getElementById(ID.panel);
             if (panel?.classList.contains('open'))
                 renderSettingsPanel();
         }
     }
-    function scheduleNmfScan(steps = [80, 240, 620, 1200]) {
+    function scheduleNmfScan(steps = [80]) {
         const normalizedSteps = Array.isArray(steps) && steps.length
             ? steps.map(ms => Math.max(0, Number(ms) || 0))
-            : [80, 240, 620, 1200];
+            : [80];
         if (scheduleNmfScan._busy) {
             scheduleNmfScan._pending = true;
             scheduleNmfScan._pendingSteps = normalizedSteps;
@@ -12538,7 +14868,7 @@
             scheduleNmfScan._busy = false;
             if (!scheduleNmfScan._pending)
                 return;
-            const pendingSteps = scheduleNmfScan._pendingSteps || [80, 240, 620, 1200];
+            const pendingSteps = scheduleNmfScan._pendingSteps || [80];
             scheduleNmfScan._pending = false;
             scheduleNmfScan._pendingSteps = null;
             scheduleNmfScan(pendingSteps);
@@ -12554,6 +14884,7 @@
             el.id = 'cmu-native-model-filter-style';
             document.head.appendChild(el);
         }
+        CMU_RESOURCES.styles.add(el);
         if (!shouldRun() || !settings.nativeModelFilter) {
             if (el.textContent)
                 el.textContent = '';
@@ -12989,10 +15320,13 @@
         if (w.__CMU_MODEL_DELETE_HOOKED__)
             return;
         w.__CMU_MODEL_DELETE_HOOKED__ = true;
+        CMU_RESOURCES.cleanups.push(() => { delete w.__CMU_MODEL_DELETE_HOOKED__; });
         try {
             const originalFetch = w.fetch;
             if (typeof originalFetch === 'function') {
                 w.fetch = function (input, init) {
+                    if (!shouldRun())
+                        return originalFetch.apply(this, arguments);
                     const method = init?.method || input?.method || 'GET';
                     const url = typeof input === 'string' ? input : (input?.url || input?.href || String(input || ''));
                     const deletion = cmiParseDeleteRequest(method, url);
@@ -13000,11 +15334,12 @@
                     if (!deletion)
                         return result;
                     return Promise.resolve(result).then(response => {
-                        if (response?.ok)
+                        if (shouldRun() && response?.ok)
                             cmiRecordSuccessfulDeletion(deletion.chatId, deletion.messageId);
                         return response;
                     });
                 };
+                cmuOwnMethod(w, 'fetch', originalFetch);
             }
         }
         catch (_) { }
@@ -13014,24 +15349,28 @@
             const originalSend = XHR?.prototype?.send;
             if (typeof originalOpen === 'function' && typeof originalSend === 'function') {
                 XHR.prototype.open = function (method, url) {
-                    this[CMI_DELETE_META] = cmiParseDeleteRequest(method, url);
+                    if (shouldRun())
+                        this[CMI_DELETE_META] = cmiParseDeleteRequest(method, url);
                     return originalOpen.apply(this, arguments);
                 };
                 XHR.prototype.send = function () {
                     const deletion = this[CMI_DELETE_META];
-                    if (deletion) {
+                    if (shouldRun() && deletion) {
                         this.addEventListener('loadend', () => {
-                            if (this.status >= 200 && this.status < 300) {
+                            if (shouldRun() && this.status >= 200 && this.status < 300) {
                                 cmiRecordSuccessfulDeletion(deletion.chatId, deletion.messageId);
                             }
                         }, { once: true });
                     }
                     return originalSend.apply(this, arguments);
                 };
+                cmuOwnMethod(XHR.prototype, 'open', originalOpen);
+                cmuOwnMethod(XHR.prototype, 'send', originalSend);
             }
         }
         catch (_) { }
     }
+    const cmuPreviousModelProbe = getPublicWindow().__cmuModelProbe;
     getPublicWindow().__cmuModelProbe = async () => {
         const { messages } = await fetchBadgeMessagesOnce(true);
         const a = (messages || []).find(m => String(m?.role || '').toLowerCase() === 'assistant');
@@ -13039,6 +15378,7 @@
             return 'assistant 메시지 없음 (방에 답변이 있어야 함)';
         return { crackerModel: a.crackerModel ?? '(없음)', model: a.model ?? '(없음)', keys: Object.keys(a) };
     };
+    cmuOwnMethod(getPublicWindow(), '__cmuModelProbe', cmuPreviousModelProbe);
     const CMU_MESSAGE_ACTIONS = {
         holdDelay: 400,
         travelLimit: 13,
@@ -13970,6 +16310,7 @@
         loreButton.dataset.cmuLorePlaced = 'before-model';
     }
     function boot(reason = 'boot') {
+        syncCmuMessageTextRoots(reason === 'route' || reason === 'visible-resume' || !CMU_DOM_WATCH.textRoots.size ? null : []);
         const late = /^late-/.test(String(reason || ''));
         applyState();
         if (cmuUserNoteGuardActive())
@@ -13984,14 +16325,14 @@
         ensureTopRevealZone();
         markGlobalHeader();
         ensureLoreEntryButtonInRoomTopBar();
-        ensureToolbarButton();
+        ensureToolbarButton({ syncInline: false });
         ensureMobileEdgeMenuButtons();
         ensureCmuMenuSwipeZone();
         scheduleCmuEdgeMenuStateSync();
         scheduleCmuStatBarMark(0);
         applyRadiosondeTheme();
         applyNativeModelFilterCss();
-        if (settings.nativeModelFilter)
+        if (settings.nativeModelFilter && cmuHasNativeModelMenu(document))
             nmfScanNativeModelMenu();
         if (settings.wideView)
             document.querySelectorAll('main [data-message-group-id]').forEach(markCmuWideContainer);
@@ -14007,27 +16348,28 @@
             document.getElementById('chud-info-menu')?.remove();
             document.getElementById('igx-live-popup')?.remove();
         }
-        refreshSideAvailability(late);
+        if (settings.dashboardSidebar)
+            refreshSideAvailability(late);
         ensureInlineBlocks();
         if (!late)
             scheduleBadgeScan();
     }
-    const CMU_SELF_SELECTOR = `#${ID.panel}, #${ID.toolbarWrapper}, #${ID.topZone}, #${ID.leftMenuZone}, #${ID.rightMenuZone}, #${ID.menuSwipeZone}, #${ID.toast}, #${ID.dashboard}, #${ID.dashboardSidebar}, #${ID.logCaptureBar}, #${ID.logCapturePreview}, #${ID.inputCounterWrap}, #chud-info-menu, #chud-side-menu, #igx-live-popup, .cmi-model-badge, .cmi-model-slot, .cac-answer-cost, #cmu-message-select-copy`;
+    const CMU_SELF_SELECTOR = `#${ID.panel}, #${ID.toolbarWrapper}, #${ID.topZone}, #${ID.leftMenuZone}, #${ID.rightMenuZone}, #${ID.menuSwipeZone}, #${ID.toast}, #${ID.dashboard}, #${ID.dashboardSidebar}, #${ID.logCaptureBar}, #${ID.logCapturePreview}, #${ID.inputCounterWrap}, #chud-info-menu, #chud-side-menu, #igx-live-popup, #cmu-compact-model-menu, .cmi-model-badge, .cmi-model-slot, .cac-answer-cost, #cmu-message-select-copy, .cmu-message-badge, .cmu-user-badge-row`;
     function isSelfMutation(m) {
         const el = m.target instanceof Element ? m.target : m.target?.parentElement;
         return !!el?.closest?.(CMU_SELF_SELECTOR);
     }
 
-    const CMU_ROUTER_OWNED_SELECTOR = `#${ID.inputCounterWrap}, #${ID.inputCounterCount}, .cmu-message-badge, .cmu-user-badge-row, .cmi-model-badge, .cmi-model-slot, .cac-answer-cost, [data-cmu-theme-quote], [data-sgb-quote], [data-cmu-theme-codeblock], [data-sgb-codeblock], [data-cmu-theme-codeblock-head], [data-sgb-codeblock-head], [data-cmu-theme-codeblock-body], [data-sgb-codeblock-body]`;
+    const CMU_ROUTER_OWNED_SELECTOR = `${CMU_SELF_SELECTOR}, .cmu-user-badge-row`;
     const CMU_ROUTER_COMPOSER_SELECTOR = '.__chat_input_textarea, textarea[placeholder*="메시지"], textarea[placeholder*="Message"], div.ProseMirror[contenteditable="true"], div.tiptap[contenteditable="true"], p[data-placeholder*="메시지"], p[data-placeholder*="Message"]';
-    const CMU_ROUTER_POPUP_SELECTOR = '[data-radix-popper-content-wrapper], [data-radix-menu-content], [role="dialog"], [aria-modal="true"]';
+    const CMU_ROUTER_POPUP_SELECTOR = '#rpcm-overlay, #csp-v35-root, [data-radix-popper-content-wrapper], [data-radix-menu-content], [role="dialog"], [aria-modal="true"]';
     const CMU_ROUTER_MARKDOWN_SELECTOR = '.wrtn-markdown, [class*="wrtn-markdown"], .markdown-body, .prose, [class*="prose"]';
     function cmuRouterOwnedElement(el) {
         return el instanceof Element && !!(el.matches?.(CMU_ROUTER_OWNED_SELECTOR) || el.closest?.(CMU_ROUTER_OWNED_SELECTOR));
     }
     function cmuMutationOwnedOnly(mutation) {
-        const elements = [...mutation.addedNodes, ...mutation.removedNodes].filter(node => node instanceof Element);
-        return elements.length > 0 && elements.every(cmuRouterOwnedElement);
+        const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
+        return nodes.length > 0 && nodes.every(node => node instanceof Element && cmuRouterOwnedElement(node));
     }
     function cmuRouterAddMarkdown(markdown) {
         if (!(markdown instanceof HTMLElement) || !markdown.isConnected)
@@ -14049,18 +16391,25 @@
     function cmuRouterAddGroup(group) {
         if (!(group instanceof HTMLElement) || !group.isConnected)
             return;
-        markCmuWideContainer(group);
+        if (!cmuMessageDomWorkWanted() || CMU_DOM_ROUTER.messageGroups.has(group))
+            return;
+        if (settings.wideView)
+            markCmuWideContainer(group);
         CMU_DOM_ROUTER.messageGroups.add(group);
+        if (!themeSkinEnabled())
+            return;
         if (group.matches?.(CMU_ROUTER_MARKDOWN_SELECTOR))
             cmuRouterAddMarkdown(group);
         group.querySelectorAll?.(CMU_ROUTER_MARKDOWN_SELECTOR).forEach(cmuRouterAddMarkdown);
     }
     function cmuRouterCollectMessageNode(node) {
-        if (!(node instanceof Element) || cmuRouterOwnedElement(node))
+        if (!cmuMessageDomWorkWanted() || !(node instanceof Element) || cmuRouterOwnedElement(node))
             return;
         const directGroup = node.matches?.('[data-message-group-id]') ? node : node.closest?.('[data-message-group-id]');
-        if (directGroup)
+        if (directGroup) {
             cmuRouterAddGroup(directGroup);
+            return;
+        }
         node.querySelectorAll?.('[data-message-group-id]').forEach(cmuRouterAddGroup);
         if (node.matches?.(CMU_ROUTER_MARKDOWN_SELECTOR))
             cmuRouterAddMarkdown(node);
@@ -14081,13 +16430,14 @@
         return node instanceof Element && !!(node.matches?.(CMU_ROUTER_POPUP_SELECTOR) || node.closest?.(CMU_ROUTER_POPUP_SELECTOR) || node.querySelector?.(CMU_ROUTER_POPUP_SELECTOR));
     }
     function cmuNodeTouchesHeader(node) {
-        return node instanceof Element && !!(node.matches?.('header, [data-cmu-global-header="1"]') || node.querySelector?.('header, [data-cmu-global-header="1"]'));
+        const selector = 'header, [data-cmu-global-header="1"], [data-cmu-global-header-shell="1"], div[height="56"][width="100%"]';
+        return node instanceof Element && !!(node.matches?.(selector) || node.querySelector?.(selector));
     }
     function cmuNodeTouchesExternalThemeMarker(node) {
         return node instanceof Element && !!(node.matches?.('#sgb-bg-root, #sgb-bg-style') || node.querySelector?.('#sgb-bg-root, #sgb-bg-style'));
     }
     function cmuNodeMayAffectSideAvailability(node) {
-        if (!(node instanceof Element) || node.closest?.('[data-message-group-id], ' + CMU_ROUTER_POPUP_SELECTOR))
+        if (!settings.dashboardSidebar || !(node instanceof Element) || node.closest?.('[data-message-group-id], ' + CMU_ROUTER_POPUP_SELECTOR))
             return false;
         if (observedScope?.contains?.(node) || cmuCachedChatInput?.contains?.(node))
             return false;
@@ -14135,6 +16485,12 @@
             scanBadgeGroups(groups);
         if (groups.length && themeSkinEnabled())
             decorateThemeSubset(groups);
+        if (!themeSkinEnabled()) {
+            clearTimeout(cmuDomQuoteTimer);
+            clearTimeout(cmuDomQuoteRetryTimer);
+            CMU_DOM_PENDING_QUOTES.clear();
+            return;
+        }
         markdowns.forEach(markdown => CMU_DOM_PENDING_QUOTES.add(markdown));
         clearTimeout(cmuDomQuoteTimer);
         clearTimeout(cmuDomQuoteRetryTimer);
@@ -14154,46 +16510,37 @@
         const popupDirty = CMU_DOM_ROUTER.popupDirty;
         const themeDirty = CMU_DOM_ROUTER.themeDirty;
         const nativeModelDirty = CMU_DOM_ROUTER.nativeModelDirty;
-        const sideDirty = CMU_DOM_ROUTER.sideDirty;
+        const sideDirty = CMU_DOM_ROUTER.sideDirty && settings.dashboardSidebar;
         const statDirty = CMU_DOM_ROUTER.statDirty;
         const groups = Array.from(CMU_DOM_ROUTER.messageGroups);
         const markdowns = Array.from(CMU_DOM_ROUTER.markdownNodes);
-        CMU_DOM_ROUTER.composerDirty = false;
-        CMU_DOM_ROUTER.headerDirty = false;
-        CMU_DOM_ROUTER.popupDirty = false;
-        CMU_DOM_ROUTER.themeDirty = false;
-        CMU_DOM_ROUTER.nativeModelDirty = false;
-        CMU_DOM_ROUTER.sideDirty = false;
-        CMU_DOM_ROUTER.statDirty = false;
+        for (const key of ['composerDirty', 'headerDirty', 'popupDirty', 'themeDirty', 'nativeModelDirty', 'sideDirty', 'statDirty'])
+            CMU_DOM_ROUTER[key] = false;
         CMU_DOM_ROUTER.messageGroups.clear();
         CMU_DOM_ROUTER.markdownNodes.clear();
+        syncCmuMessageTextRoots(groups);
+        let inlineDirty = sideDirty;
+        let input = null;
+        if (sideDirty)
+            refreshSideAvailability(true);
         if (composerDirty) {
-            const cachedOk = cmuCachedChatInput instanceof Element &&
-                cmuCachedChatInput.isConnected &&
-                !isInsideKnownPopup(cmuCachedChatInput);
+            const cachedOk = cmuCachedChatInput instanceof Element && cmuCachedChatInput.isConnected && !isInsideKnownPopup(cmuCachedChatInput);
             const now = Date.now();
-            if (cachedOk && now - Number(flushCmuDomRouter._composerHealAt || 0) < 900) {
-                scheduleComposerExpandSync();
-                scheduleCmuInputCounterSync();
-                scheduleEmptySendGuardUiUpdate();
-            }
-            else {
+            if (!cachedOk || now - Number(flushCmuDomRouter._composerHealAt || 0) >= 900) {
                 flushCmuDomRouter._composerHealAt = now;
                 if (!cachedOk)
                     invalidateCmuChatInputCache();
-                const input = findChatInput(!cachedOk);
+                input = findChatInput(!cachedOk);
                 cmuDraftSync();
-                ensureToolbarButton();
-                if (input) {
-                    ensureInlineBlocks(input);
-                    ensureCmuMenuSwipeZone(input);
-                    ensureComposerExpandButton(input);
-                }
-                scheduleComposerExpandSync();
-                scheduleCmuInputCounterSync();
-                scheduleEmptySendGuardUiUpdate();
+                ensureToolbarButton({ syncInline: false });
+                inlineDirty = true;
             }
+            scheduleComposerExpandSync();
+            scheduleCmuInputCounterSync();
+            scheduleEmptySendGuardUiUpdate();
         }
+        if (inlineDirty)
+            ensureInlineBlocks(input || findChatInput());
         if (headerDirty) {
             markGlobalHeader();
             ensureLoreEntryButtonInRoomTopBar();
@@ -14206,12 +16553,8 @@
                 scheduleCmuEdgeMenuStateSync();
             }
         }
-        if ((popupDirty || nativeModelDirty) && settings.nativeModelFilter)
+        if (nativeModelDirty && settings.nativeModelFilter)
             scheduleNmfScan();
-        if (sideDirty) {
-            refreshSideAvailability(true);
-            ensureInlineBlocks();
-        }
         if (statDirty)
             scheduleCmuStatBarMark();
         if (themeDirty) {
@@ -14221,98 +16564,268 @@
         if (groups.length || markdowns.length)
             queueCmuIncrementalMessageWork(groups, markdowns);
     }
+    function cmuMessageDomWorkWanted() {
+        return shouldRun() && isChatRoomPath() && !!(settings.wideView || settings.themeSkin || settings.badgeChars || settings.badgeTime || settings.modelIcon || settings.answerCost);
+    }
+    function cmuMessageTextWorkWanted() {
+        return shouldRun() && isChatRoomPath() && !!(settings.themeSkin || settings.badgeChars || settings.badgeTime || settings.modelIcon || settings.answerCost);
+    }
+    function cmuExpectChildChange(target, added, removed) {
+        if (!bootObserver || !target?.isConnected)
+            return;
+        let records = CMU_DOM_WATCH.ownedRecords.get(target);
+        if (!records) {
+            records = [];
+            CMU_DOM_WATCH.ownedRecords.set(target, records);
+        }
+        records.push({ added: Array.from(added), removed: Array.from(removed) });
+    }
+    function cmuConsumeOwnedChange(mutation) {
+        if (mutation.type !== 'childList')
+            return false;
+        const records = CMU_DOM_WATCH.ownedRecords.get(mutation.target);
+        if (!records?.length)
+            return false;
+        const same = (expected, actual) => expected.length === actual.length && expected.every((node, i) => node === actual[i]);
+        const index = records.findIndex(record => same(record.added, mutation.addedNodes) && same(record.removed, mutation.removedNodes));
+        if (index < 0)
+            return false;
+        records.splice(index, 1);
+        if (!records.length)
+            CMU_DOM_WATCH.ownedRecords.delete(mutation.target);
+        return true;
+    }
+    function cmuUnwrapQuoteNode(node) {
+        const text = document.createTextNode(node.textContent || '');
+        cmuExpectChildChange(node.parentNode, [text], [node]);
+        node.replaceWith(text);
+    }
+    function cmuHasNativeModelMenu(node) {
+        if (!settings.nativeModelFilter || !node?.querySelectorAll)
+            return false;
+        const rootSelector = nmfNativeModelRootSelector();
+        const roots = new Set();
+        if (node instanceof Element) {
+            const closest = node.closest(rootSelector);
+            if (closest)
+                roots.add(closest);
+        }
+        node.querySelectorAll(rootSelector).forEach(root => roots.add(root));
+        for (const root of roots) {
+            if (root.isConnected && root.getAttribute('data-state') !== 'closed' && root.querySelector('img[src*="model-icon"], img[srcset*="model-icon"], source[srcset*="model-icon"], [style*="model-icon"]'))
+                return true;
+        }
+        return false;
+    }
+    function cmuQueueNativeUiModeChange() {
+        if (CMU_DOM_WATCH.nativeModeTimer)
+            return;
+        CMU_DOM_WATCH.nativeModeTimer = setTimeout(() => {
+            CMU_DOM_WATCH.nativeModeTimer = 0;
+            cmiHandleNativeUiModeChange();
+        }, 60);
+    }
+    function syncCmuMessageTextRoots(groups = null) {
+        if (!cmuMessageTextWorkWanted()) {
+            CMU_DOM_WATCH.textObserver?.disconnect();
+            CMU_DOM_WATCH.textRoots.clear();
+            return;
+        }
+        if (!CMU_DOM_WATCH.textObserver) {
+            CMU_DOM_WATCH.textObserver = new MutationObserver(mutations => {
+                if (document.hidden) {
+                    CMU_DOM_ROUTER.fullResume = true;
+                    return;
+                }
+                for (const mutation of mutations) {
+                    if (isSelfMutation(mutation))
+                        continue;
+                    const group = mutation.target.parentElement?.closest('[data-message-group-id]');
+                    if (group) {
+                        const markdown = mutation.target.parentElement?.closest(CMU_ROUTER_MARKDOWN_SELECTOR);
+                        if (markdown && themeSkinEnabled()) {
+                            delete markdown.dataset.cmuThemeQuotedLen;
+                            markdown.dataset.cmuThemeLenAt = String(Date.now());
+                        }
+                        cmuRouterAddGroup(group);
+                    }
+                }
+                if (CMU_DOM_ROUTER.messageGroups.size)
+                    scheduleCmuDomRouterFlush();
+            });
+        }
+        const roots = CMU_DOM_WATCH.textRoots;
+        const observer = CMU_DOM_WATCH.textObserver;
+        let rebuild = false;
+        for (const root of roots) {
+            if (!root.isConnected) {
+                roots.delete(root);
+                rebuild = true;
+            }
+        }
+        for (const group of groups || document.querySelectorAll('main [data-message-group-id]')) {
+            if (!(group instanceof Element) || !group.isConnected)
+                continue;
+            const parent = group.parentElement;
+            const root = parent && !parent.matches('main, body, html') && !(cmuCachedChatInput && parent.contains(cmuCachedChatInput)) ? parent : group;
+            if (Array.from(roots).some(existing => existing === root || existing.contains(root)))
+                continue;
+            for (const existing of roots) {
+                if (root.contains(existing)) {
+                    roots.delete(existing);
+                    rebuild = true;
+                }
+            }
+            roots.add(root);
+            if (!rebuild)
+                observer.observe(root, { characterData: true, subtree: true });
+        }
+        if (rebuild) {
+            observer.disconnect();
+            roots.forEach(root => observer.observe(root, { characterData: true, subtree: true }));
+        }
+    }
+    function syncCmuDomWatchOptions() {
+        if (!bootObserver || !shouldRun() || !document.body)
+            return;
+        const attributeFilter = ['aria-checked', 'data-state'];
+        if (settings.pauseAnimatedThumbs || settings.nativeModelFilter)
+            attributeFilter.push('src', 'srcset');
+        const key = attributeFilter.join(',') + ':' + String(cmuMessageTextWorkWanted());
+        if (CMU_DOM_WATCH.attributeKey === key)
+            return;
+        CMU_DOM_WATCH.attributeKey = key;
+        bootObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter });
+        syncCmuMessageTextRoots();
+    }
+    function installCmuThemeRootWatch() {
+        CMU_DOM_WATCH.themeObserver?.disconnect();
+        const signature = () => `${detectCmuTheme()}:${isCmuLightTheme()}`;
+        CMU_DOM_WATCH.themeSignature = signature();
+        CMU_DOM_WATCH.themeObserver = new MutationObserver(() => {
+            const next = signature();
+            if (next === CMU_DOM_WATCH.themeSignature)
+                return;
+            CMU_DOM_WATCH.themeSignature = next;
+            CMU_DOM_ROUTER.themeDirty = true;
+            scheduleCmuDomRouterFlush();
+        });
+        for (const root of [document.documentElement, document.body]) {
+            if (root)
+                CMU_DOM_WATCH.themeObserver.observe(root, { attributes: true, attributeFilter: ['class', 'style', 'data-theme'] });
+        }
+    }
     function startBootObserver() {
-        if (bootObserver)
-            bootObserver.disconnect();
+        bootObserver?.disconnect();
         if (!document.body)
             return;
-        bootObserver = new MutationObserver((mutations) => {
-            let animatedThumbRelevant = false;
-            let dirty = false;
+        bootObserver = new MutationObserver(mutations => {
             if (document.hidden) {
                 CMU_DOM_ROUTER.fullResume = true;
+                CMU_DOM_WATCH.ownedRecords = new WeakMap();
                 return;
             }
-            for (const m of mutations) {
-                if (isSelfMutation(m))
+            let dirty = false;
+            const structureNodes = new Set();
+            for (const mutation of mutations) {
+                if (cmuConsumeOwnedChange(mutation) || isSelfMutation(mutation))
                     continue;
-                if (m.type === 'attributes') {
-                    if ((m.attributeName === 'src' || m.attributeName === 'srcset') && m.target instanceof HTMLImageElement) {
-                        animatedThumbRelevant = true;
+                const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+                if (mutation.type === 'attributes') {
+                    if ((mutation.attributeName === 'src' || mutation.attributeName === 'srcset')) {
+                        if (target instanceof HTMLImageElement)
+                            scheduleAnimatedThumbState(target);
+                        if (cmuHasNativeModelMenu(target)) {
+                            CMU_DOM_ROUTER.nativeModelDirty = true;
+                            dirty = true;
+                        }
                         continue;
                     }
-                    if (m.attributeName === 'data-theme') {
-                        CMU_DOM_ROUTER.themeDirty = true;
-                        dirty = true;
-                        continue;
-                    }
-                    if (m.attributeName === 'data-state' && m.target instanceof Element && m.target.matches?.('[role="dialog"], [aria-modal="true"]')) {
+                    if (mutation.attributeName === 'data-state' && target?.matches(CMU_ROUTER_POPUP_SELECTOR)) {
                         CMU_DOM_ROUTER.popupDirty = true;
                         dirty = true;
+                        if (cmuHasNativeModelMenu(target))
+                            CMU_DOM_ROUTER.nativeModelDirty = true;
                     }
-                    if ((m.attributeName === 'aria-checked' || m.attributeName === 'data-state') && cmiIsNativeUiModeControl(m.target)) {
-                        setTimeout(cmiHandleNativeUiModeChange, 60);
-                        CMU_DOM_ROUTER.nativeModelDirty = true;
-                        dirty = true;
-                    }
+                    if (cmiIsNativeUiModeControl(target))
+                        cmuQueueNativeUiModeChange();
                     continue;
                 }
-                const ownedOnly = cmuMutationOwnedOnly(m);
-                if (!ownedOnly && Date.now() >= Number(CMU_DOM_ROUTER.suppressMessageUntil || 0)) {
-                    const targetGroup = m.target instanceof Element ? m.target.closest?.('[data-message-group-id]') : m.target?.parentElement?.closest?.('[data-message-group-id]');
-                    if (targetGroup)
-                        cmuRouterAddGroup(targetGroup);
+                if (cmuMutationOwnedOnly(mutation))
+                    continue;
+                const group = target?.closest('[data-message-group-id]');
+                if (group) {
+                    const markdown = target?.closest(CMU_ROUTER_MARKDOWN_SELECTOR);
+                    if (markdown && themeSkinEnabled()) {
+                        delete markdown.dataset.cmuThemeQuotedLen;
+                        markdown.dataset.cmuThemeLenAt = String(Date.now());
+                    }
+                    cmuRouterAddGroup(group);
                 }
-                for (const node of [...m.addedNodes, ...m.removedNodes]) {
-                    if (!(node instanceof Element))
+                // Text replacements within messages never trigger composer/header/sidebar discovery.
+                for (const node of [...mutation.addedNodes, ...mutation.removedNodes]) {
+                    if (!(node instanceof Element) || cmuRouterOwnedElement(node))
                         continue;
-                    if (cmuNodeTouchesExternalThemeMarker(node)) {
-                        cmuExternalThemeProvider = '';
-                        CMU_DOM_ROUTER.themeDirty = true;
-                        dirty = true;
+                    if (group) {
+                        scheduleAnimatedThumbState(node);
+                        if (!cmuNodeTouchesPopup(node))
+                            continue;
                     }
-                    if (node.matches?.(CMU_SELF_SELECTOR) || node.closest?.(CMU_SELF_SELECTOR) || cmuRouterOwnedElement(node))
-                        continue;
-                    if (node.matches?.('img') || node.querySelector?.('img'))
-                        animatedThumbRelevant = true;
-                    const groupCount = CMU_DOM_ROUTER.messageGroups.size;
-                    const markdownCount = CMU_DOM_ROUTER.markdownNodes.size;
-                    if (Date.now() >= Number(CMU_DOM_ROUTER.suppressMessageUntil || 0))
-                        cmuRouterCollectMessageNode(node);
-                    if (CMU_DOM_ROUTER.messageGroups.size !== groupCount || CMU_DOM_ROUTER.markdownNodes.size !== markdownCount)
-                        dirty = true;
-                    if (cmuNodeTouchesComposer(node)) {
-                        CMU_DOM_ROUTER.composerDirty = true;
-                        dirty = true;
-                    }
-                    if (cmuNodeTouchesPopup(node)) {
-                        CMU_DOM_ROUTER.popupDirty = true;
-                        dirty = true;
-                    }
-                    if (cmuNodeTouchesHeader(node)) {
-                        CMU_DOM_ROUTER.headerDirty = true;
-                        dirty = true;
-                    }
-                    if (cmuNodeMayAffectSideAvailability(node)) {
-                        CMU_DOM_ROUTER.sideDirty = true;
-                        dirty = true;
-                    }
-                    if (node.matches?.('[data-stat-index]') || node.querySelector?.('[data-stat-index]')) {
-                        CMU_DOM_ROUTER.statDirty = true;
-                        dirty = true;
-                    }
+                    structureNodes.add(node);
                 }
-                if (cmuCachedChatInput && !cmuCachedChatInput.isConnected) {
+            }
+            // React can report both an ancestor and its descendants in the same batch.
+            const roots = Array.from(structureNodes).filter(node => {
+                for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+                    if (structureNodes.has(parent))
+                        return false;
+                }
+                return true;
+            });
+            for (const node of roots) {
+                if (cmuNodeTouchesExternalThemeMarker(node)) {
+                    cmuExternalThemeProvider = '';
+                    CMU_DOM_ROUTER.themeDirty = true;
+                    dirty = true;
+                }
+                scheduleAnimatedThumbState(node);
+                cmuRouterCollectMessageNode(node);
+                if (cmuNodeTouchesComposer(node)) {
                     CMU_DOM_ROUTER.composerDirty = true;
                     dirty = true;
                 }
+                if (cmuNodeTouchesPopup(node)) {
+                    CMU_DOM_ROUTER.popupDirty = true;
+                    dirty = true;
+                    if (cmuHasNativeModelMenu(node))
+                        CMU_DOM_ROUTER.nativeModelDirty = true;
+                }
+                if (cmuNodeTouchesHeader(node)) {
+                    CMU_DOM_ROUTER.headerDirty = true;
+                    dirty = true;
+                }
+                if (cmuNodeMayAffectSideAvailability(node)) {
+                    CMU_DOM_ROUTER.sideDirty = true;
+                    dirty = true;
+                }
+                if (settings.hideStatBar && (node.matches('[data-stat-index]') || node.querySelector('[data-stat-index]'))) {
+                    CMU_DOM_ROUTER.statDirty = true;
+                    dirty = true;
+                }
             }
-            if (animatedThumbRelevant)
-                scheduleAnimatedThumbState();
+            CMU_DOM_WATCH.ownedRecords = new WeakMap();
+            if (Array.from(CMU_DOM_WATCH.textRoots).some(root => !root.isConnected))
+                dirty = true;
+            if (cmuCachedChatInput && !cmuCachedChatInput.isConnected) {
+                CMU_DOM_ROUTER.composerDirty = true;
+                dirty = true;
+            }
             if (dirty || CMU_DOM_ROUTER.messageGroups.size || CMU_DOM_ROUTER.markdownNodes.size)
                 scheduleCmuDomRouterFlush();
         });
-        bootObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-theme', 'aria-checked', 'data-state', 'src', 'srcset'] });
+        CMU_DOM_WATCH.attributeKey = '';
+        syncCmuDomWatchOptions();
+        installCmuThemeRootWatch();
     }
     const CMU_DOUBLE_OPEN = new Set(['"', '“', '「', '❝']);
     const CMU_DOUBLE_CLOSE = new Set(['"', '”', '」', '❞']);
@@ -14655,6 +17168,7 @@
             originalNode: textNode,
             insertedNodes
         });
+        cmuExpectChildChange(parent, insertedNodes, [textNode]);
         parent.replaceChild(frag, textNode);
     }
     function unwrapThemeQuotesInsideCodeblocks() {
@@ -14662,7 +17176,7 @@
             if (!(el instanceof HTMLElement))
                 return;
             try {
-                el.replaceWith(document.createTextNode(el.textContent || ''));
+                cmuUnwrapQuoteNode(el);
             }
             catch (_) { }
         });
@@ -14705,11 +17219,13 @@
                 const firstConnected = insertedNodes.find(node => node?.isConnected && node.parentNode);
                 const parent = firstConnected?.parentNode || originalNode.parentNode;
                 if (parent && !originalNode.isConnected) {
+                    cmuExpectChildChange(parent, [originalNode], []);
                     parent.insertBefore(originalNode, firstConnected || null);
                 }
                 insertedNodes.forEach(node => {
                     if (node && node !== originalNode && node.parentNode) {
                         try {
+                            cmuExpectChildChange(node.parentNode, [], [node]);
                             node.parentNode.removeChild(node);
                         }
                         catch (_) { }
@@ -14731,7 +17247,7 @@
             try {
                 if (!(span instanceof HTMLElement))
                     return;
-                span.replaceWith(document.createTextNode(span.textContent || ''));
+                cmuUnwrapQuoteNode(span);
             }
             catch (err) {
                 console.warn(`${LOG} loose quote unwrap failed`, err);
@@ -14743,7 +17259,7 @@
             try {
                 if (!(span instanceof HTMLElement))
                     return;
-                span.replaceWith(document.createTextNode(span.textContent || ''));
+                cmuUnwrapQuoteNode(span);
             }
             catch (err) {
                 console.warn(`${LOG} CMU quote unwrap failed`, err);
@@ -14764,7 +17280,7 @@
         if (isCmuExternalThemeActive())
             return;
         clearTimeout(CMU_THEME_STATE.quoteHealTimer);
-        CMU_THEME_STATE.quoteHealTimer = window.setTimeout(() => {
+        CMU_THEME_STATE.quoteHealTimer = setTimeout(() => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     try {
@@ -14824,40 +17340,40 @@
             md.dataset.cmuThemeQuotedLen = String(len);
         });
     }
-    function decorateThemeCodeblocks() {
-        document.querySelectorAll('main .wrtn-codeblock, main pre').forEach(cb => {
-            if (!(cb instanceof HTMLElement))
+    function decorateThemeCodeblock(cb) {
+        if (!(cb instanceof HTMLElement))
+            return;
+        if (cb.closest('#chud-sidebar, #chud-infobar, #igx-live-popup'))
+            return;
+        if (cb.matches('pre') && cb.closest('.wrtn-codeblock')) {
+            ['data-cmu-theme-codeblock', 'data-sgb-codeblock', 'data-cmu-theme-codeblock-head', 'data-sgb-codeblock-head', 'data-cmu-theme-codeblock-body', 'data-sgb-codeblock-body'].forEach(name => cb.removeAttribute(name));
+            if (cb.dataset?.cmuCbCleaned)
+                delete cb.dataset.cmuCbCleaned;
+            return;
+        }
+        setAttrIfMissing(cb, 'data-cmu-theme-codeblock');
+        setAttrIfMissing(cb, 'data-sgb-codeblock');
+        if (cb.dataset.cmuCbCleaned === '1')
+            return;
+        cb.dataset.cmuCbCleaned = '1';
+        cb.querySelectorAll('[data-cmu-theme-codeblock-head], [data-sgb-codeblock-head], [data-cmu-theme-codeblock-body], [data-sgb-codeblock-body], [data-cmu-theme-quote], [data-sgb-quote]').forEach(el => {
+            if (!(el instanceof HTMLElement))
                 return;
-            if (cb.closest('#chud-sidebar, #chud-infobar, #igx-live-popup'))
-                return;
-            if (cb.matches('pre') && cb.closest('.wrtn-codeblock')) {
-                ['data-cmu-theme-codeblock', 'data-sgb-codeblock', 'data-cmu-theme-codeblock-head', 'data-sgb-codeblock-head', 'data-cmu-theme-codeblock-body', 'data-sgb-codeblock-body'].forEach(name => cb.removeAttribute(name));
-                if (cb.dataset?.cmuCbCleaned)
-                    delete cb.dataset.cmuCbCleaned;
-                return;
-            }
-            setAttrIfMissing(cb, 'data-cmu-theme-codeblock');
-            setAttrIfMissing(cb, 'data-sgb-codeblock');
-            if (cb.dataset.cmuCbCleaned === '1')
-                return;
-            cb.dataset.cmuCbCleaned = '1';
-            cb.querySelectorAll('[data-cmu-theme-codeblock-head], [data-sgb-codeblock-head], [data-cmu-theme-codeblock-body], [data-sgb-codeblock-body], [data-cmu-theme-quote], [data-sgb-quote]').forEach(el => {
-                if (!(el instanceof HTMLElement))
-                    return;
-                el.removeAttribute('data-cmu-theme-codeblock-head');
-                el.removeAttribute('data-sgb-codeblock-head');
-                el.removeAttribute('data-cmu-theme-codeblock-body');
-                el.removeAttribute('data-sgb-codeblock-body');
-                el.removeAttribute('data-cmu-theme-quote');
-                el.removeAttribute('data-sgb-quote');
-                ['background', 'background-color', 'background-image', 'width', 'min-width', 'max-width', 'white-space', 'overflow-wrap', 'word-break', 'display'].forEach(prop => {
-                    el.style.removeProperty(prop);
-                });
+            el.removeAttribute('data-cmu-theme-codeblock-head');
+            el.removeAttribute('data-sgb-codeblock-head');
+            el.removeAttribute('data-cmu-theme-codeblock-body');
+            el.removeAttribute('data-sgb-codeblock-body');
+            el.removeAttribute('data-cmu-theme-quote');
+            el.removeAttribute('data-sgb-quote');
+            ['background', 'background-color', 'background-image', 'width', 'min-width', 'max-width', 'white-space', 'overflow-wrap', 'word-break', 'display'].forEach(prop => {
+                el.style.removeProperty(prop);
             });
         });
     }
+    function decorateThemeCodeblocks() {
+        document.querySelectorAll('main .wrtn-codeblock, main pre').forEach(decorateThemeCodeblock);
+    }
     function decorateThemeSkin() {
-        CMU_DOM_ROUTER.suppressMessageUntil = Date.now() + 160;
         applyState();
         if (!themeSkinEnabled()) {
             clearThemeDecorations();
@@ -14871,7 +17387,6 @@
     function decorateThemeSubset(groups) {
         if (!themeSkinEnabled())
             return;
-        CMU_DOM_ROUTER.suppressMessageUntil = Date.now() + 120;
         for (const group of groups || []) {
             if (!(group instanceof HTMLElement) || !group.isConnected)
                 continue;
@@ -14912,23 +17427,12 @@
             const hasNovel = !!group.querySelector('[data-cmu-theme-bubble="novel"], [data-sgb-bubble="novel"]');
             group.toggleAttribute('data-cmu-theme-novel-group', hasNovel);
             group.toggleAttribute('data-sgb-novel-group', hasNovel);
-            group.querySelectorAll('.wrtn-codeblock, pre').forEach(cb => {
-                if (!(cb instanceof HTMLElement) || cb.closest('#chud-sidebar, #chud-infobar, #igx-live-popup'))
-                    return;
-                if (cb.matches('pre') && cb.closest('.wrtn-codeblock'))
-                    return;
-                setAttrIfMissing(cb, 'data-cmu-theme-codeblock');
-                setAttrIfMissing(cb, 'data-sgb-codeblock');
-                if (cb.dataset.cmuCbCleaned === '1')
-                    return;
-                cb.dataset.cmuCbCleaned = '1';
-            });
+            group.querySelectorAll('.wrtn-codeblock, pre').forEach(decorateThemeCodeblock);
         }
     }
     function decorateThemeQuotesSubset(markdowns) {
         if (!themeSkinEnabled() || Date.now() < Number(CMU_THEME_STATE.quoteHealUntil || 0))
             return;
-        CMU_DOM_ROUTER.suppressMessageUntil = Date.now() + 120;
         cmuPruneStaleQuoteWraps();
         for (const md of markdowns || []) {
             if (!(md instanceof HTMLElement) || !md.isConnected || md.closest('.not-wrtn-markdown, #igx-live-popup, #chud-sidebar, #chud-infobar'))
@@ -15067,6 +17571,7 @@
         if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) {
             document.getElementById('igx-live-popup')?.remove();
             clearRsInlineHost();
+            restartRsAutoTimer();
             return;
         }
         const host = findRsInlineHost();
@@ -15086,7 +17591,6 @@
         <div id="igx-live-head">
           <div id="igx-live-left">
             <div class="inline-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;"><path d="M2 12h4l2.25-11.25a.5.5 0 0 1 .98 0l4.54 22.5a.5.5 0 0 0 .98 0L17 12h5"/></svg></div>
-            <div id="igx-live-title">Radiosonde</div>
             <div id="igx-live-barline">불러오는 중…</div>
           </div>
           <div id="igx-live-actions">
@@ -15100,10 +17604,11 @@
             });
         }
         popup.classList.add('inline');
-        popup.classList.remove('bar', 'show-settings');
         applyRadiosondeTheme();
-        if (popup.parentNode !== host)
+        if (popup.parentNode !== host) {
             host.appendChild(popup);
+            renderRsLine();
+        }
         if (!RS.discovered) {
             RS.discovered = true;
             scheduleRadiosondeRefresh(true);
@@ -15111,27 +17616,41 @@
         restartRsAutoTimer();
     }
     function renderRsLine(text = '') {
+        if (!shouldRun() || !settings.radiosonde)
+            return;
         const line = document.getElementById('igx-live-barline');
         if (!line)
             return;
-        if (text) {
+        const refresh = document.querySelector('#igx-live-popup .btn-refresh');
+        if (refresh) {
+            refresh.disabled = text === '갱신중…';
+            refresh.setAttribute('aria-label', text || '라디오존데 갱신');
+        }
+        if (text && !RS.last.size) {
             line.textContent = text;
             return;
         }
         const frag = document.createDocumentFragment();
         const models = getRsVisibleModels();
+        if (!models.length) {
+            line.textContent = '표시할 모델 없음 · 설정에서 선택';
+            return;
+        }
+        const scrollLeft = line.scrollLeft;
         for (const model of models) {
             const data = RS.last.get(model.slug) || { status: 'unknown', score: '—', lat: '—' };
             const item = document.createElement('span');
-            item.className = `bitem s-${normalizeStatus(data.status)}`;
-            item.title = model.label;
+            item.className = `bitem s-${data.stale ? 'unknown' : normalizeStatus(data.status)}`;
+            const lastSuccess = data.fetchedAt ? new Date(data.fetchedAt).toLocaleTimeString('ko-KR') : '';
+            item.title = [model.label, data.stale ? '갱신 실패 · 이전 값' : '', lastSuccess ? `마지막 조회 ${lastSuccess}` : ''].filter(Boolean).join(' · ');
             const latency = settings.radiosondeLatency !== false
                 ? `<span class="blat">${data.lat ?? '—'}s</span>`
                 : '';
-            item.innerHTML = `<span class="bdot"></span><span class="bname">${model.short}</span><b class="bscore">${data.score ?? '—'}</b>${latency}`;
+            item.innerHTML = `<span class="bdot"></span><span class="bname">${escapeHtml(model.short)}</span><b class="bscore">${data.score ?? '—'}${data.stale ? ' (이전)' : ''}</b>${latency}`;
             frag.appendChild(item);
         }
         line.replaceChildren(frag);
+        line.scrollLeft = scrollLeft;
     }
     function handleSameChatSelfClick(event) {
         if (!event || event.defaultPrevented)
@@ -15186,27 +17705,40 @@
         if (window.__CMU_HISTORY_HOOKED__)
             return;
         window.__CMU_HISTORY_HOOKED__ = true;
+        CMU_RESOURCES.cleanups.push(() => { delete window.__CMU_HISTORY_HOOKED__; });
         const fire = () => setTimeout(checkRouteChange, 80);
         const origPush = history.pushState;
         const origReplace = history.replaceState;
         history.pushState = function (...args) {
+            if (!shouldRun())
+                return origPush.apply(this, args);
             cmuDraftFlush('history-pushState');
             const ret = origPush.apply(this, args);
             fire();
             return ret;
         };
         history.replaceState = function (...args) {
+            if (!shouldRun())
+                return origReplace.apply(this, args);
             cmuDraftFlush('history-replaceState');
             const ret = origReplace.apply(this, args);
             fire();
             return ret;
         };
-        window.addEventListener('popstate', fire);
+        cmuOwnMethod(history, 'pushState', origPush);
+        cmuOwnMethod(history, 'replaceState', origReplace);
+        cmuListen(window, 'popstate', fire);
     }
     function checkRouteChange() {
         if (routeKey === location.href)
             return;
         routeKey = location.href;
+        CMU_DOM_WATCH.roomPanelMissUntil = 0;
+        CMU_DOM_WATCH.roomPanelSearchRoot = null;
+        CMU_DOM_WATCH.textObserver?.disconnect();
+        CMU_DOM_WATCH.textRoots.clear();
+        stopComposerSendWatch();
+        cleanupCmuInputCounter();
         invalidateCmuChatInputCache();
         cmuDraftSync();
         collapseComposerInput({ immediate: true, scrollToEnd: false });
@@ -15215,12 +17747,12 @@
         cmuCloseMessageSelectSheet();
         cmuLogCaptureExitMode(true);
         cmuLogCaptureClosePreview(true);
+        restoreGlobalHeaderShellLayout();
         if (!isEpisodePath()) {
             document.documentElement.classList.remove('cmu-header-reveal');
         }
         BADGE.cacheKey = '';
-        BADGE.apiCache = null;
-        BADGE.resultCache.clear();
+        resetBadgeCacheIfNeeded();
         RS.discovered = false;
         CMI.uiModeAt = 0;
         CMI.uiMode = '';
@@ -15228,6 +17760,7 @@
         DASH_SIDE.availableAt = 0;
         resetAnimatedThumbRouteState();
         scheduleInject('route');
+        scheduleIntegratedSideButtonsRouteRefreshLite();
         scheduleMobileChatListPopoverLayoutSettle();
         scheduleCmuEdgeMenuStateSync();
         if (settings.dashboard) {
@@ -15237,7 +17770,7 @@
         }
         scheduleRadiosondeRefresh(true);
     }
-    window.addEventListener('resize', () => {
+    cmuListen(window, 'resize', () => {
         applyState();
         if (cmuUserNoteGuardActive())
             return;
@@ -15253,14 +17786,14 @@
             ensureInlineBlocks(input);
     }, { passive: true });
     try {
-        window.visualViewport?.addEventListener?.('resize', scheduleCmuMenuSwipeZonePosition, { passive: true });
-        window.visualViewport?.addEventListener?.('scroll', scheduleCmuMenuSwipeZonePosition, { passive: true });
-        window.visualViewport?.addEventListener?.('resize', scheduleComposerExpandSync, { passive: true });
-        window.visualViewport?.addEventListener?.('resize', scheduleCmuInputCounterSync, { passive: true });
+        cmuListen(window.visualViewport, 'resize', scheduleCmuMenuSwipeZonePosition, { passive: true });
+        cmuListen(window.visualViewport, 'scroll', scheduleCmuMenuSwipeZonePosition, { passive: true });
+        cmuListen(window.visualViewport, 'resize', scheduleComposerExpandSync, { passive: true });
+        cmuListen(window.visualViewport, 'resize', scheduleCmuInputCounterSync, { passive: true });
     }
     catch (_) { }
     ['fullscreenchange', 'webkitfullscreenchange'].forEach(type => {
-        document.addEventListener(type, () => syncCmuFullscreenControls(document), true);
+        cmuListen(document, type, () => syncCmuFullscreenControls(document), true);
     });
     cmuRegisterGlobalGesture('native-situation-image', signal => {
         ['pointerdown', 'mousedown', 'touchstart'].forEach(type => {
@@ -15278,7 +17811,7 @@
             handleNativeSituationImageToggleLite(e.target);
         }, true);
     });
-    document.addEventListener('click', (e) => {
+    cmuListen(document, 'click', (e) => {
         if (isCmuProtectedEditorTarget(e.target))
             return;
         const panel = document.getElementById(ID.panel);
@@ -15317,12 +17850,54 @@
     setTimeout(() => boot('late-1'), 600);
     setTimeout(() => boot('late-2'), 1800);
     CMU_RUNTIME.dispose = () => {
-        cmuSuspendGlobalGestures('dispose');
-        try {
-            CMU_USER_NOTE_STATE.observer?.disconnect?.();
-        }
-        catch (_) { }
+        if (CMU_RUNTIME.disposed)
+            return;
+        // Flush user input before disabling scheduling and detaching the UI.
+        try { cmuDraftFlush('dispose'); } catch (_) { }
+        CMU_RUNTIME.disposed = true;
+        CMU_DRAFT.restoreToken += 1;
+        CMU_DRAFT.verifyToken += 1;
+        const safely = fn => { try { fn(); } catch (_) { } };
+        safely(restoreGlobalHeaderShellLayout);
+        safely(cmuDisposeResources);
+        CMU_INPUT_COUNTER.disposed = true;
+        safely(cleanupCmuInputCounter);
+        safely(stopComposerSendWatch);
+        safely(() => cmuSuspendGlobalGestures('dispose'));
+        safely(disconnectComposerExpandResizeObserver);
+        safely(() => collapseComposerInput({ immediate: true, scrollToEnd: false }));
+        safely(resetDashboardLayout);
+        safely(clearRsInlineHost);
+        safely(clearComposerExpandButtonHost);
+        safely(cmuMessageActionsClearGesture);
+        safely(cmuMessageActionsCloseMenu);
+        safely(cmuCloseMessageSelectSheet);
+        safely(() => cmuLogCaptureExitMode(true));
+        safely(() => cmuLogCaptureClosePreview(true));
+        safely(clearThemeDecorations);
+        safely(() => document.querySelectorAll('[data-cmu-animated-thumb]').forEach(restoreAnimatedThumbImage));
+        safely(() => document.querySelectorAll('.crack-ui-empty-send-blocked, button[data-crack-ui-empty-send-guard]').forEach(clearEmptySendGuardButton));
+        safely(() => {
+            for (const key of ['cmuComposerExpandBound', 'cmuRoomPanelReleaseBound', 'cmuMenuSwipeDocBound', 'cmuSendGuardBound', 'cmuAnswerCostBound'])
+                delete document.documentElement.dataset[key];
+            for (const name of [...document.documentElement.classList]) {
+                if (name.startsWith('cmu-'))
+                    document.documentElement.classList.remove(name);
+            }
+            nmfResetMenuVisibilityRuntime();
+        });
+        safely(() => {
+            for (const id of [...Object.values(ID), 'igx-live-popup', 'chud-info-menu', 'chud-side-menu', 'chud-side-dropdown'])
+                document.getElementById(id)?.remove();
+            document.querySelectorAll('.cmu-message-badge, .cmu-user-badge-row, .cmi-model-badge, .cmi-model-slot, .cac-answer-cost').forEach(el => el.remove());
+        });
         CMU_USER_NOTE_STATE.observer = null;
+        CMU_DOM_PENDING_GROUPS.clear();
+        CMU_DOM_PENDING_MARKDOWNS.clear();
+        CMU_DOM_PENDING_QUOTES.clear();
+        CMU_DOM_WATCH.textRoots.clear();
+        CMU_DOM_WATCH.thumbNodes.clear();
+        CMU_DOM_WATCH.ownedRecords = new WeakMap();
         if (document.documentElement?.getAttribute(CMU_RUNTIME_ATTR) === VERSION)
             document.documentElement.removeAttribute(CMU_RUNTIME_ATTR);
         try {
