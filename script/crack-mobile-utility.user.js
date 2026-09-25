@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.5.3.2
-// @description  모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
+// @version      4.5.5.1
+// @description  코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
 // @author       Assistant
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
@@ -31,7 +31,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.5.3.2';
+    const VERSION = '4.5.5.1';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -883,12 +883,13 @@
             // Render only newly available visible groups; no full badge pass.
             if (getChatId() === meta.chatId) {
                 BADGE.apiCache = null;
-                for (const msg of json.data.messages) {
-                    const id = messageIdOf(msg);
-                    if (!isObjectId(id)) continue;
+                const ids = new Set(json.data.messages.map(messageIdOf).filter(isObjectId));
+                for (const [key, resolved] of BADGE.resultCache) {
+                    if (ids.has(key.split(':')[0]) || ids.has(resolved?.messageId))
+                        BADGE.resultCache.delete(key);
+                }
+                for (const id of ids) {
                     BADGE.missCache.delete(id);
-                    for (const key of BADGE.resultCache.keys())
-                        if (key.split(':')[0] === id) BADGE.resultCache.delete(key);
                     const group = document.querySelector(`[data-message-group-id="${id}"]`);
                     if (group) cmuRouterAddGroup(group);
                 }
@@ -3450,6 +3451,89 @@
       pointer-events: none !important;
     }
     `);
+    addStyle(`
+    /* Soft wrap changes presentation only; copied source and indentation stay intact. */
+    html.cmu-enabled[data-cmu-theme] main [data-message-group-id] :is(.wrtn-codeblock, pre),
+    html.cmu-enabled[data-cmu-theme] main [data-message-group-id] .wrtn-codeblock > div {
+      min-width: 0 !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      overflow-x: hidden !important;
+    }
+    html.cmu-enabled[data-cmu-theme] main [data-message-group-id] pre,
+    html.cmu-enabled[data-cmu-theme] main [data-message-group-id] :is(.wrtn-codeblock, pre) :is(pre, code, .line, span, em, i, strong, b, a) {
+      white-space: pre-wrap !important;
+      overflow-wrap: anywhere !important;
+      word-break: normal !important;
+    }
+    html.cmu-enabled[data-cmu-theme] main [data-message-group-id] pre > code {
+      display: block !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+    /* 4.5.5: scoped light palette; native dark highlighting remains intact. */
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] :is(.wrtn-markdown, .markdown-body, .prose) {
+      color: var(--cmu-theme-readable-text) !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] :is(.wrtn-markdown, .markdown-body, .prose) :is(td, th, dt, dd) {
+      color: var(--cmu-theme-readable-text) !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] :is(.wrtn-markdown, .markdown-body, .prose) span:not(:where([data-cmu-theme-quote], [data-sgb-quote], pre *, code *, .not-wrtn-markdown *, button *, [role="button"] *)) {
+      color: inherit !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] :is(.wrtn-markdown, .markdown-body, .prose) :is(em, i):not(:where(pre *, code *, .not-wrtn-markdown *)) {
+      color: #595c66 !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] :is(.wrtn-markdown, .markdown-body, .prose) :is(strong, b):not(:where(pre *, code *, .not-wrtn-markdown *)) {
+      color: var(--cmu-theme-strong-text) !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] main [data-cmu-theme-message-group] code:not(:where(pre *, .wrtn-codeblock *)) {
+      color: #563b60 !important;
+      background: #eee8f0 !important;
+      text-shadow: none !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"][data-cmu-theme-code="on"] main :is(pre[data-cmu-theme-codeblock], .wrtn-codeblock[data-cmu-theme-codeblock]) {
+      color: #30323a !important;
+      background: #f2f3f5 !important;
+      border-color: #cdd0d6 !important;
+      color-scheme: light;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"][data-cmu-theme-code="on"] main :is(pre[data-cmu-theme-codeblock], .wrtn-codeblock[data-cmu-theme-codeblock]) :is(div, pre, code, span, em, i, strong, b, a, button, svg) {
+      color: #30323a !important;
+      background: transparent !important;
+      text-shadow: none !important;
+      -webkit-text-fill-color: currentColor;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"][data-cmu-theme-code="on"] main .wrtn-codeblock[data-cmu-theme-codeblock] > :first-child:not(pre):not(code) {
+      background: #e6e8ed !important;
+    }
+    html.cmu-theme-active[data-cmu-theme="light"] :is([data-cmu-theme-input-box], [data-sgb-input-box]) :is(.__chat_input_textarea, .ProseMirror[contenteditable="true"], textarea) {
+      color: #30323a !important;
+      caret-color: #30323a !important;
+    }
+    html[data-cmu-theme="light"] :is(#chud-infobar, #chud-sidebar) {
+      color: #595c66 !important;
+    }
+    html[data-cmu-theme="light"] :is(.cmu-message-badge, .cmu-user-badge-row .cmu-message-badge, .cac-answer-cost, .cmi-model-badge, .cmi-model-fallback) {
+      color: #626570 !important;
+      opacity: 1;
+    }
+    html[data-cmu-theme="light"] #${ID.composerExpandButton}.cmu-composer-expand-overlay {
+      color: #626570 !important;
+    }
+    html[data-cmu-theme="light"] #${ID.inputCounterCount} {
+      color: var(--cmu-input-counter-color, #626570) !important;
+      opacity: 1 !important;
+    }
+    html[data-cmu-theme="light"] #igx-live-popup.igx-light {
+      --c-active: #16733a;
+      --c-degraded: #805b00;
+      --c-impacted: #b52b2b;
+      --c-unknown: #626570;
+    }
+    html[data-cmu-theme="light"] #igx-live-popup.inline .blat { opacity: 1; }
+
+    `);
     function applyState() {
         const html = document.documentElement;
         const active = shouldRun();
@@ -5118,6 +5202,11 @@
         const { yellowStart, orangeStart, hotStart, limit } = CMU_INPUT_COUNTER;
         if (count < yellowStart)
             return '';
+        if (isCmuLightTheme()) {
+            if (count >= limit) return '#b42318';
+            const t = (count - yellowStart) / (limit - yellowStart);
+            return `hsl(${cmuInputCounterLerp(42, 0, t).toFixed(1)} 90% 28%)`;
+        }
         if (count >= limit)
             return '#ef4444';
         if (count < orangeStart) {
@@ -5134,7 +5223,7 @@
         countEl.classList.remove('cmu-input-counter-over-pulse');
         void countEl.offsetWidth;
         countEl.classList.add('cmu-input-counter-over-pulse');
-        CMU_INPUT_COUNTER.alertTimer = window.setTimeout(() => {
+        CMU_INPUT_COUNTER.alertTimer = setTimeout(() => {
             CMU_INPUT_COUNTER.alertTimer = 0;
             countEl.classList.remove('cmu-input-counter-over-pulse');
         }, 560);
@@ -5169,7 +5258,7 @@
             return;
         const count = cmuInputCounterLength(cmuInputCounterText(editor));
         // 위치만 바뀐 프레임에서는 동일한 텍스트/속성을 다시 쓰지 않는다.
-        if (CMU_INPUT_COUNTER.previousCount === count && CMU_INPUT_COUNTER.renderedElement === countEl)
+        if (CMU_INPUT_COUNTER.previousCount === count && CMU_INPUT_COUNTER.renderedElement === countEl && CMU_INPUT_COUNTER.renderedTheme === detectCmuTheme())
             return;
         const formattedCount = count.toLocaleString('ko-KR');
         countEl.textContent = formattedCount;
@@ -5186,6 +5275,7 @@
             cmuInputCounterAlert(countEl);
         CMU_INPUT_COUNTER.previousCount = count;
         CMU_INPUT_COUNTER.renderedElement = countEl;
+        CMU_INPUT_COUNTER.renderedTheme = detectCmuTheme();
     }
     function scheduleCmuInputCounterSync() {
         if (CMU_INPUT_COUNTER.disposed || CMU_INPUT_COUNTER.updateFrame || cmuUserNoteGuardActive())
@@ -5880,7 +5970,7 @@
         bar.style.setProperty('opacity', '0', 'important');
         bar.style.setProperty('pointer-events', 'auto', 'important');
         bar.style.setProperty('transition', 'none', 'important');
-        LOG_CAPTURE.barRetireTimer = window.setTimeout(() => {
+        LOG_CAPTURE.barRetireTimer = setTimeout(() => {
             if (bar.isConnected)
                 bar.remove();
             LOG_CAPTURE.barRetireTimer = 0;
@@ -7993,11 +8083,11 @@
         return open;
     }
     function scheduleCmuRoomPanelStateSync() {
-        cmuRoomPanelStateTimers.forEach(timer => window.clearTimeout(timer));
+        cmuRoomPanelStateTimers.forEach(timer => clearTimeout(timer));
         cmuRoomPanelStateTimers = [];
         const steps = [0, 80, 220, 480, 850, 1400];
         steps.forEach(ms => {
-            const timer = window.setTimeout(() => {
+            const timer = setTimeout(() => {
                 syncCmuRightRoomMenuOpenState();
                 if (ms === steps[steps.length - 1])
                     cmuRoomPanelStateTimers = [];
@@ -8073,11 +8163,11 @@
     }
     let cmuEdgeMenuStateTimers = [];
     function scheduleCmuEdgeMenuStateSync() {
-        cmuEdgeMenuStateTimers.forEach((timer) => window.clearTimeout(timer));
+        cmuEdgeMenuStateTimers.forEach((timer) => clearTimeout(timer));
         cmuEdgeMenuStateTimers = [];
         const steps = CMU_EDGE_SYNC_STEPS;
         steps.forEach((ms) => {
-            const timer = window.setTimeout(() => {
+            const timer = setTimeout(() => {
                 syncCmuEdgeMenuOpenState();
                 if (ms === steps[steps.length - 1])
                     cmuEdgeMenuStateTimers = [];
@@ -8127,7 +8217,7 @@
         if (!(zone instanceof HTMLElement))
             return;
         zone.classList.add('cmu-swipe-feedback');
-        window.setTimeout(() => zone.classList.remove('cmu-swipe-feedback'), CMU_MENU_SWIPE.FEEDBACK_MS);
+        setTimeout(() => zone.classList.remove('cmu-swipe-feedback'), CMU_MENU_SWIPE.FEEDBACK_MS);
     }
     function cmuPointInMenuSwipeZone(event) {
         if (!cmuMenuSwipeZoneActive())
@@ -8689,7 +8779,7 @@
     }
     function scheduleCmuStatBarMark(delay = 40) {
         clearTimeout(cmuStatBarMarkTimer);
-        cmuStatBarMarkTimer = window.setTimeout(markCmuStatBar, Math.max(0, Number(delay) || 0));
+        cmuStatBarMarkTimer = setTimeout(markCmuStatBar, Math.max(0, Number(delay) || 0));
     }
     function renderFullscreenRow() {
         const supported = isCmuFullscreenSupported();
@@ -9531,7 +9621,7 @@
             if (!sig)
                 return;
             clearTimeout(CMU_PANEL_INPUT.fallbackTimer);
-            CMU_PANEL_INPUT.fallbackTimer = window.setTimeout(() => {
+            CMU_PANEL_INPUT.fallbackTimer = setTimeout(() => {
                 CMU_PANEL_INPUT.fallbackTimer = 0;
                 if (!panel.isConnected || !panel.contains(node))
                     return;
@@ -9573,7 +9663,7 @@
                     rules[index][field] = ruleInput.value || '';
                     settings.logCaptureRules = rules;
                     clearTimeout(cmuLcRuleSaveTimer);
-                    cmuLcRuleSaveTimer = window.setTimeout(saveSettings, 300);
+                    cmuLcRuleSaveTimer = setTimeout(saveSettings, 300);
                 }
                 return;
             }
@@ -16463,7 +16553,20 @@
             `[data-radix-popper-content-wrapper] [data-radix-collection-item]:has(img[srcset*="model-icon/${urlToken}.webp"])`,
             `[data-radix-popper-content-wrapper] button:has(img[src*="model-icon/${urlToken}.webp"])`
         ].join(',\n');
-        const css = hiddenEntries.map(m => {
+        // 순정 Popover의 고정 높이를 숨김 항목이 있는 모델창에만 해제한다.
+        // 기존 모델 숨김 선택자/설정 저장 방식은 그대로 유지한다.
+        const compactSelectors = hiddenEntries.flatMap(m => {
+            const tokens = Array.from(new Set([nmfIconUrlToken(m.token), nmfIconFlatToken(m.token)].filter(Boolean)));
+            return tokens.flatMap(token => ['src', 'srcset'].map(attr =>
+                `[data-radix-popper-content-wrapper] [role="dialog"]:has(button img[${attr}*="model-icon/${token}.webp"])`));
+        });
+        const compactCss = compactSelectors.length ? `${compactSelectors.join(',\n')} {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: min(569px, var(--radix-popover-content-available-height, calc(100dvh - 24px))) !important;
+            overflow-y: auto;
+        }` : '';
+        const css = compactCss + '\n' + hiddenEntries.map(m => {
             const urlTokens = Array.from(new Set([
                 nmfIconUrlToken(m.token),
                 nmfIconFlatToken(m.token)
@@ -17201,27 +17304,27 @@
       cursor: text;
     }
 
-    html.cmu-light #cmu-message-select-copy .cmu-select-sheet,
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-sheet,
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-sheet {
       background: #f7f7f8;
       color: #171719;
     }
 
-    html.cmu-light #cmu-message-select-copy .cmu-select-head::before,
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-head::before,
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-head::before {
       background: rgba(0,0,0,.24);
     }
 
-    html.cmu-light #cmu-message-select-copy .cmu-select-close,
-    html.cmu-light #cmu-message-select-copy .cmu-select-mode,
-    html.cmu-light #cmu-message-select-copy .cmu-select-copy-all,
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-close,
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-mode,
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-copy-all,
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-close,
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-mode,
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-copy-all {
       background: rgba(0,0,0,.07);
     }
 
-    html.cmu-light #cmu-message-select-copy .cmu-select-mode button[aria-pressed="true"],
+    html[data-cmu-theme="light"] #cmu-message-select-copy .cmu-select-mode button[aria-pressed="true"],
     body[data-theme="light"] #cmu-message-select-copy .cmu-select-mode button[aria-pressed="true"] {
       background: rgba(0,0,0,.10);
     }
@@ -17986,10 +18089,8 @@
             cmuRouterAddGroup(directGroup);
             return;
         }
+        // Each collected group already queues its markdown descendants.
         node.querySelectorAll?.('[data-message-group-id]').forEach(cmuRouterAddGroup);
-        if (node.matches?.(CMU_ROUTER_MARKDOWN_SELECTOR))
-            cmuRouterAddMarkdown(node);
-        node.querySelectorAll?.(CMU_ROUTER_MARKDOWN_SELECTOR).forEach(cmuRouterAddMarkdown);
     }
     function cmuNodeTouchesComposer(node) {
         if (!(node instanceof Element))
@@ -18136,6 +18237,7 @@
         if (statDirty)
             scheduleCmuStatBarMark();
         if (themeDirty) {
+            scheduleCmuInputCounterSync();
             applyRadiosondeTheme();
             scheduleThemeDecorate(true);
         }
@@ -18279,7 +18381,7 @@
     }
     function installCmuThemeRootWatch() {
         CMU_DOM_WATCH.themeObserver?.disconnect();
-        const signature = () => `${detectCmuTheme()}:${isCmuLightTheme()}`;
+        const signature = detectCmuTheme;
         CMU_DOM_WATCH.themeSignature = signature();
         CMU_DOM_WATCH.themeObserver = new MutationObserver(() => {
             const next = signature();
@@ -18408,6 +18510,16 @@
         CMU_DOM_WATCH.attributeKey = '';
         syncCmuDomWatchOptions();
         installCmuThemeRootWatch();
+        if (!CMU_DOM_WATCH.themeMedia && window.matchMedia) {
+            CMU_DOM_WATCH.themeMedia = window.matchMedia('(prefers-color-scheme: light)');
+            cmuListen(CMU_DOM_WATCH.themeMedia, 'change', () => {
+                const next = detectCmuTheme();
+                if (next === CMU_DOM_WATCH.themeSignature) return;
+                CMU_DOM_WATCH.themeSignature = next;
+                CMU_DOM_ROUTER.themeDirty = true;
+                scheduleCmuDomRouterFlush();
+            });
+        }
     }
     const CMU_DOUBLE_OPEN = new Set(['"', '“', '「', '❝']);
     const CMU_DOUBLE_CLOSE = new Set(['"', '”', '」', '❞']);
@@ -18416,19 +18528,24 @@
     const CMU_QUOTE_CHAR_RE = /["'“”‘’「」❝❞]/;
     const CMU_THEME_STATE = { quoteSeq: 0, quoteHealTimer: 0, quoteHealUntil: 0, nativeHealAt: 0, quoteWraps: new Map() };
     function detectCmuTheme() {
-        const hints = [
-            document.documentElement.getAttribute('data-theme'),
-            document.body?.getAttribute('data-theme'),
-            document.documentElement.className,
-            document.body?.className,
-            document.documentElement.style.colorScheme,
-            document.body?.style?.colorScheme,
-        ].join(' ').toLowerCase();
-        if (/\bdark\b|theme-dark|dark-mode|color-scheme-dark/.test(hints))
-            return 'dark';
-        if (/\blight\b|theme-light|light-mode|color-scheme-light/.test(hints))
-            return 'light';
-        return 'dark';
+        // Explicit site selection wins over stale classes and OS preference.
+        const roots = [document.body, document.documentElement];
+        for (const root of roots) {
+            const value = root?.getAttribute('data-theme')?.trim().toLowerCase();
+            if (value === 'light' || value === 'dark') return value;
+        }
+        for (const root of roots) {
+            const tokens = String(root?.className || '').toLowerCase().split(/\s+/);
+            for (const mode of ['light', 'dark']) {
+                if (tokens.some(token => [mode, 'theme-' + mode, mode + '-mode', 'color-scheme-' + mode].includes(token)))
+                    return mode;
+            }
+        }
+        for (const root of roots) {
+            const scheme = root?.style?.colorScheme?.trim().toLowerCase();
+            if (scheme === 'light' || scheme === 'dark') return scheme;
+        }
+        return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
     }
     function isCmuLightTheme() {
         return detectCmuTheme() === 'light';
@@ -18693,9 +18810,11 @@
     }
     function cmuPruneStaleQuoteWraps() {
         const wraps = CMU_THEME_STATE.quoteWraps;
-        if (!(wraps instanceof Map) || wraps.size < 400)
-            return;
-        for (const [groupId, record] of Array.from(wraps.entries())) {
+        if (!(wraps instanceof Map) || wraps.size < 400) return;
+        const now = Date.now();
+        if (now - (CMU_THEME_STATE.lastQuotePruneAt || 0) < 2000) return;
+        CMU_THEME_STATE.lastQuotePruneAt = now;
+        for (const [groupId, record] of wraps) {
             const nodes = Array.isArray(record?.insertedNodes) ? record.insertedNodes : [];
             const alive = record?.originalNode?.isConnected || nodes.some(n => n?.isConnected);
             if (!alive)
@@ -19012,10 +19131,7 @@
         const popup = document.getElementById('igx-live-popup');
         if (!popup)
             return;
-        const bodyTheme = document.body?.getAttribute('data-theme');
-        const htmlTheme = document.documentElement?.getAttribute('data-theme');
-        const isDark = bodyTheme === 'dark' || htmlTheme === 'dark' || document.documentElement.classList.contains('dark');
-        popup.classList.toggle('igx-light', !isDark);
+        popup.classList.toggle('igx-light', isCmuLightTheme());
     }
     function bindRadiosondeRefreshButton(popup = document.getElementById('igx-live-popup')) {
         const button = popup?.querySelector?.('.btn-refresh');
@@ -19073,6 +19189,7 @@
         }
         restartRsAutoTimer();
     }
+    const CMU_RS_LINE_RENDER = new WeakMap();
     function renderRsLine(text = '', forceText = false) {
         if (!shouldRun() || !settings.radiosonde)
             return;
@@ -19087,15 +19204,24 @@
             refresh.setAttribute('aria-label', text || '라디오존데 갱신');
         }
         if (text && (forceText || !RS.last.size)) {
-            line.textContent = text;
+            CMU_RS_LINE_RENDER.delete(line);
+            if (line.textContent !== text) line.textContent = text;
             return;
         }
-        const frag = document.createDocumentFragment();
         const models = getRsVisibleModels();
         if (!models.length) {
-            line.textContent = '표시할 모델 없음 · 설정에서 선택';
+            CMU_RS_LINE_RENDER.delete(line);
+            if (line.textContent !== '표시할 모델 없음 · 설정에서 선택') line.textContent = '표시할 모델 없음 · 설정에서 선택';
             return;
         }
+        const key = JSON.stringify([settings.radiosondeLatency !== false, models.map(model => {
+            const data = RS.last.get(model.slug);
+            return [model.slug, model.label, model.short, data?.status, data?.score, data?.lat, data?.fetchedAt];
+        })]);
+        const previous = CMU_RS_LINE_RENDER.get(line);
+        if (previous?.key === key && previous.first === line.firstChild && line.childElementCount === models.length)
+            return;
+        const frag = document.createDocumentFragment();
         const scrollLeft = line.scrollLeft;
         for (const model of models) {
             const data = RS.last.get(model.slug) || { status: 'unknown', score: '—', lat: '—' };
@@ -19110,6 +19236,7 @@
             frag.appendChild(item);
         }
         line.replaceChildren(frag);
+        CMU_RS_LINE_RENDER.set(line, { key, first: line.firstChild });
         line.scrollLeft = scrollLeft;
     }
     function handleSameChatSelfClick(event) {
