@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.5.5.1
-// @description  코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
-// @author       Assistant
+// @version      4.5.7.3
+// @description  라디오존데 모델 목록 합치기(새 모델 누락 수정), 입력창 아래 버튼 개별 숨기기, 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
+// @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @match        *://crack.wrtn.ai/*
@@ -31,7 +31,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.5.5.1';
+    const VERSION = '4.5.7.3';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -223,6 +223,8 @@
         outputModelHidden: 'cmu_output_model_hidden_v1',
         outputModelSeen: 'cmu_output_model_seen_v1',
         modelMeta: 'cmu_model_meta_v1',
+        composerHidden: 'cmu_composer_hidden_v1',
+        composerHiddenBackup: 'cmu_composer_hidden_v1_backup',
     };
     const DEFAULTS = {
         enabled: true,
@@ -2630,6 +2632,51 @@
     }
     #cmu-settings-panel .qputil .chip:disabled,
     #cmu-settings-panel .qputil .chip[aria-disabled="true"] { opacity: .38; cursor: not-allowed; filter: grayscale(.45); }
+    /* 입력창 아래 버튼 칩 — 복제한 순정/확프 아이콘은 크기만 맞추고 켜짐/꺼짐은 명도로 구분 */
+    /* 짧은 이름표와 함께 380px에서 두세 줄에 들어가도록 조금 촘촘하게 */
+    #cmu-settings-panel .qputil #g-composer.chips { gap: 5px; padding: 10px 8px 12px; }
+    #cmu-settings-panel .qputil #g-composer .chip {
+      min-height: 36px;
+      max-width: 100%;
+      min-width: 0;
+      gap: 3px;
+      padding: 6px 7px;
+      font-size: 12px;
+      letter-spacing: -.1px;
+      text-align: left;
+    }
+    #cmu-settings-panel .qputil #g-composer .chip .ci.cmu-composer-chip-icon,
+    #cmu-settings-panel .qputil #g-composer .chip .ci.cmu-composer-chip-glyph,
+    #cmu-settings-panel .qputil #g-composer .chip .ci.cmu-composer-chip-img {
+      width: 14px !important;
+      height: 14px !important;
+      flex: 0 0 14px !important;
+      object-fit: contain;
+      opacity: .45;
+      transform: none !important;
+      filter: grayscale(.3);
+    }
+    #cmu-settings-panel .qputil #g-composer .chip .ci.cmu-composer-chip-glyph {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      line-height: 1;
+      overflow: hidden;
+    }
+    #cmu-settings-panel .qputil #g-composer .chip.ck .ci.cmu-composer-chip-icon,
+    #cmu-settings-panel .qputil #g-composer .chip.ck .ci.cmu-composer-chip-glyph,
+    #cmu-settings-panel .qputil #g-composer .chip.ck .ci.cmu-composer-chip-img { opacity: 1; filter: none; }
+    /* 표에 없는 버튼의 이모지 아이콘은 켜짐/꺼짐 모두 흑백 */
+    #cmu-settings-panel .qputil #g-composer .chip .ci.cmu-composer-chip-glyph.cmu-composer-chip-emoji,
+    #cmu-settings-panel .qputil #g-composer .chip.ck .ci.cmu-composer-chip-glyph.cmu-composer-chip-emoji { filter: grayscale(1) !important; }
+    #cmu-settings-panel .qputil #g-composer .cmu-composer-chip-text { min-width: 0; overflow-wrap: anywhere; }
+    #cmu-settings-panel .qputil #g-composer .cmu-composer-absent {
+      display: block;
+      margin-top: 1px;
+      font-size: 10.5px;
+      opacity: .7;
+    }
 
     /* 스테퍼 — 숫자가 위아래로 굴러가며 바뀜 */
     #cmu-settings-panel .qputil .step { display: inline-flex; align-items: center; gap: 10px; flex: none; }
@@ -5377,6 +5424,8 @@
             logCaptureBtn.remove();
         }
         ensureComposerExpandButton(input);
+        if (Object.keys(cmuComposerHiddenMap()).length)
+            cmuComposerMarkBar(input);
         watchComposerScope(info?.scope || fallbackHost || input.closest?.('form') || input.parentElement);
         if (syncInline)
             ensureInlineBlocks(input);
@@ -7396,6 +7445,19 @@
             page.classList.remove('cmu-in-r', 'cmu-in-l');
         }, 460);
     }
+    // 검색 결과가 한 탭에만 있으면 그 탭을 현재 탭으로 삼는다. 검색을 닫으면 그 탭이 보인다.
+    function cmuGoSettingsTab(panel, id) {
+        const next = normalizeCmuSettingsTab(id);
+        if (!panel || next !== id)
+            return;
+        cmuSettingsTab = next;
+        panel.querySelectorAll('.cmu-tab').forEach(b => {
+            const on = b.dataset.tab === next;
+            b.classList.toggle('on', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        cmuPanelShowPage(panel, next, 0);
+    }
     function cmuSetSettingsSearchOpen(panel, open, focus = false) {
         cmuSettingsSearchOpen = !!open;
         const head = panel?.querySelector?.('.cmu-panel-head');
@@ -7413,8 +7475,14 @@
                 input.blur();
             }
             panel?.querySelector?.('.cmu-search')?.classList.remove('has');
-            if (panel)
+            if (panel) {
                 cmuApplySettingsSearch(panel);
+                clearTimeout(CMU_PANEL_ANIM.indTimer);
+                CMU_PANEL_ANIM.indTimer = setTimeout(() => {
+                    CMU_PANEL_ANIM.indTimer = 0;
+                    cmuPanelPlaceTabIndicator(panel, true);
+                }, 300);
+            }
             return;
         }
         if (focus && input) {
@@ -7459,6 +7527,9 @@
             return false;
         if (key === 'fullscreenButton' && !isCmuFullscreenSupported())
             return false;
+        // 설정값이 아닌 가상 키: 숨긴 입력창 아래 버튼이 하나라도 있으면 켜짐.
+        if (key === 'composerButtons')
+            return Object.keys(cmuComposerHiddenMap()).length > 0;
         return !!settings[key];
     }
     function cmuTabActive(tab) {
@@ -7585,12 +7656,12 @@
     const CMU_TAB_ICONONLY_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>`;
     const CMU_SEARCH_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>`;
     const CMU_TABS = Object.freeze([
-        { id: 'ui', icon: Q_ICONS.ui, label: 'UI', keys: ['autoHideHeader', 'wideView', 'hideStatBar', 'fullscreenButton', 'composerExpandButton', 'inputCharacterCounter', 'mobileMenuSwipeZone', 'mobileLeftMenuButton', 'mobileRightMenuButton', 'emptySendGuard', 'draftAutoSave', 'hideEndingHint', 'hideImageGenerateButton'] },
+        { id: 'ui', icon: Q_ICONS.ui, label: 'UI', keys: ['autoHideHeader', 'wideView', 'hideStatBar', 'fullscreenButton', 'composerExpandButton', 'inputCharacterCounter', 'mobileMenuSwipeZone', 'mobileLeftMenuButton', 'mobileRightMenuButton', 'emptySendGuard', 'draftAutoSave', 'hideEndingHint'] },
         { id: 'message', icon: Q_ICONS.message, label: '길게 누르기', keys: ['messageLongPressMenu'] },
         { id: 'theme', icon: Q_ICONS.theme, label: '테마', keys: ['themeSkin'] },
         { id: 'radiosonde', icon: Q_ICONS.radio, label: '라존데', keys: ['radiosonde'] },
-        { id: 'dashboard', icon: Q_ICONS.dash, label: '대시보드', keys: ['dashboard', 'dashboardSidebar'] },
-        { id: 'badge', icon: Q_ICONS.badge, label: '배지', keys: ['badgeChars', 'badgeTime', 'modelIcon', 'answerCost'] },
+        { id: 'dashboard', icon: Q_ICONS.dash, label: '대시보드', keys: ['dashboard', 'dashboardSidebar', 'composerButtons'] },
+        { id: 'badge', icon: Q_ICONS.badge, label: '배지', keys: ['badgeChars', 'badgeTime', 'modelIcon', 'answerCost', 'hideImageGenerateButton'] },
         { id: 'nativemodel', icon: Q_ICONS.filter, label: '모델', keys: ['nativeModelFilter', 'outputModelFilter'] },
         { id: 'capture', icon: Q_ICONS.capture, label: '로그 캡처', keys: ['logCapture'] }
     ]);
@@ -7638,14 +7709,19 @@
             return;
         }
         let hit = 0;
+        const hitPages = new Set();
         panel.querySelectorAll('.cmu-page .subrow').forEach(r => {
             const ok = (r.dataset.search || '').includes(q);
             r.classList.toggle('cmu-hit-off', !ok);
-            if (ok)
+            if (ok) {
                 hit++;
+                hitPages.add(r.closest('.cmu-page')?.dataset.page || '');
+            }
         });
         if (empty)
             empty.hidden = hit > 0;
+        if (hitPages.size === 1)
+            cmuGoSettingsTab(panel, Array.from(hitPages)[0]);
     }
     function qSwitch(key, title, note = '', opts = {}) {
         const externalProvider = isCmuThemeSettingKey(key) ? detectCmuExternalThemeProvider() : '';
@@ -9129,6 +9205,610 @@
     function cmuThemeShouldUseChatBorderlessOnly() {
         return cmuThemeUiModeForSettings() === 'chat';
     }
+    // 입력창 아래 도구줄 버튼 숨기기: 설정을 열 때만 한 번 훑고, 숨김은 CSS 규칙으로만 처리한다.
+    // 열쇠는 id → aria-label → title → 첫 svg path d 앞 24자 순서. class는 크랙이 자주 바꿔서 쓰지 않는다.
+    const CMU_COMPOSER_STYLE_ID = 'cmu-composer-hide-style';
+    const CMU_COMPOSER_BUTTON_SELECTOR = 'button, [role="button"]';
+    const CMU_COMPOSER_EXCLUDE_ROOTS = `#${ID.panel}, #${ID.dashboard}, #${ID.dashboardSidebar}, #chud-info-menu, #chud-side-menu, #igx-live-popup, [data-message-group-id]`;
+    const CMU_COMPOSER_INPUT_SELECTOR = '.__chat_input_textarea, textarea, [contenteditable="true"]';
+    const CMU_COMPOSER_ICON_MAX = 6000;
+    const CMU_COMPOSER_SVG_TAGS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon']);
+    // 칩 짧은 이름표. 확프 버튼은 상태에 따라 이름표가 바뀌므로 id·아이콘처럼 바뀌지 않는 값으로 알아본다.
+    const CMU_COMPOSER_SHORT_NAMES = Object.freeze([
+        { id: 'ciw-toolbar-button', name: '입력 감싸기' },
+        { path: 'm12.8 10.62', name: '지문' },
+        { aria: '단축어', name: '단축어' },
+        { path: 'm13.8 2.58', name: '추천 답변' },
+        { id: 'delete-mode-toggle-button', name: '휴지통' },
+        { id: 'copy-mode-toggle-button', name: '복사' },
+        { id: 'ch-inline-launch', name: '크랙 도우미' },
+        { id: 'crac-memo-btn', name: '메모' },
+        { id: 'crack-pure-trans-btn', name: '뮤즈-번역' },
+        { id: 'crack-pure-magic-btn', name: '뮤즈' },
+    ]);
+    // WRMC가 나중에 도구줄 버튼을 넣을 때를 대비한 알아보기(이름 「위시」).
+    const CMU_COMPOSER_WISH_SELF = '.wish-mon-core, [id^="wish-rp"], [aria-label*="Wish RP Manager"], [title*="Wish RP Manager"]';
+    const CMU_COMPOSER_WISH_INNER = '.wish-mon-core, [id^="wish-rp"]';
+    // 이모지·색 배경으로 그리는 버튼은 칩에서 한 가지 색 선 아이콘으로 바꿔 그린다(다른 칩 아이콘과 같은 24칸 · 선 굵기 2).
+    // 뮤즈는 동그라미 테두리 안에 ✦.
+    const CMU_COMPOSER_LINE_ICONS = Object.freeze({
+        'id:crack-pure-magic-btn': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.6l1.3 4.1 4.1 1.3-4.1 1.3-1.3 4.1-1.3-4.1-4.1-1.3 4.1-1.3z" fill="currentColor" stroke="none"/></svg>',
+        'id:crac-memo-btn': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5v-.7a.8.8 0 0 1 .8-.8h4.4a.8.8 0 0 1 .8.8v.7M9 11h6M9 15h4"/></svg>',
+        'id:crack-pure-trans-btn': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/></svg>',
+    });
+    // 칠해진 부분이 하나도 없는 아이콘은 이 글자로 대신한다.
+    const CMU_COMPOSER_EMPTY_GLYPH = '✦';
+    // 루트 svg에서 안쪽 <g>로 옮기는 칠 속성(설정 패널의 `#cmu-settings-panel svg` 규칙이 루트를 덮어쓰므로).
+    const CMU_COMPOSER_PAINT_ATTRS = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'fill-opacity', 'fill-rule', 'clip-rule'];
+    const CMU_COMPOSER_SHAPES = 'path, circle, ellipse, rect, line, polyline, polygon';
+    let cmuComposerHiddenCache = null;
+    let cmuComposerScanMeta = new Map();
+    function cmuComposerCssString(value) {
+        return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\n\r\f]/g, ' ');
+    }
+    function cmuComposerKeySelector(key) {
+        const m = /^(id|aria|title|path|wish):([\s\S]+)$/.exec(String(key || ''));
+        if (!m || !m[2].trim())
+            return '';
+        if (m[1] === 'id')
+            return `#${CSS.escape(m[2])}`;
+        if (m[1] === 'wish')
+            return `:is(button, [role="button"]):is(${CMU_COMPOSER_WISH_SELF}, :has(${CMU_COMPOSER_WISH_INNER}))`;
+        if (m[1] === 'aria')
+            return `:is(button, [role="button"])[aria-label="${cmuComposerCssString(m[2])}"]`;
+        if (m[1] === 'title')
+            return `:is(button, [role="button"])[title="${cmuComposerCssString(m[2])}"]`;
+        return `:is(button, [role="button"]):has(svg path[d^="${cmuComposerCssString(m[2])}"])`;
+    }
+    function cmuComposerHiddenMap() {
+        if (cmuComposerHiddenCache)
+            return cmuComposerHiddenCache;
+        const read = key => {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+            }
+            catch (_) {
+                return null;
+            }
+        };
+        const source = read(LS.composerHidden) || read(LS.composerHiddenBackup) || {};
+        const map = {};
+        for (const [key, entry] of Object.entries(source)) {
+            if (!entry || entry.hidden !== true || !cmuComposerKeySelector(key))
+                continue;
+            // 예전에 긴 이름표로 저장된 항목도 새 짧은 이름으로 보여 준다.
+            map[key] = {
+                label: cmuComposerStoredLabel(key, entry.label),
+                icon: String(entry.icon || '').slice(0, CMU_COMPOSER_ICON_MAX),
+                hidden: true,
+            };
+        }
+        cmuComposerHiddenCache = map;
+        return map;
+    }
+    function cmuComposerSaveHidden(map) {
+        cmuComposerHiddenCache = map;
+        const serialized = JSON.stringify(map);
+        try {
+            localStorage.setItem(LS.composerHidden, serialized);
+            localStorage.setItem(LS.composerHiddenBackup, serialized);
+        }
+        catch (_) { }
+    }
+    function cmuComposerHideCss(map = cmuComposerHiddenMap()) {
+        const guard = `:not(#${ID.settingsButton}):not([data-crack-ui-empty-send-guard])`;
+        const depthScope = [1, 2, 3, 4, 5, 6]
+            .map(depth => `> ${'* > '.repeat(depth - 1)}:is(${CMU_COMPOSER_INPUT_SELECTOR})`)
+            .join(', ');
+        // 입력창에서 6단계 안쪽 조상 중 메시지를 품지 않은 곳 = 입력 영역.
+        const scope = `main :is(form, div):has(${depthScope}):not(:has([data-message-group-id]))`;
+        const outside = `:not([data-message-group-id] *):not(:is(#${ID.panel}, #${ID.dashboard}, #${ID.dashboardSidebar}, #igx-live-popup) *):not(:has(path[d^="M18.77 11.13"]))`;
+        const rules = [];
+        for (const key of Object.keys(map)) {
+            const sel = cmuComposerKeySelector(key);
+            if (!sel)
+                continue;
+            // 규칙마다 따로 두어 한 규칙이 깨져도(:has 미지원 등) 나머지는 살아 있게 한다.
+            rules.push(`html.cmu-enabled main [data-cmu-composer-bar="1"] ${sel}${guard} { display: none !important; }`);
+            rules.push(`html.cmu-enabled ${scope} ${sel}${guard}${outside} { display: none !important; }`);
+        }
+        return rules.join('\n');
+    }
+    function applyComposerHideCss() {
+        let el = document.getElementById(CMU_COMPOSER_STYLE_ID);
+        if (!shouldRun()) {
+            el?.remove();
+            return;
+        }
+        if (!el) {
+            el = document.createElement('style');
+            el.id = CMU_COMPOSER_STYLE_ID;
+            (document.head || document.documentElement).appendChild(el);
+        }
+        CMU_RESOURCES.styles.add(el);
+        const css = cmuComposerHideCss();
+        if (el.textContent !== css)
+            el.textContent = css;
+    }
+    function cmuComposerButtonRoots(input = findChatInput()) {
+        if (!(input instanceof Element))
+            return [];
+        const main = input.closest('main');
+        // 버튼에서 위로 올라가다 입력창을 품은 조상 바로 아래에서 멈춘 곳이 도구줄 영역이다.
+        const climb = start => {
+            let node = start;
+            let best = null;
+            for (let depth = 0; node && depth < 8; depth++, node = node.parentElement) {
+                if (node === main || node === document.body || node === document.documentElement)
+                    return null;
+                if (node.contains(input))
+                    return best;
+                best = node;
+            }
+            return null;
+        };
+        const roots = [];
+        const send = getSendButton();
+        if (send && findChatInputForSendButton(send) === input)
+            roots.push(climb(send));
+        const shortcut = document.querySelector('button[aria-label*="단축어"]');
+        if (shortcut && !shortcut.closest(CMU_COMPOSER_EXCLUDE_ROOTS))
+            roots.push(climb(shortcut));
+        return roots.filter((root, index, all) => root instanceof Element &&
+            !root.closest(CMU_COMPOSER_EXCLUDE_ROOTS) &&
+            all.indexOf(root) === index &&
+            !all.some(other => other instanceof Element && other !== root && other.contains(root)));
+    }
+    function cmuComposerMarkBar(input = findChatInput()) {
+        const marked = document.querySelector('main [data-cmu-composer-bar="1"]');
+        if (marked?.parentElement?.contains(input))
+            return;
+        cmuComposerButtonRoots(input).forEach(root => root.setAttribute('data-cmu-composer-bar', '1'));
+    }
+    function cmuComposerButtonKey(btn) {
+        const id = String(btn.id || '').trim();
+        if (id && !/^(radix-|headlessui-|\d)/i.test(id) && !id.includes(':'))
+            return `id:${id}`;
+        if (cmuComposerIsWish(btn))
+            return 'wish:rp';
+        const aria = String(btn.getAttribute('aria-label') || '').trim();
+        if (aria)
+            return `aria:${aria}`;
+        const title = String(btn.getAttribute('title') || '').trim();
+        if (title)
+            return `title:${title}`;
+        const d = String(btn.querySelector('svg path[d]')?.getAttribute('d') || '').slice(0, 24);
+        return d.trim() ? `path:${d}` : '';
+    }
+    function cmuComposerIsWish(btn) {
+        try {
+            return !!(btn?.matches?.(CMU_COMPOSER_WISH_SELF) || btn?.querySelector?.(CMU_COMPOSER_WISH_INNER));
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    // 짧은 이름표 표에서 찾는다. 버튼이 없으면(저장된 숨김 항목) 열쇠만으로 찾는다.
+    function cmuComposerKnownName(key, btn = null) {
+        const k = String(key || '');
+        if (k.startsWith('wish:') || /Wish RP Manager/i.test(k) || /^id:wish-rp/.test(k) || (btn && cmuComposerIsWish(btn)))
+            return '위시';
+        const id = k.startsWith('id:') ? k.slice(3) : String(btn?.id || '');
+        const aria = k.startsWith('aria:') ? k.slice(5) : String(btn?.getAttribute?.('aria-label') || '').trim();
+        const d = k.startsWith('path:') ? k.slice(5) : String(btn?.querySelector?.('svg path[d]')?.getAttribute('d') || '').trim();
+        for (const entry of CMU_COMPOSER_SHORT_NAMES) {
+            if ((entry.id && id === entry.id) || (entry.aria && aria.startsWith(entry.aria)) || (entry.path && d.startsWith(entry.path)))
+                return entry.name;
+        }
+        return '';
+    }
+    // 표에 없는 버튼: 구분자 앞부분만, 「열기·시작·설정·모드」 같은 꼬리말을 떼고, 8자까지.
+    function cmuComposerShortenLabel(raw) {
+        let text = String(raw || '').replace(/\s+/g, ' ').trim();
+        text = text.split(/\s[—–]\s|[·(/]/)[0].trim();
+        const tail = /\s*(?:열기|닫기|시작|종료|설정|모드|켜기|끄기)$/;
+        while (tail.test(text) && text.replace(tail, '').trim())
+            text = text.replace(tail, '').trim();
+        return Array.from(text).slice(0, 8).join('').trim();
+    }
+    function cmuComposerButtonLabel(btn, key) {
+        const known = cmuComposerKnownName(key, btn);
+        if (known)
+            return known;
+        const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
+        const text = clean(btn.textContent);
+        const source = clean(btn.getAttribute('aria-label')) || clean(btn.getAttribute('title')) ||
+            (text && /[\p{L}\p{N}]/u.test(text) ? text : '');
+        return cmuComposerShortenLabel(source);
+    }
+    function cmuComposerStoredLabel(key, label) {
+        const known = cmuComposerKnownName(key);
+        if (known)
+            return known;
+        const value = String(label || '');
+        // 예전 「이름 없는 버튼 N」은 목록을 그릴 때 「버튼 N」으로 다시 번호를 매긴다.
+        if (/^(?:이름 없는 )?버튼 \d+$/.test(value))
+            return '';
+        return cmuComposerShortenLabel(value);
+    }
+    // url(#그라디언트) 채움은 칩으로 옮기면 참조가 끊겨 빈 모양이 된다. 첫 색으로 바꾼다.
+    function cmuComposerResolvePaint(value, root) {
+        const text = String(value || '').trim();
+        const m = /url\(\s*["']?[^"')#]*#([^"')\s]+)["']?\s*\)/i.exec(text);
+        if (!m)
+            return /url\s*\(/i.test(text) ? 'currentColor' : text;
+        let ref = null;
+        try {
+            ref = root?.querySelector?.(`#${CSS.escape(m[1])}`) || document.getElementById(m[1]);
+        }
+        catch (_) { }
+        const stop = ref?.querySelector?.('stop');
+        let color = stop?.getAttribute('stop-color') || '';
+        if (!color && stop) {
+            try {
+                color = getComputedStyle(stop).stopColor || '';
+            }
+            catch (_) { }
+        }
+        return color && !/url\s*\(|javascript:/i.test(color) ? color : 'currentColor';
+    }
+    // 화면에 그려진 색(클래스·스타일시트로 칠한 경우 포함)을 복제본 속성으로 옮긴다.
+    function cmuComposerInlinePaint(orig, clone) {
+        const origEls = [orig, ...orig.querySelectorAll('*')];
+        const cloneEls = [clone, ...clone.querySelectorAll('*')];
+        if (origEls.length !== cloneEls.length)
+            return;
+        origEls.forEach((el, index) => {
+            const tag = el.tagName.toLowerCase();
+            if (!CMU_COMPOSER_SVG_TAGS.has(tag) && tag !== 'use')
+                return;
+            let cs = null;
+            try {
+                cs = getComputedStyle(el);
+            }
+            catch (_) {
+                return;
+            }
+            const target = cloneEls[index];
+            for (const prop of ['fill', 'stroke']) {
+                const value = cs[prop];
+                if (!value)
+                    continue;
+                target.setAttribute(prop, value === cs.color ? 'currentColor' : cmuComposerResolvePaint(value, orig));
+            }
+            const strokeWidth = parseFloat(cs.strokeWidth);
+            if (cs.stroke && cs.stroke !== 'none' && strokeWidth > 0)
+                target.setAttribute('stroke-width', String(strokeWidth));
+            // 루트 svg의 투명도·숨김은 버튼 상태(생성 중 흐리게 등)라 칩으로 옮기지 않는다. 켜짐/꺼짐은 칩이 따로 그린다.
+            for (const [prop, attr] of [['fillOpacity', 'fill-opacity'], ['strokeOpacity', 'stroke-opacity'], ['opacity', 'opacity']]) {
+                if (index === 0 && prop === 'opacity')
+                    continue;
+                const value = parseFloat(cs[prop]);
+                if (Number.isFinite(value) && value < 1)
+                    target.setAttribute(attr, String(value));
+            }
+            if (index > 0 && (cs.display === 'none' || cs.visibility === 'hidden'))
+                target.setAttribute('display', 'none');
+        });
+    }
+    // <use href="#심볼">은 칩에서 참조가 끊기므로 심볼 내용을 그대로 펼친다.
+    function cmuComposerInlineUse(clone) {
+        for (const use of Array.from(clone.querySelectorAll('use'))) {
+            const href = use.getAttribute('href') || use.getAttribute('xlink:href') || '';
+            let ref = null;
+            try {
+                ref = /^#/.test(href) ? document.getElementById(href.slice(1)) : null;
+            }
+            catch (_) { }
+            if (!ref) {
+                use.remove();
+                continue;
+            }
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            for (const name of ['fill', 'stroke', 'stroke-width', 'opacity'])
+                if (use.getAttribute(name))
+                    group.setAttribute(name, use.getAttribute(name));
+            for (const child of Array.from(ref.children))
+                group.appendChild(child.cloneNode(true));
+            if (!clone.getAttribute('viewBox') && ref.getAttribute('viewBox'))
+                clone.setAttribute('viewBox', ref.getAttribute('viewBox'));
+            use.replaceWith(group);
+        }
+    }
+    function cmuComposerNoPaint(value) {
+        const v = String(value || '').trim().toLowerCase();
+        return !v || v === 'none' || v === 'transparent' || /^rgba\([^)]*,\s*0(?:\.0+)?\)$/.test(v);
+    }
+    // 복제본 안에 실제로 칠해지는 모양이 하나라도 있는지 속성만으로 판단한다(숨김·투명도 0·칠 없음 제외).
+    function cmuComposerSvgPainted(svg) {
+        const attrOf = (el, name) => {
+            for (let n = el; n && n.nodeType === 1; n = n === svg ? null : n.parentNode) {
+                const v = n.getAttribute(name);
+                if (v != null && v !== '' && v !== 'inherit')
+                    return v;
+            }
+            return null;
+        };
+        const hidden = el => {
+            for (let n = el; n && n.nodeType === 1; n = n === svg ? null : n.parentNode) {
+                if (n.getAttribute('display') === 'none' || n.getAttribute('visibility') === 'hidden' || parseFloat(n.getAttribute('opacity')) === 0)
+                    return true;
+            }
+            return false;
+        };
+        const num = (value, fallback) => {
+            const n = parseFloat(value ?? '');
+            return Number.isFinite(n) ? n : fallback;
+        };
+        return Array.from(svg.querySelectorAll(CMU_COMPOSER_SHAPES)).some(el => {
+            if (hidden(el))
+                return false;
+            const fillOn = el.tagName.toLowerCase() !== 'line' && !cmuComposerNoPaint(attrOf(el, 'fill') ?? 'black') && num(attrOf(el, 'fill-opacity'), 1) > 0;
+            const strokeOn = !cmuComposerNoPaint(attrOf(el, 'stroke') ?? 'none') && num(attrOf(el, 'stroke-width'), 1) > 0 && num(attrOf(el, 'stroke-opacity'), 1) > 0;
+            return fillOn || strokeOn;
+        });
+    }
+    function cmuComposerCleanSvg(svg, { live = false, cls = 'ci cmu-composer-chip-icon' } = {}) {
+        if (!(svg instanceof SVGElement) || svg.tagName.toLowerCase() !== 'svg')
+            return '';
+        const clone = svg.cloneNode(true);
+        if (live) {
+            cmuComposerInlinePaint(svg, clone);
+            cmuComposerInlineUse(clone);
+        }
+        const clean = el => {
+            for (const child of Array.from(el.children)) {
+                if (!CMU_COMPOSER_SVG_TAGS.has(child.tagName.toLowerCase()))
+                    child.remove();
+                else
+                    clean(child);
+            }
+            for (const attr of Array.from(el.attributes)) {
+                const name = attr.name.toLowerCase();
+                if ((name === 'fill' || name === 'stroke') && /url\s*\(/i.test(attr.value))
+                    el.setAttribute(attr.name, cmuComposerResolvePaint(attr.value, svg));
+                if (name.startsWith('on') || name.startsWith('data-') || name.includes('href') ||
+                    ['style', 'class', 'id', 'clip-path', 'mask', 'filter'].includes(name) ||
+                    /url\s*\(|javascript:/i.test(el.getAttribute(attr.name) || '')) {
+                    el.removeAttribute(attr.name);
+                    continue;
+                }
+            }
+        };
+        clean(clone);
+        if (!clone.getAttribute('viewBox')) {
+            const w = parseFloat(clone.getAttribute('width') || '');
+            const h = parseFloat(clone.getAttribute('height') || '');
+            clone.setAttribute('viewBox', w > 0 && h > 0 ? `0 0 ${w} ${h}` : '0 0 24 24');
+        }
+        clone.removeAttribute('width');
+        clone.removeAttribute('height');
+        clone.removeAttribute('opacity');
+        // 설정 패널 공통 규칙 `#cmu-settings-panel svg { fill:none; stroke:currentColor }`는 루트 svg의 칠 속성을 이긴다.
+        // 루트의 칠 속성은 안쪽 <g>로 옮겨 칩 CSS가 복제한 칠을 덮어쓰지 못하게 한다.
+        // 속성이 없던 칠은 크랙 기본 버튼처럼 채움 currentColor · 선 없음으로 둔다.
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        for (const name of CMU_COMPOSER_PAINT_ATTRS) {
+            if (clone.hasAttribute(name)) {
+                group.setAttribute(name, clone.getAttribute(name));
+                clone.removeAttribute(name);
+            }
+        }
+        for (const [name, value] of [['fill', 'currentColor'], ['stroke', 'none'], ['stroke-linecap', 'butt'], ['stroke-linejoin', 'miter']]) {
+            if (!group.hasAttribute(name))
+                group.setAttribute(name, value);
+        }
+        while (clone.firstChild)
+            group.appendChild(clone.firstChild);
+        clone.appendChild(group);
+        if (!cmuComposerSvgPainted(clone))
+            return '';
+        clone.setAttribute('class', cls);
+        clone.setAttribute('aria-hidden', 'true');
+        clone.setAttribute('focusable', 'false');
+        const html = clone.outerHTML;
+        return html.length <= CMU_COMPOSER_ICON_MAX ? html : '';
+    }
+    function cmuComposerSafeImageSrc(src) {
+        const value = String(src || '').trim();
+        if (/^data:image\/(?:png|gif|webp|jpeg|svg\+xml)[;,]/i.test(value))
+            return value.length <= CMU_COMPOSER_ICON_MAX ? value : '';
+        return /^https:\/\/[^\s"'<>]+$/i.test(value) && value.length <= 1000 ? value : '';
+    }
+    function cmuComposerIsEmoji(text) {
+        try {
+            return /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(String(text || ''));
+        }
+        catch (_) {
+            return false;
+        }
+    }
+    // 아이콘 복제: 칠해진 svg → 이미지(img·배경 이미지) → 이모지·글자 순서.
+    function cmuComposerCaptureIcon(btn, key = '') {
+        if (CMU_COMPOSER_LINE_ICONS[key])
+            return CMU_COMPOSER_LINE_ICONS[key];
+        const svgs = Array.from(btn.querySelectorAll('svg')).filter(svg => !svg.parentElement?.closest('svg'));
+        // 버튼 위에 겹쳐 그리는 장식(길게 누르기 링·생성 중 로더처럼 position:absolute)은 뒤로 미룬다.
+        // 투명도는 보지 않는다. 생성 중에 잠깐 흐려진 아이콘도 아이콘이다.
+        const placed = svgs.map(svg => {
+            let cs = null;
+            try {
+                cs = getComputedStyle(svg);
+            }
+            catch (_) { }
+            return { svg, gone: !!cs && (cs.display === 'none' || cs.visibility === 'hidden'), overlay: !!cs && /^(?:absolute|fixed)$/.test(cs.position) };
+        }).filter(item => !item.gone);
+        let html = '';
+        for (const item of [...placed.filter(i => !i.overlay), ...placed.filter(i => i.overlay)]) {
+            html = cmuComposerCleanSvg(item.svg, { live: true });
+            if (html)
+                break;
+        }
+        if (html)
+            return html;
+        const img = btn.querySelector('img');
+        let src = cmuComposerSafeImageSrc(img?.currentSrc || img?.getAttribute('src'));
+        if (!src) {
+            for (const el of [btn, ...btn.querySelectorAll('*')]) {
+                let bg = '';
+                try {
+                    bg = getComputedStyle(el).backgroundImage || '';
+                }
+                catch (_) { }
+                const m = /url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(bg);
+                src = m ? cmuComposerSafeImageSrc(m[1]) : '';
+                if (src)
+                    break;
+            }
+        }
+        if (src)
+            return `<img src="${escapeHtml(src)}">`;
+        const text = String(btn.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text)
+            return Array.from(text).slice(0, 2).join('');
+        // svg는 있는데 칠해진 부분이 하나도 없으면 빈 칸·이모지 대신 ✦.
+        if (svgs.length)
+            return CMU_COMPOSER_EMPTY_GLYPH;
+        return '';
+    }
+    function cmuComposerIconHtml(icon, key = '') {
+        if (CMU_COMPOSER_LINE_ICONS[key])
+            return cmuComposerCleanSvg(cmuComposerParseIcon(CMU_COMPOSER_LINE_ICONS[key])) || Q_CHECK_ICON;
+        const value = String(icon || '').trim();
+        // 4.5.7.2가 저장한 색 배지(<i data-bg…><svg…></i>)는 안의 svg만 칩 글자색으로 그린다.
+        if (/^<i[\s>]/i.test(value)) {
+            const svg = cmuComposerParseIcon(value)?.querySelector('svg');
+            return (svg && cmuComposerCleanSvg(svg)) || cmuComposerGlyphHtml(CMU_COMPOSER_EMPTY_GLYPH);
+        }
+        if (/^<svg[\s>]/i.test(value)) {
+            const html = cmuComposerCleanSvg(cmuComposerParseIcon(value));
+            return html || cmuComposerGlyphHtml(CMU_COMPOSER_EMPTY_GLYPH);
+        }
+        else if (/^<img[\s>]/i.test(value)) {
+            const tpl = document.createElement('template');
+            tpl.innerHTML = value;
+            const src = cmuComposerSafeImageSrc(tpl.content.firstElementChild?.getAttribute('src'));
+            if (src)
+                return `<img class="ci cmu-composer-chip-img" src="${escapeHtml(src)}" alt="" aria-hidden="true">`;
+        }
+        else if (value) {
+            return cmuComposerGlyphHtml(value);
+        }
+        return Q_CHECK_ICON;
+    }
+    function cmuComposerParseIcon(html) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = String(html || '');
+        return tpl.content.firstElementChild;
+    }
+    // 글자 아이콘. 표에 없는 버튼의 이모지는 다른 칩 아이콘처럼 흑백으로 보이게 한다.
+    function cmuComposerGlyphHtml(text) {
+        const glyph = Array.from(String(text || '')).slice(0, 2).join('');
+        const emoji = cmuComposerIsEmoji(glyph) ? ' cmu-composer-chip-emoji' : '';
+        return `<span class="ci cmu-composer-chip-glyph${emoji}" aria-hidden="true">${escapeHtml(glyph)}</span>`;
+    }
+    function cmuComposerIsVisible(btn) {
+        if (!btn.isConnected || btn.closest('[hidden]'))
+            return false;
+        const rect = btn.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2)
+            return false;
+        const style = getComputedStyle(btn);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+    }
+    function cmuComposerScanButtons() {
+        const hidden = cmuComposerHiddenMap();
+        const input = shouldRun() && isChatRoomPath() ? findChatInput(true) : null;
+        const roots = cmuComposerButtonRoots(input);
+        const send = roots.length ? getSendButton() : null;
+        const list = [];
+        const seen = new Set();
+        const iconFixes = new Map();
+        for (const root of roots) {
+            root.setAttribute('data-cmu-composer-bar', '1');
+            for (const btn of root.querySelectorAll(CMU_COMPOSER_BUTTON_SELECTOR)) {
+                if (!(btn instanceof HTMLElement))
+                    continue;
+                const outer = btn.parentElement?.closest(CMU_COMPOSER_BUTTON_SELECTOR);
+                if (outer && root.contains(outer))
+                    continue;
+                // 전송 버튼(숨기면 보낼 수 없음)과 이 확프 설정 버튼(숨기면 설정을 못 엶)은 목록에서 뺀다.
+                if (btn === send || btn.id === ID.settingsButton || btn.querySelector(`#${ID.settingsButton}`) ||
+                    btn.hasAttribute('data-crack-ui-empty-send-guard') || isRawSendButton(btn) ||
+                    btn.closest(CMU_COMPOSER_EXCLUDE_ROOTS))
+                    continue;
+                const key = cmuComposerButtonKey(btn);
+                if (!key || seen.has(key))
+                    continue;
+                const isHidden = !!hidden[key];
+                if (!isHidden && !cmuComposerIsVisible(btn))
+                    continue;
+                seen.add(key);
+                const icon = cmuComposerCaptureIcon(btn, key) || hidden[key]?.icon || '';
+                // 숨긴 채 화면에 있는 버튼은 새로 읽은 아이콘·이름으로 저장값을 고쳐 둔다(예전 빈 아이콘 복구).
+                if (isHidden && icon && icon !== hidden[key].icon)
+                    iconFixes.set(key, icon);
+                list.push({
+                    key,
+                    label: cmuComposerButtonLabel(btn, key),
+                    icon,
+                    hidden: isHidden,
+                    present: true,
+                });
+            }
+        }
+        // 숨긴 버튼은 지금 화면에 없어도 다시 켤 수 있게 목록에 남긴다.
+        for (const [key, entry] of Object.entries(hidden)) {
+            if (seen.has(key))
+                continue;
+            list.push({ key, label: entry.label, icon: entry.icon, hidden: true, present: false });
+        }
+        let unnamed = 0;
+        list.forEach(item => {
+            if (!item.label)
+                item.label = `버튼 ${++unnamed}`;
+        });
+        cmuComposerScanMeta = new Map(list.filter(item => item.present).map(item => [item.key, { label: item.label, icon: item.icon }]));
+        // 저장된 숨김 항목을 새 짧은 이름·새 아이콘으로 고쳐 저장한다.
+        const stored = hidden;
+        const updated = {};
+        let changed = iconFixes.size > 0;
+        for (const [key, entry] of Object.entries(stored)) {
+            const label = list.find(item => item.key === key)?.label || entry.label;
+            updated[key] = { ...entry, label, icon: (iconFixes.get(key) || entry.icon || '').slice(0, CMU_COMPOSER_ICON_MAX) };
+            if (label !== entry.label)
+                changed = true;
+        }
+        if (changed)
+            cmuComposerSaveHidden(updated);
+        return list;
+    }
+    function cmuComposerSetHidden(key, hide) {
+        const map = { ...cmuComposerHiddenMap() };
+        if (hide) {
+            const meta = cmuComposerScanMeta.get(key) || map[key] || {};
+            map[key] = { label: String(meta.label || '').slice(0, 80), icon: String(meta.icon || '').slice(0, CMU_COMPOSER_ICON_MAX), hidden: true };
+        }
+        else {
+            delete map[key];
+        }
+        cmuComposerSaveHidden(map);
+        applyComposerHideCss();
+    }
+    function renderComposerButtonCard() {
+        const chips = cmuComposerScanButtons().map(item => {
+            const label = `<span class="cmu-composer-chip-text">${escapeHtml(item.label)}${item.present ? '' : '<small class="cmu-composer-absent">지금 화면에 없음</small>'}</span>`;
+            return qChip('q-composer-chip', encodeURIComponent(item.key), label, !item.hidden, false, cmuComposerIconHtml(item.icon, item.key));
+        }).join('');
+        const note = chips
+            ? '끈 버튼은 화면에서만 숨김 · 전송 버튼과 이 설정 버튼은 목록에서 제외'
+            : '채팅방 입력창이 보일 때 설정을 열면 버튼 목록이 나와요.';
+        return qCard(`
+        <div class="subrow cmu-composer-head"><div class="lbl">입력창 아래 버튼 켜고 끄기<div class="note">${note}</div></div></div>
+        ${chips ? qChipWrap('g-composer', chips) : ''}
+      `);
+    }
     function renderSettingsUiPage() {
         return qPage('ui', `
       <div class="sec">화면</div>
@@ -9161,9 +9841,6 @@
 
       <div class="sec">알림</div>
       ${qCard(qSwitch('hideEndingHint', '엔딩 힌트/알림 점 숨기기'))}
-
-      <div class="sec">상황 이미지</div>
-      ${qCard(qSwitch('hideImageGenerateButton', '이미지 생성 버튼 숨기기', 'AI 답변 아래의 상황 이미지 생성(크래커 차감) 아이콘을 화면에서만 숨김'))}
     `);
     }
     function renderSettingsMessagePage() {
@@ -9226,6 +9903,9 @@
         ${qChipWrap('g-info', renderDashboardPartRows(), !!settings.dashboard)}
       `)}
       ${sideSection}
+
+      <div class="sec">입력창 아래 버튼</div>
+      ${renderComposerButtonCard()}
     `);
     }
     function renderSettingsBadgePage() {
@@ -9241,6 +9921,7 @@
         ${qSwitch('badgeTime', '생성 시간 표시')}
         ${qSwitch('modelIcon', '모델 아이콘', modelIconNote, { disabled: !modelIconNovel, forceOffWhenDisabled: true })}
         ${qSwitch('answerCost', '답변별 크래커', '설치 후 실제 측정분만 · 리롤 답변마다 표시')}
+        ${qSwitch('hideImageGenerateButton', '이미지 생성 버튼 숨기기', 'AI 답변 아래의 상황 이미지 생성(크래커 차감) 아이콘을 화면에서만 숨김')}
       `)}
     `);
     }
@@ -9348,6 +10029,15 @@
                 const row = e.target?.closest?.('.subrow');
                 if (row && !e.target?.closest?.('input, .chip, .step, button')) {
                     target = row.querySelector('.sw[data-action]');
+                    // 스위치 없는 검색 결과(예: 입력창 아래 버튼)를 누르면 검색을 닫고 그 탭의 그 자리로 간다.
+                    const page = row.closest('.cmu-page')?.dataset.page || '';
+                    if (!target && page && String(cmuSettingsQuery || '').trim()) {
+                        e.preventDefault?.();
+                        cmuGoSettingsTab(panel, page);
+                        cmuSetSettingsSearchOpen(panel, false);
+                        requestAnimationFrame(() => row.scrollIntoView({ block: 'start' }));
+                        return true;
+                    }
                 }
             }
             if (!target || !panel.contains(target))
@@ -9482,6 +10172,16 @@
                 sideSaveVisible();
                 applySideVisible();
                 syncSideMenu();
+                return true;
+            }
+            if (action === 'q-composer-chip' && key) {
+                let name = '';
+                try { name = decodeURIComponent(key); } catch (_) { name = key; }
+                if (!name) return true;
+                const next = !target.classList.contains('ck');
+                target.classList.toggle('ck', next);
+                cmuComposerSetHidden(name, !next);
+                cmuSyncTabDots(panel);
                 return true;
             }
             if (action === 'q-rs-group' && key) {
@@ -13903,6 +14603,7 @@
     ];
     const FALLBACK_MODELS = [
         { slug: 'claude-fable-5.1', apiId: 'claude-fable-5.1', source: 'igx', label: 'Claude Fable 5.1', short: 'F5.1' },
+        { slug: 'claude-opus-5.5', apiId: 'claude-opus-5.5', source: 'igx', label: 'Claude Opus 5.5', short: 'O5.5' },
         { slug: 'claude-opus-5', apiId: 'claude-opus-5', source: 'igx', label: 'Claude Opus 5', short: 'O5' },
         { slug: 'claude-opus-4.8', apiId: 'claude-opus-4.8', source: 'igx', label: 'Claude Opus 4.8', short: 'O4.8' },
         { slug: 'claude-opus-4.7', apiId: 'claude-opus-4.7', source: 'igx', label: 'Claude Opus 4.7', short: 'O4.7' },
@@ -14509,11 +15210,57 @@
         return bySlug;
       }
 
+      const IGX_DASHBOARD_CACHE_MS = 5 * 60 * 1000;
+      let igxDashboardCache = null;
+      let igxDashboardCacheAt = 0;
+      let igxDashboardPromise = null;
+
       async function fetchDashboardSnapshot() {
         const html = await fetchDashboardHtml();
         const entries = dashboardEntriesFromHtml(html);
         if (!entries.size) throw new Error("dashboard parse returned no model metrics");
+        igxDashboardCache = entries;
+        igxDashboardCacheAt = Date.now();
         return entries;
+      }
+
+      // 모델 목록 합치기용 대시보드 읽기: 성공·실패와 관계없이 5분에 한 번만 요청한다.
+      // 실패하면 null을 돌려주고, 호출한 쪽은 v2 결과만으로 지금처럼 동작한다.
+      function fetchDashboardSnapshotCached() {
+        if (Date.now() - igxDashboardCacheAt < IGX_DASHBOARD_CACHE_MS) return Promise.resolve(igxDashboardCache);
+        if (igxDashboardPromise) return igxDashboardPromise;
+        igxDashboardPromise = (async () => {
+          try {
+            return await fetchDashboardSnapshot();
+          } catch (_) {
+            igxDashboardCache = null;
+            igxDashboardCacheAt = Date.now();
+            return null;
+          } finally {
+            igxDashboardPromise = null;
+          }
+        })();
+        return igxDashboardPromise;
+      }
+
+      // v2(또는 폴백 경로) 목록 + 대시보드 목록. 순서는 대시보드 순서, v2에만 있는 모델은 뒤에 붙인다.
+      // 점수·응답시간은 v2 값이 있으면 v2, 없으면 대시보드 값을 쓴다.
+      function mergeIgxModelLists(primary, dashboard) {
+        if (!(primary instanceof Map) || !primary.size) return primary;
+        if (!(dashboard instanceof Map) || !dashboard.size) return primary;
+        const has = value => value !== null && value !== undefined && value !== "";
+        const merged = new Map();
+        for (const [slug, dash] of dashboard) {
+          if (!looksLikeModelSlug(slug)) continue;
+          const own = primary.get(slug);
+          merged.set(slug, own
+            ? { ...own, score: has(own.score) ? own.score : dash.score, latency: has(own.latency) ? own.latency : dash.latency }
+            : dash);
+        }
+        for (const [slug, own] of primary) {
+          if (!merged.has(slug)) merged.set(slug, own);
+        }
+        return merged;
       }
 
       async function fetchLegacyStatisticsSnapshot() {
@@ -14625,9 +15372,9 @@
           }
         } catch (_) {}
 
-        // 공식 대시보드 HTML에 응답시간이 노출되는 배포라면 마지막으로 여기서 보충.
+        // 공식 대시보드 HTML에 응답시간이 노출되는 배포라면 마지막으로 여기서 보충(5분 캐시 공유).
         try {
-          const entries = await fetchDashboardSnapshot();
+          const entries = await fetchDashboardSnapshotCached();
           if (hasSupplementMetrics(entries)) {
             igxSupplementCache = entries;
             igxSupplementCacheAt = Date.now();
@@ -14674,26 +15421,15 @@
         return new Map(results.map(result => result.value));
       }
 
-      async function fetchIgxSnapshot({ force = false } = {}) {
-        const now = Date.now();
-        if (!force && igxSnapshotCache?.size && now - igxSnapshotCacheAt < 15000) {
-          return igxSnapshotCache;
-        }
-
+      async function fetchIgxBaseSnapshot() {
         try {
-          const entries = await fetchIgxV2Snapshot();
-          igxSnapshotCache = entries;
-          igxSnapshotCacheAt = Date.now();
-          return entries;
+          return await fetchIgxV2Snapshot();
         } catch (_) {}
 
         if (igxWorkingBulkRoute) {
           try {
             const entries = await tryBulkRoute(igxWorkingBulkRoute);
-            const finalized = await finalizeIgxSnapshot(entries);
-            igxSnapshotCache = finalized;
-            igxSnapshotCacheAt = Date.now();
-            return finalized;
+            return await finalizeIgxSnapshot(entries);
           } catch (_) {
             igxWorkingBulkRoute = null;
           }
@@ -14704,28 +15440,34 @@
           try {
             const entries = await tryBulkRoute(route);
             igxWorkingBulkRoute = route;
-            const finalized = await finalizeIgxSnapshot(entries);
-            igxSnapshotCache = finalized;
-            igxSnapshotCacheAt = Date.now();
-            return finalized;
+            return await finalizeIgxSnapshot(entries);
           } catch (_) {}
         }
 
         // 새 API 경로가 또 바뀐 순간에도 대시보드 자체가 살아 있으면 현재값을 계속 보여준다.
         try {
           const entries = await fetchDashboardSnapshot();
-          const finalized = await finalizeIgxSnapshot(entries);
-          igxSnapshotCache = finalized;
-          igxSnapshotCacheAt = Date.now();
-          return finalized;
+          return await finalizeIgxSnapshot(entries);
         } catch (_) {}
 
         // 최후 호환: 구형 statistics가 아직 살아 있으면 사용.
         const entries = await fetchLegacyStatisticsSnapshot();
-        const finalized = await finalizeIgxSnapshot(entries);
-        igxSnapshotCache = finalized;
+        return await finalizeIgxSnapshot(entries);
+      }
+
+      async function fetchIgxSnapshot({ force = false } = {}) {
+        const now = Date.now();
+        if (!force && igxSnapshotCache?.size && now - igxSnapshotCacheAt < 15000) {
+          return igxSnapshotCache;
+        }
+
+        // v2 모델 목록이 옛 목록에서 멈춰 있어도 대시보드에만 있는 새 모델이 빠지지 않게 합친다.
+        const base = await fetchIgxBaseSnapshot();
+        const dashboard = await fetchDashboardSnapshotCached();
+        const merged = mergeIgxModelLists(base, dashboard);
+        igxSnapshotCache = merged;
         igxSnapshotCacheAt = Date.now();
-        return finalized;
+        return merged;
       }
 
       function modelsFromSnapshot(entries) {
@@ -18010,6 +18752,7 @@
         scheduleCmuStatBarMark(0);
         applyRadiosondeTheme();
         applyNativeModelFilterCss();
+        applyComposerHideCss();
         omfScanOpenDialogs();
         if (settings.nativeModelFilter && cmuHasNativeModelMenu(document))
             nmfScanNativeModelMenu();
