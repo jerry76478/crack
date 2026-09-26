@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🧰 크랙 도우미
 // @namespace    https://crack.wrtn.ai/
-// @version      1.1.0
+// @version      1.1.2
 // @description  크랙 장기기억 편집·AI 요약, ChatGPT 도우미(질문·조언·유저노트·로어), RP 로그 내보내기를 한 창에서
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-helper.user.js
@@ -48,7 +48,7 @@
  * 따로 가지고 있던 인증·채팅 ID·크랙 API·WRMC 블록 제거·저장소를 한곳에 둔다.
  * ===================================================================== */
 const CH = (() => {
-    const VERSION = '1.1.0';
+    const VERSION = '1.1.2';
     const NAME = '크랙 도우미';
     const isCrack = location.hostname === 'crack.wrtn.ai';
     const isChatGPT = location.hostname === 'chatgpt.com';
@@ -167,6 +167,10 @@ const CH = (() => {
         log: { source: 'api', stripWrmc: true, includeUserNote: false, includeMemory: false, includeProfile: false, wrmcTurn: false },
         memory: { choice: 'cgc:memory1', turns: '', style: '' },
         ui: { tab: 'memory', panel: null },
+        // 1.1.1: 화면 가볍게(애니메이션 끄기). 기본 꺼짐(움직임 있음). ui 와 달리 설정 백업 파일에 들어간다.
+        motion: { off: false },
+        // 1.1.1: 화면 가볍게(애니메이션 끄기). 기본 꺼짐(움직임 있음). ui 와 달리 설정 백업 파일에 들어간다.
+        motion: { off: false },
     });
     function deepMerge(base, extra) {
         if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return base;
@@ -445,14 +449,24 @@ CH.ui = (() => {
 #ch-root [hidden],#ch-layer [hidden]{display:none!important}
 .ch-launcher{position:fixed;pointer-events:auto;width:52px;height:52px;border-radius:50%;border:1px solid var(--ch-line);background:var(--ch-card);color:var(--ch-tx);box-shadow:0 6px 18px rgba(30,20,60,.22);display:grid;place-items:center;font-size:24px;line-height:1;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;padding:0}
 .ch-launcher:focus-visible,.ch-inline-launch:focus-visible{outline:2px solid var(--ch-br);outline-offset:2px}
-.ch-launcher .ch-busy{position:absolute;right:-2px;top:-2px;width:18px;height:18px;border-radius:50%;background:var(--ch-br);color:var(--ch-on-br);font-size:11px;display:grid;place-items:center;border:2px solid var(--ch-card)}
+.ch-launcher svg{width:24px;height:24px;display:block;pointer-events:none}
 .ch-inline-launch{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .ch-inline-launch.side{width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:9px 10px;margin:2px 0;border:0;border-radius:8px;background:transparent;color:inherit;font-size:14px;font-weight:600;text-align:left}
 .ch-inline-launch.side:hover{background:rgba(127,127,127,.12)}
 .ch-inline-launch.top{flex:0 0 auto;min-width:36px;height:36px;padding:0 10px;margin-right:6px;border:1px solid rgba(127,127,127,.35);border-radius:8px;background:transparent;color:inherit;font-size:13px;font-weight:700;white-space:nowrap}
 .ch-inline-launch.composer{display:inline-grid;place-items:center;width:36px;height:36px;min-width:36px;flex:0 0 auto;padding:0;border:1px solid rgba(127,127,127,.35);border-radius:999px;background:transparent;color:inherit;font-size:17px}
 .ch-inline-launch{position:relative}
-.ch-inline-launch .ch-busy{position:absolute;right:-5px;top:-5px;width:17px;height:17px;border-radius:50%;background:#6246D0;color:#fff;font-size:10px;line-height:1;display:grid;place-items:center;pointer-events:none}
+/* 1.1.2: 이모지 대신 한 가지 색 선 아이콘. 입력창 옆 버튼 틀은 옆 버튼의 계산된 스타일을 그대로 따른다(40_shell.js matchToolbarLook). */
+.ch-inline-launch svg{display:block;flex:0 0 auto;pointer-events:none}
+.ch-inline-launch.side svg,.ch-inline-launch.top svg{width:18px;height:18px}
+.ch-inline-launch.top{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.ch-inline-launch.composer::after{content:"";position:absolute;inset:calc(var(--ch-hit,0px) * -1);border-radius:inherit}
+.ch-inline-launch.composer::before{content:"";position:absolute;inset:0;border-radius:inherit;background:currentColor;opacity:0;pointer-events:none}
+.ch-inline-launch.composer:active::before{opacity:.14}
+.ch-inline-launch[data-motion="off"]:active::before{opacity:0}
+/* GPT 작업 중: 버튼 오른쪽 위 작은 점(지름 8px, 강조색 한 가지, 움직임 없음) */
+.ch-launcher .ch-busy,.ch-inline-launch .ch-busy{position:absolute;right:0;top:0;width:8px;height:8px;border-radius:50%;background:#7B5CF0;border:0;padding:0;pointer-events:none;animation:none}
+.ch-launcher .ch-busy{right:5px;top:5px}
 .ch-inline-launch.side .ch-busy{position:static;margin-left:auto}
 .ch-panel{position:fixed;pointer-events:auto;display:flex;flex-direction:column;overflow:hidden;background:var(--ch-bg);color:var(--ch-tx);border:1px solid var(--ch-line);box-shadow:var(--ch-shadow);right:12px;bottom:12px;width:min(460px,calc(100vw - 24px));height:min(820px,calc(100vh - 24px));height:min(820px,calc(100dvh - 24px));border-radius:18px}
 .ch-panel.is-sheet{left:0;right:0;bottom:0;top:auto;width:100%;max-width:100%;height:calc(100vh - 36px);height:calc(var(--ch-vvh,100dvh) - 28px);border-radius:18px 18px 0 0;border-bottom:0}
@@ -465,10 +479,10 @@ CH.ui = (() => {
 .ch-head small{display:block;font-size:11.5px;color:var(--ch-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ch-iconbtn{flex:0 0 auto;width:40px;height:40px;min-height:36px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--ch-sub);display:grid;place-items:center;font-size:18px;line-height:1;cursor:pointer;padding:0}
 .ch-iconbtn:hover{background:var(--ch-card2);color:var(--ch-tx)}
-.ch-tabs{flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px 8px;background:var(--ch-card);border-bottom:1px solid var(--ch-line)}
-.ch-tab{min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:0;border-radius:10px;background:transparent;color:var(--ch-sub);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;padding:4px 2px;min-width:0}
+.ch-tabs{position:relative;flex:0 0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px 8px;background:var(--ch-card);border-bottom:1px solid var(--ch-line)}
+.ch-tab{position:relative;z-index:1;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:0;border-radius:10px;background:transparent;color:var(--ch-sub);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer;padding:4px 2px;min-width:0}
 .ch-tab span.i{font-size:16px;line-height:1.1}
-.ch-tab.on{background:var(--ch-brs);color:var(--ch-br)}
+.ch-tab.on{background:transparent;color:var(--ch-br)}
 .ch-tab:focus-visible{outline:2px solid var(--ch-br);outline-offset:-2px}
 .ch-banner{flex:0 0 auto;margin:8px 10px 0;padding:9px 11px;border-radius:12px;background:var(--ch-warns);color:var(--ch-warn);font-size:12.5px;line-height:1.5;display:flex;gap:8px;align-items:flex-start}
 .ch-banner p{margin:0;flex:1;min-width:0}
@@ -581,7 +595,28 @@ CH.ui = (() => {
 .ch-files{display:flex;flex-direction:column;gap:8px;margin:8px 0}
 .ch-files a{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:10px 12px;border:1px solid var(--ch-line);border-radius:12px;background:var(--ch-card2);color:var(--ch-tx);text-decoration:none;font-weight:650;overflow-wrap:anywhere}
 .ch-files a.done{opacity:.6}
-@media (prefers-reduced-motion:reduce){#ch-root *,#ch-layer *{transition:none!important;animation:none!important}}
+/* ---- 1.1.1 움직임: transform·opacity 만 쓴다. 값은 WRMC 와 같다(등장 .6s/.46s/.5s 스프링, 탭 표시 .46s 스프링). 이름은 ch- 로 시작한다. ---- */
+#ch-root,#ch-layer{--ch-ease:cubic-bezier(.2,.8,.3,1);--ch-spring:cubic-bezier(.34,1.42,.5,1)}
+@keyframes ch-shell-in{from{opacity:0;transform:translateY(14px) scale(.985)}}
+@keyframes ch-sheet-in{from{opacity:0;transform:translateY(18px) scale(.955)}}
+@keyframes ch-toast-in{from{opacity:0;transform:translateX(-50%) translateY(16px) scale(.9)}}
+.ch-panel{animation:ch-shell-in .6s var(--ch-spring) backwards}
+.ch-panel.is-sheet{animation:ch-sheet-in .46s var(--ch-spring) backwards}
+.ch-dialog{animation:ch-sheet-in .46s var(--ch-spring) backwards}
+.ch-toast{animation:ch-toast-in .5s var(--ch-spring) backwards}
+.ch-tabs::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:calc((100% - 28px)/4);border-radius:10px;background:var(--ch-brs);transition:transform .46s var(--ch-spring);pointer-events:none}
+.ch-tabs:has(.ch-tab:nth-child(2).on)::before{transform:translateX(calc(100% + 4px))}
+.ch-tabs:has(.ch-tab:nth-child(3).on)::before{transform:translateX(calc(200% + 8px))}
+.ch-tabs:has(.ch-tab:nth-child(4).on)::before{transform:translateX(calc(300% + 12px))}
+/* 화면 가볍게(설정 탭 스위치): 모든 animation·transition 과 무거운 효과(backdrop-filter·box-shadow·filter)를 끈다. 탭 표시는 숨기고 선택 탭은 배경색으로만. */
+#ch-root[data-motion="off"],#ch-layer[data-motion="off"],#ch-root[data-motion="off"] *,#ch-layer[data-motion="off"] *,#ch-root[data-motion="off"] *::before,#ch-root[data-motion="off"] *::after,#ch-layer[data-motion="off"] *::before,#ch-layer[data-motion="off"] *::after{animation:none!important;transition:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;filter:none!important}
+#ch-root[data-motion="off"] .ch-tabs::before,#ch-root[data-motion="off"] .cgc-panel .tabs::before{display:none!important}
+#ch-root[data-motion="off"] .ch-tab.on{background:var(--ch-brs)}
+#ch-root[data-motion="off"] .cgc-panel .tabs button.on{background:var(--brs)}
+#ch-root[data-motion="off"] .cgc-panel .st{opacity:1!important}
+/* 기기의 「동작 줄이기」: 스위치와 관계없이 모두 끈다. */
+@media (prefers-reduced-motion:reduce){#ch-root *,#ch-layer *,#ch-root *::before,#ch-root *::after,#ch-layer *::before,#ch-layer *::after{transition:none!important;animation:none!important}
+#ch-root .ch-tabs::before,#ch-root .cgc-panel .tabs::before{display:none!important}#ch-root .ch-tab.on{background:var(--ch-brs)}#ch-root .cgc-panel .tabs button.on{background:var(--brs)}#ch-root .cgc-panel .st{opacity:1!important}}
 `;
 
     function injectStyles() {
@@ -610,8 +645,14 @@ CH.ui = (() => {
 
     function layer() {
         let el = document.getElementById('ch-layer');
-        if (!el) { el = document.createElement('div'); el.id = 'ch-layer'; (document.body || document.documentElement).appendChild(el); }
+        if (!el) { el = document.createElement('div'); el.id = 'ch-layer'; (document.body || document.documentElement).appendChild(el); syncMotion(); }
         return el;
+    }
+    // 1.1.1 화면 가볍게: 설정값을 #ch-root·#ch-layer 의 data-motion 속성으로 옮긴다(CSS 한 벌이 끈다). 새 감시·타이머 없음.
+    function syncMotion() {
+        const off = Boolean(CH.settings.get('motion.off'));
+        for (const id of ['ch-root', 'ch-layer', 'ch-inline-launch']) { const el = document.getElementById(id); if (!el) continue; if (off) el.setAttribute('data-motion', 'off'); else el.removeAttribute('data-motion'); }
+        return off;
     }
 
     let toastTimer = 0;
@@ -694,7 +735,7 @@ CH.ui = (() => {
         return `<span class="ch-count${n > max ? ' over' : ''}">${n}/${max}자</span>`;
     }
 
-    return { CSS, injectStyles, detectTheme, syncTheme, layer, toast, dialog, alert, confirm, help, bindHelp, charCount, esc };
+    return { CSS, injectStyles, detectTheme, syncTheme, layer, toast, dialog, alert, confirm, help, bindHelp, charCount, esc, syncMotion };
 })();
 
 /* =====================================================================
@@ -760,11 +801,13 @@ CH.shell = (() => {
     let lastHref = location.href, started = false, sidebarEverMounted = false;
 
     const LAUNCHER_ID = 'ch-launcher', INLINE_ID = 'ch-inline-launch';
+    // 1.1.2: 여는 버튼 아이콘은 이모지 대신 한 가지 색 선 아이콘(공구함). 색은 currentColor, 크기·선 굵기는 자리에 맞춘다.
+    const ICON = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 12.5h18"/><path d="M10 12.5v2h4v-2"/></svg>';
 
     function ensureRoot() {
         ui.injectStyles();
         if (!root) { root = document.createElement('div'); root.id = 'ch-root'; }
-        if (!root.isConnected && document.body) document.body.appendChild(root);
+        if (!root.isConnected && document.body) { document.body.appendChild(root); ui.syncMotion(); }
         return root;
     }
 
@@ -914,8 +957,8 @@ CH.shell = (() => {
             el.title = label ? `크랙 도우미 · ${label}` : '크랙 도우미';
             el.setAttribute('aria-label', el.title);
             let dot = el.querySelector('.ch-busy');
-            // 떠 있는 버튼과 크랙 화면 안에 끼운 버튼(입력창 옆·오른쪽 메뉴·위쪽 막대) 모두 같은 ⏳ 표시
-            if (label && !dot) { dot = document.createElement('span'); dot.className = 'ch-busy'; dot.textContent = '⏳'; dot.setAttribute('aria-hidden', 'true'); el.appendChild(dot); }
+            // 떠 있는 버튼과 크랙 화면 안에 끼운 버튼(입력창 옆·오른쪽 메뉴·위쪽 막대) 모두 같은 표시: 오른쪽 위 작은 점(1.1.2, 아이콘은 그대로)
+            if (label && !dot) { dot = document.createElement('span'); dot.className = 'ch-busy'; dot.setAttribute('aria-hidden', 'true'); el.appendChild(dot); }
             if (!label) dot?.remove();
         }
     }
@@ -945,7 +988,7 @@ CH.shell = (() => {
         ensureRoot();
         btn = document.createElement('button');
         btn.type = 'button'; btn.id = LAUNCHER_ID; btn.className = 'ch-launcher';
-        btn.textContent = '🧰'; btn.title = '크랙 도우미'; btn.setAttribute('aria-label', '크랙 도우미');
+        btn.innerHTML = ICON; btn.title = '크랙 도우미'; btn.setAttribute('aria-label', '크랙 도우미');
         let drag = null;
         btn.addEventListener('pointerdown', e => {
             const r = btn.getBoundingClientRect();
@@ -1040,7 +1083,8 @@ CH.shell = (() => {
     function inlineButton(kind) {
         const btn = document.createElement('button');
         btn.type = 'button'; btn.id = INLINE_ID; btn.className = `ch-inline-launch ${kind}`;
-        btn.textContent = kind === 'side' ? '🧰 크랙 도우미' : kind === 'top' ? (env.viewport().width < 720 ? '🧰' : '🧰 도우미') : '🧰';
+        btn.innerHTML = ICON + (kind === 'side' ? '<span>크랙 도우미</span>' : kind === 'top' && env.viewport().width >= 720 ? '<span>도우미</span>' : '');
+        if (settings.get('motion.off')) btn.setAttribute('data-motion', 'off');
         btn.title = '크랙 도우미'; btn.setAttribute('aria-label', '크랙 도우미');
         btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); isOpen() ? close() : open(); });
         ui.injectStyles();
@@ -1210,13 +1254,77 @@ CH.shell = (() => {
         const btn = inlineButton('composer');
         if (target.before && target.before.parentElement === target.toolbar) target.toolbar.insertBefore(btn, target.before);
         else target.toolbar.appendChild(btn);
+        btn.chRowHeight = rowHeight;
+        matchToolbarLook(btn);
         fitToToolbar(btn, rowHeight);
         return true;
     }
-    // 누르는 자리는 36px 로 두되, 도구줄 버튼이 더 낮으면 위아래 여백을 줄여 줄 높이를 늘리지 않는다
+    // 1.1.2: 같은 도구줄의 바로 옆 버튼(우리 것·전송 버튼이 아닌 것)의 계산된 스타일을 그대로 따른다.
+    //   자리를 잡을 때 한 번, 그리고 크랙 테마가 바뀔 때(기존 테마 감시) 읽는다. 새 감시·타이머 없음.
+    // type 을 적지 않은 button 도 .type 이 'submit' 이라 속성으로 본다.
+    const isSendLike = b => b.getAttribute('type') === 'submit' || /전송|보내기|send/i.test(`${b.getAttribute('aria-label') || ''} ${b.title || ''}`);
+    function neighborButton(btn) {
+        const pick = el => {
+            if (!(el instanceof HTMLElement) || el.id === INLINE_ID || insideOurs(el)) return null;
+            const b = el.matches('button,[role="button"]') ? el : el.querySelector('button,[role="button"]');
+            return b && !isSendLike(b) && b.getClientRects().length ? { button: b, box: el } : null;
+        };
+        for (let n = btn.previousElementSibling; n; n = n.previousElementSibling) { const hit = pick(n); if (hit) return hit; }
+        for (let n = btn.nextElementSibling; n; n = n.nextElementSibling) { const hit = pick(n); if (hit) return hit; }
+        return null;
+    }
+    // 밝은 화면인지: html·body 의 data-theme, 없으면 도구줄 뒤 배경 밝기, 그것도 없으면 크랙 도우미 테마 판정.
+    function lightBehind(el) {
+        for (const node of [document.documentElement, document.body]) { const v = String(node?.getAttribute('data-theme') || '').toLowerCase(); if (v === 'light') return true; if (v === 'dark') return false; }
+        for (let n = el; n instanceof Element; n = n.parentElement) {
+            const m = getComputedStyle(n).backgroundColor.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/);
+            if (m && (m[4] === undefined || Number(m[4]) > 0.5)) return 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] > 150;
+        }
+        return ui.detectTheme() === 'light';
+    }
+    function matchToolbarLook(btn) {
+        if (!btn?.isConnected) return;
+        const s = btn.style, svg = btn.querySelector('svg'), near = neighborButton(btn);
+        let icon = 20, stroke = 1.8, iconColor = '';
+        if (near) {
+            const cs = getComputedStyle(near.button), box = getComputedStyle(near.box);
+            s.boxSizing = cs.boxSizing; s.width = s.minWidth = cs.width; s.height = cs.height; s.borderRadius = cs.borderRadius;
+            s.backgroundColor = cs.backgroundColor; s.border = `${cs.borderTopWidth} ${cs.borderTopStyle} ${cs.borderTopColor}`;
+            s.color = cs.color; s.boxShadow = cs.boxShadow; s.padding = cs.padding;
+            // 간격: 도구줄 gap 은 그대로 적용되고, 옆 버튼이 margin 으로 띄웠으면 같은 margin 을 쓴다.
+            s.marginLeft = box.marginLeft; s.marginRight = box.marginRight;
+            const other = near.button.querySelector('svg');
+            if (other) {
+                const r = other.getBoundingClientRect(); icon = Math.round(Math.max(r.width, r.height)) || icon;
+                const shape = other.querySelector('path,line,polyline,polygon,rect,circle,ellipse') || other, ss = getComputedStyle(shape);
+                const vb = other.viewBox?.baseVal?.width || 24;
+                if (ss.stroke && ss.stroke !== 'none') { const w = parseFloat(ss.strokeWidth); if (w > 0) stroke = Math.round(w * 24 / vb * 100) / 100; if (!/^url/.test(ss.stroke)) iconColor = ss.stroke; }
+                else if (ss.fill && ss.fill !== 'none' && !/^url/.test(ss.fill)) iconColor = ss.fill;
+            } else icon = Math.round(Math.min(parseFloat(cs.width) || 40, parseFloat(cs.height) || 40) * 0.5);
+        } else {
+            const light = lightBehind(btn.parentElement);
+            s.boxSizing = 'border-box'; s.width = s.minWidth = s.height = '40px'; s.borderRadius = '50%'; s.padding = '0'; s.boxShadow = 'none'; s.marginLeft = s.marginRight = '';
+            s.backgroundColor = light ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.06)';
+            s.border = light ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid rgba(255, 255, 255, 0.12)';
+            s.color = light ? 'rgba(0, 0, 0, 0.85)' : 'rgba(255, 255, 255, 0.85)';
+        }
+        if (svg) { svg.style.width = svg.style.height = `${icon}px`; svg.setAttribute('stroke-width', String(stroke)); svg.style.color = iconColor; }
+        btn.dataset.chLook = near ? 'neighbor' : 'default';
+        // 누르는 자리는 36px 이상: 보이는 크기가 작으면 보이지 않는 가장자리(::after)로 넓힌다.
+        //   ::after 는 테두리 안쪽 기준으로 놓이므로 테두리 두께만큼 더 넓힌다.
+        const r = btn.getBoundingClientRect(), edge = parseFloat(getComputedStyle(btn).borderTopWidth) || 0;
+        const extra = Math.max(0, Math.ceil((36 - Math.min(r.width, r.height)) / 2));
+        btn.style.setProperty('--ch-hit', `${extra ? extra + edge : 0}px`);
+    }
+    function restyleInline() {
+        const btn = document.getElementById(INLINE_ID);
+        if (btn?.classList.contains('composer') && btn.isConnected) { matchToolbarLook(btn); fitToToolbar(btn, btn.chRowHeight || 0); }
+    }
+    // 우리 버튼이 도구줄의 원래 버튼보다 높으면(옆 버튼이 없어 기본값을 쓴 경우 등) 위아래 여백을 줄여 줄 높이를 늘리지 않는다
     // (전송 버튼이 밀리거나 입력창이 좁아지지 않게).
     function fitToToolbar(btn, rowHeight) {
-        const trim = rowHeight > 0 && rowHeight < 36 ? Math.min(8, (36 - rowHeight) / 2) : 0;
+        const h = btn.getBoundingClientRect().height;
+        const trim = rowHeight > 0 && h > rowHeight ? Math.min(8, (h - rowHeight) / 2) : 0;
         btn.style.marginTop = btn.style.marginBottom = trim ? `-${trim}px` : '';
     }
 
@@ -1410,11 +1518,12 @@ CH.shell = (() => {
         root.addEventListener('focusout', scheduleEndTyping);
         document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'hidden') { ui.syncTheme(); placeLauncher(); } });
         bus.on('settings', ({ path }) => { if (path === 'launcher.mode' || path === '*') { document.getElementById(INLINE_ID)?.remove(); syncObserver(); placeLauncher(); } });
+        bus.on('settings', ({ path }) => { if (path === 'motion.off' || path === '*') ui.syncMotion(); });
         // 테마·WRMC 표식 속성 변화만 본다(자식 목록·하위 트리는 보지 않음).
         try {
             new MutationObserver(records => {
                 if (records.some(r => r.attributeName === 'data-wrmc-open')) syncWrmc();
-                if (records.some(r => r.attributeName !== 'data-wrmc-open')) ui.syncTheme();
+                if (records.some(r => r.attributeName !== 'data-wrmc-open')) { ui.syncTheme(); restyleInline(); }
             }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'data-wrmc-open'] });
         } catch {}
         syncWrmc();
@@ -16064,12 +16173,11 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 .cgc-panel svg.i.sm{width:14px;height:14px}
 .cgc-panel svg.i.tab{width:19px;height:19px}
 @keyframes up{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:none}}
-@keyframes wipe{from{width:0}to{width:var(--w)}}
-@keyframes drift{0%{background-position:0% 50%}100%{background-position:180% 50%}}
-@keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+@keyframes ch-wipe{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes ch-jb-run{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
 .cgc-panel .anim .st{opacity:0;animation:up .48s cubic-bezier(.2,.75,.3,1) forwards;animation-delay:calc(var(--i,0)*52ms)}
-.cgc-panel .anim .fill{animation:wipe .95s cubic-bezier(.3,.85,.3,1) .4s both}
-.cgc-panel .live{animation:breathe 1.7s ease-in-out infinite}
+.cgc-panel .anim .fill{transform-origin:left center;animation:ch-wipe .95s cubic-bezier(.3,.85,.3,1) .4s both}
+.cgc-panel .live{animation:none}
 .cgc-panel .hd{display:flex;align-items:flex-start;gap:10px;padding:16px 16px 12px;flex:none}
 .cgc-panel .hd .t{min-width:0;flex:1}
 .cgc-panel .hd .t b{display:block;font-size:16px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -16128,8 +16236,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 .cgc-panel .job .right .big u{text-decoration:none;font-size:10px;font-weight:760;color:var(--sub)}
 .cgc-panel .job .right .sm{font-size:9px;color:var(--sub);margin-top:4px;letter-spacing:.06em;font-weight:750}
 .cgc-panel .job .track{position:absolute;left:58px;right:13px;bottom:8px;height:3px;border-radius:2px;background:var(--mute);overflow:hidden}
-.cgc-panel .job .track .fill{display:block;height:100%;border-radius:2px;
-  background:linear-gradient(96deg,var(--br),var(--br2),var(--br));background-size:200% 100%;animation:drift 3s linear infinite}
+.cgc-panel .job .track .fill{display:block;height:100%;width:var(--w,100%);border-radius:2px;background:var(--br)}
+.cgc-panel .job .track.run .fill{display:none}
+.cgc-panel .job .track.run::after{content:"";position:absolute;left:0;top:0;height:100%;width:30%;border-radius:2px;background:var(--br);animation:ch-jb-run 1.3s cubic-bezier(.2,.8,.3,1) infinite}
 .cgc-panel .dotlive{width:6px;height:6px;border-radius:50%;background:var(--br);flex:none}
 .cgc-panel .empty{margin:0 14px;padding:24px 16px;border-radius:18px;background:var(--card);text-align:center}
 .cgc-panel .empty b{display:block;font-size:13.5px;font-weight:790}
@@ -16138,7 +16247,11 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
   border-top:1px solid var(--hair);position:relative}
 .cgc-panel .tabs button{flex:1;border:0;background:transparent;color:var(--sub);padding:9px 0 10px;cursor:pointer;border-radius:12px;
   display:flex;flex-direction:column;align-items:center;gap:4px;font:740 10px/1 inherit;position:relative;transition:background .2s,color .2s}
-.cgc-panel .tabs button.on{color:var(--brdeep);background:var(--brs)}
+.cgc-panel .tabs button.on{color:var(--brdeep);background:transparent;z-index:1}
+.cgc-panel .tabs::before{content:"";position:absolute;left:6px;top:6px;bottom:max(6px,env(safe-area-inset-bottom,0px));width:calc((100% - 12px)/4);border-radius:12px;background:var(--brs);transition:transform .46s cubic-bezier(.34,1.42,.5,1);pointer-events:none}
+.cgc-panel .tabs:has(button:nth-child(2).on)::before{transform:translateX(100%)}
+.cgc-panel .tabs:has(button:nth-child(3).on)::before{transform:translateX(200%)}
+.cgc-panel .tabs:has(button:nth-child(4).on)::before{transform:translateX(300%)}
 .cgc-panel .tabs .dotmark{position:absolute;top:7px;right:calc(50% - 20px);width:5px;height:5px;border-radius:50%;background:var(--warn)}
 .cgc-panel .pane{padding:0 14px 16px}
 .cgc-panel .pane-t{font-size:19px;font-weight:800;letter-spacing:-.035em;margin:0 4px 5px}
@@ -16165,7 +16278,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 .cgc-panel .hd .t b{max-width:100%}.cgc-panel .hd .no{background:var(--sub);animation:none}.cgc-panel .hd .x{min-width:32px}.cgc-panel .job{display:block;padding:0;cursor:default}.cgc-panel .job-main{width:100%;display:flex;align-items:center;gap:11px;background:transparent;border:0;color:inherit;text-align:left;padding:14px;font:inherit;cursor:pointer}.cgc-panel .job-main:disabled{opacity:1;cursor:default}.cgc-panel .job .desc{color:var(--sub);font-size:11px;line-height:1.5;margin-top:4px}.cgc-panel .job .job-extra{margin:0 12px 12px}.cgc-panel .job .right{margin-left:auto}.cgc-panel .job .meta{flex-wrap:wrap}.cgc-panel .job.run{padding-bottom:0}.cgc-panel .job .track{position:relative;left:auto;right:auto;bottom:auto;margin:0 14px 12px 58px}.cgc-panel .job .fill{width:var(--w)}
 .cgc-panel .settings-content .grp{display:block;margin:0 0 12px;border-radius:16px;background:var(--card);overflow:hidden}.cgc-panel .settings-content .grp b{font:inherit;letter-spacing:normal;color:inherit}.cgc-panel .settings-content .r{padding:14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--hair)}.cgc-panel .settings-content .r:last-child{border-bottom:0}.cgc-panel .settings-content .r.col2{align-items:stretch;flex-direction:column}.cgc-panel .settings-content .tt{flex:1;min-width:0}.cgc-panel .settings-content .a{font-weight:700}.cgc-panel .settings-content .b{color:var(--sub);font-size:11px;line-height:1.6}.cgc-panel .settings-content .gt{margin:20px 4px 8px}.cgc-panel .link{display:flex;align-items:center;gap:9px;background:var(--card);border-radius:14px;padding:12px;margin-bottom:8px}.cgc-panel .link .tt{flex:1}.cgc-panel .link .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}.cgc-panel .link .dot.no{background:var(--sub)}.cgc-panel .link .x{border:0;background:var(--mute);color:var(--sub);border-radius:9px;padding:8px}.cgc-panel .seg{display:flex;gap:3px;padding:4px;background:var(--app);border-radius:11px}.cgc-panel .seg button{flex:1;min-width:0;border:0;border-radius:8px;background:transparent;color:var(--sub);padding:9px 5px;font:inherit;font-size:11px}.cgc-panel .seg button.on{background:var(--brs);color:var(--brdeep)}.cgc-panel .ta{width:100%;min-height:240px;border:1px solid var(--line);border-radius:13px;padding:14px;background:var(--card);color:var(--tx);font:13px/1.7 inherit;resize:vertical}.cgc-panel .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 14px;background:var(--card);border-top:1px solid var(--hair)}.cgc-panel .tarow{display:flex;justify-content:space-between;align-items:center;margin-top:9px}.cgc-panel .step{display:flex;align-items:center;background:var(--app);border-radius:11px}.cgc-panel .step button{background:transparent;border:0;color:var(--br);padding:10px;font:inherit}.cgc-panel .src .tx{min-width:0}.cgc-panel .src .b{flex-wrap:wrap}.cgc-panel .ev .bd{max-height:80px}.cgc-panel .ev .meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.cgc-panel .ev .h span{max-width:130px;text-align:right}.cgc-panel .stats a:focus-visible{outline:2px solid var(--br)}.cgc-panel #cgc-ui-room{max-width:none}.cgc-panel .dash-aux{margin:12px 14px}.cgc-panel .cgc-view{padding-bottom:16px}.cgc-overlay[data-panel-mode="floating"] .sc{padding:0 12px 12px}.cgc-overlay[data-panel-mode="floating"] .hero-n .num{font-size:76px}
 @media(max-width:720px),(pointer:coarse) and (max-width:900px){.cgc-panel .ta,.cgc-panel .ui-input,.cgc-panel .step input{font-size:16px}.cgc-panel .mn,.cgc-panel .seg button,.cgc-panel .hd .x{min-height:44px}.cgc-panel .sc{overscroll-behavior:contain}.cgc-panel .tabs{padding-bottom:max(6px,env(safe-area-inset-bottom,0px))}}
-@media(prefers-reduced-motion:reduce){.cgc-panel .st{opacity:1!important;animation:none!important}.cgc-panel .fill,.cgc-panel .live{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.cgc-panel .st{opacity:1!important;animation:none!important}.cgc-panel .fill,.cgc-panel .live,.cgc-panel .track::after{animation:none!important}.cgc-panel .tabs::before{transition:none!important}}
 
 /* ===== v4.6.6 UI density & alignment pass ===== */
 .cgc-panel .headcard{padding:13px 14px 12px;border-radius:18px}
@@ -21972,10 +22085,15 @@ ${groups.map(g => `<div class="ch-item" style="margin-bottom:6px"><div class="ch
 <p class="ch-faint">크랙 도우미 ${esc(CH.VERSION)}</p></div>`;
     }
 
+    // 1.1.1: 설정 탭 맨 위(접지 않는 영역) 「화면 가볍게」 스위치. 기본 꺼짐. 값은 크랙 도우미 설정(motion.off)에 저장되고 설정 백업 파일에 들어간다.
+    function motionHtml() {
+        return `<div class="ch-card" data-s-sec="motion"><label class="ch-check ch-switch"><input type="checkbox" role="switch" data-s="motionOff" ${settings.get('motion.off') ? 'checked' : ''}><span>화면 가볍게 (애니메이션 끄기)<span class="ch-faint">움직이는 효과를 모두 꺼서 화면이 가벼워져요.</span></span></label></div>`;
+    }
+
     /* ---------------- 화면 ---------------- */
     function paint() {
         if (!root) return;
-        root.innerHTML = originalsHtml() + migrationHtml() + aiHtml() + gptHtml() + launcherHtml() + historyHtml() + backupHtml();
+        root.innerHTML = motionHtml() + originalsHtml() + migrationHtml() + aiHtml() + gptHtml() + launcherHtml() + historyHtml() + backupHtml();
     }
     function repaintSection(name, html) {
         const old = root?.querySelector(`[data-s-sec="${name}"]`);
@@ -22026,6 +22144,7 @@ ${groups.map(g => `<div class="ch-item" style="margin-bottom:6px"><div class="ch
         } else if (key === 'key' || key === 'firebase') saveSecret(el);
         else if (key === 'backgroundRelay' || key === 'autoRenameChatTitles') { try { CGC.saveSettings({ [key]: el.checked }); } catch {} }
         else if (key === 'launcherMode') settings.set('launcher.mode', el.value);
+        else if (key === 'motionOff') settings.set('motion.off', el.checked);
         else if (key === 'backup-file') { const file = el.files?.[0]; el.value = ''; if (file) importBackup(file); }
         if (key === 'provider' || key === 'model' || key === 'reasoning') bus.emit('ai-connection');
     }
