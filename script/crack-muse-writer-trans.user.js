@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         ✨ Crack Muse Writer + 번역 (AI 답변 커스텀)
 // @namespace    muse writer
-// @version      5.3.5-multilang.6
-// @description  Crack 캐릭터챗 입력을 맥락·프로필·유저 노트·참고자료·서사 나침반에 맞춰 다듬고, 단기·장기 기억과 최신 에리 로어를 읽기 전용으로 참고하는 AI 집필 보조 도구 + 단일 언어 번역과 문장별 [es]·[스페인어] 태그 번역
+// @version      5.3.5-multilang.7
+// @description  Crack 캐릭터챗 입력을 맥락·프로필·유저 노트·참고자료·서사 나침반에 맞춰 다듬고, 단기·장기 기억과 최신 WRMC 자료(없으면 에리 로어)를 읽기 전용으로 참고하는 AI 집필 보조 도구 + 단일 언어 번역과 문장별 [es]·[스페인어] 태그 번역
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-muse-writer-trans.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-muse-writer-trans.user.js
@@ -23,7 +23,7 @@
 (function () {
   "use strict";
 
-  const SCRIPT_VERSION = "5.3.5-multilang.6";
+  const SCRIPT_VERSION = "5.3.5-multilang.7";
   const API_BASE = "https://crack-api.wrtn.ai/crack-gen";
   const API_ORIGIN = "https://crack-api.wrtn.ai";
 
@@ -3408,6 +3408,7 @@
     refreshRefGroupHeader("lore");
   }
 
+  const referenceOpenGroups = new Set();
   function renderEriLoreList(entries = referenceCache.loreEntries) {
     const list = document.getElementById("ref-lore-list");
     if (!list) return;
@@ -3432,7 +3433,7 @@
     }
     for (const [pack, groupEntries] of groups) {
       const container=referenceSource==='wrmc'?document.createElement("details"):list;
-      if(container!==list){container.className="lore-ref-group";list.appendChild(container);}
+      if(container!==list){container.className="lore-ref-group";container.open=referenceOpenGroups.has(pack);container.addEventListener("toggle",()=>{if(!container.isConnected)return;if(container.open)referenceOpenGroups.add(pack);else referenceOpenGroups.delete(pack);});list.appendChild(container);}
       const header = document.createElement(container===list?"div":"summary");
       header.className = "lore-ref-group";
       header.textContent = `${pack} · ${groupEntries.length}개`;
@@ -6550,7 +6551,7 @@ ${styleInstruction}`);
     if(room!==getChatRoomId()||epoch!==referenceReadEpoch||detectedReferenceSource()!=='wrmc')return {entries:[],packs:[],status:''};
     const groups=result?.ok&&Array.isArray(result.groups)?result.groups:[];
     const entries=groups.flatMap(g=>(g.items||[]).map(i=>({wrmc:true,id:String(i.id),packName:String(g.title),groupKey:String(g.key),name:String(i.title),text:String(i.text),injected:i.injected===true})));
-    const packs=groups.map(g=>String(g.title)),status=result?.ok?`WRMC 자료 · 묶음 ${groups.length}개 · 항목 ${entries.length}개 (주입 중 ${entries.filter(e=>e.injected).length})`:'WRMC 준비 중 — 완료되면 자동으로 다시 읽음';
+    const packs=groups.map(g=>String(g.title)),status=result?.ok?`WRMC 자료 · 묶음 ${groups.length}개 · 항목 ${entries.length}개 (주입 중 ${entries.filter(e=>e.injected).length})`:'WRMC · '+String(result?.reason||'자료를 읽지 못함');
     referenceCache.room=room;referenceCache.loreAt=result?.ok?Date.now():0;referenceCache.loreEntries=entries;referenceCache.lorePacks=packs;referenceCache.loreStatus=status;
     return {entries,packs,status};
   }
