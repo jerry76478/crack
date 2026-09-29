@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🪽 Wish RP Manager Core · CONTINUUM
 // @namespace    local.rp.context.manager
-// @version      1.3.8-continuum.9.1
+// @version      1.3.8-continuum.10
 // @description  Crack RP용 컨텍스트 주입·인지·자동 장기기억·자료집·전체 재구축을 하나로 관리합니다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-rp-manager-continuum.user.js
@@ -47,7 +47,7 @@
   // Storage IDs, ELR contract, strict AI commit validation and rollback formats are preserved.
  let WUI=null;
 
-  const SCRIPT_VERSION = '1.3.8-continuum.9.1';
+  const SCRIPT_VERSION = '1.3.8-continuum.10';
   const RUNTIME_KEY = '__WISH_RP_MANAGER_V1__';
   const RELOAD_GUARD_KEY = `WISH_RP_clean_reload_${SCRIPT_VERSION}`;
   const previousRuntime = window[RUNTIME_KEY];
@@ -16413,7 +16413,7 @@ diff:`<div class="m3-shell">
 
   }
   const clamp = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b));
-  const canMove = () => matchMedia('(any-pointer: fine)').matches || innerWidth >= 600;
+  const canMove = () => WF.on || matchMedia('(any-pointer: fine)').matches || innerWidth >= 600;
   function startDrag(e) {
     if (!canMove()) return; const sh = root.querySelector('.m3-shell'), ov = root.querySelector('.m3-overlay'); if (!sh || !ov) return; e.preventDefault();
     const sr = sh.getBoundingClientRect(), or = ov.getBoundingClientRect(), ox = e.clientX - sr.left, oy = e.clientY - sr.top;
@@ -16564,6 +16564,195 @@ diff:`<div class="m3-shell">
     localStorage.setItem('WISH_CONTINUUM_UI_FOLDS_V1',JSON.stringify([...S.openSet]));
     open(target[0]);requestAnimationFrame(()=>{const el=root?.querySelector('[data-key="'+target[1]+'"]')||root?.querySelector('[data-key="feature-off-'+target[2]+'"]');if(!el)return;for(let p=el;p&&p!==root;p=p.parentElement)if(p.tagName==='DETAILS'){p.open=true;ui.expand(p.dataset.open);}el.scrollIntoView({block:'start'});});
   };
+
+  const wfStyle=document.createElement('style');wfStyle.id='wish-frame-style';wfStyle.textContent="/* CONTINUUM.10: all visual overrides opt in through one document attribute. */\nhtml[data-wrmc-frame] #wish-rp-root .m3-overlay{padding:0!important;background:var(--m3-scrim);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .12s;animation:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-overlay>.m3-shell{position:absolute!important;left:var(--wf-x)!important;top:var(--wf-y)!important;width:var(--wf-w)!important;height:var(--wf-h)!important;max-width:none;max-height:none;border-radius:20px!important;border:1px solid var(--m3-line)!important;box-shadow:var(--m3-shadow);background:var(--m3-sheet);animation:none;transform:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:12px 16px;cursor:move;flex:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-head .m3-id{min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .m3-room-titlebar>strong{font-size:18px;line-height:26px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\nhtml[data-wrmc-frame] #wish-rp-root .m3-headtools{display:flex;gap:0;align-items:center}\nhtml[data-wrmc-frame] #wish-rp-root .m3-headtools>.m3-ico{width:44px;height:44px;min-width:44px;min-height:44px;padding:10px;flex:none;color:var(--m3-fg)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-status{grid-column:1/-1;display:flex;align-items:center;gap:8px;color:var(--m3-fg2);font-size:12px;line-height:18px;min-width:0;overflow-wrap:anywhere}\nhtml[data-wrmc-frame] #wish-rp-root .wf-status .m3-dot{flex:none;background:var(--m3-ok)}\nhtml[data-wrmc-frame] #wish-rp-root .m3-layout{min-height:0;flex:1}\nhtml[data-wrmc-frame] #wish-rp-root .m3-main{padding:16px;min-width:0;background:var(--m3-bg)}\nhtml[data-wrmc-frame] #wish-rp-root .m3-page{font-size:14px;line-height:23px;animation:none;overflow-wrap:anywhere}\nhtml[data-wrmc-frame] #wish-rp-root .m3-page :is(b,strong,h2,h3){font-weight:600}\nhtml[data-wrmc-frame] #wish-rp-root .m3-pagehead{margin:0 0 8px;gap:8px}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-pagehead h2,.c71-heading h2){font-size:20px;line-height:28px;font-weight:600;margin:0}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-muted,.m3-page small,.c71-head small,.m3-state,.m3-cap-den,.m3-ts){color:var(--m3-fg2);font-size:12px;line-height:18px}\nhtml[data-wrmc-frame] #wish-rp-root .m3-panel{padding:16px;margin:0 0 12px;background:var(--m3-card);border-color:var(--m3-line);box-shadow:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-panel::before{display:none}\n/* Explicit control families; help buttons retain the user's 17/36 exception. */\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-btn,.m3-inject,.m3-select,.m3-toggle,.wf-back,.wf-task-toggle,.wf-more-row):not(.m3-help){min-height:44px;min-width:44px;max-width:100%;font-weight:500;font-size:14px;line-height:20px}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-btn,.m3-inject):not(.m3-help){padding:8px 12px;white-space:normal;overflow-wrap:anywhere}\nhtml[data-wrmc-frame] #wish-rp-root .m3-btn>span{min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .m3-btn.primary{background:var(--m3-accent)!important;background-image:none!important;color:var(--m3-accent-ink)!important}\nhtml[data-wrmc-frame] #wish-rp-root .m3-ai-call::before,html[data-wrmc-frame] #wish-rp-root .m3-ai-call::after{display:none!important}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-help,.m3-k){color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root .m3-actions{gap:8px}\nhtml[data-wrmc-frame] #wish-rp-root .m3-current-status{display:flex;flex-wrap:wrap;gap:12px 8px;margin:4px 0 24px;align-items:center}\nhtml[data-wrmc-frame] #wish-rp-root .m3-current-status>.m3-btn{position:relative;height:36px;min-height:36px;padding:4px 10px;font-size:12px;line-height:18px;max-width:100%;border:1px solid var(--m3-line);border-radius:18px;background:var(--m3-card)}\nhtml[data-wrmc-frame] #wish-rp-root .m3-current-status>.m3-btn::after{content:\"\";position:absolute;inset:-4px 0;min-height:44px;pointer-events:auto;animation:none;background:none;transform:none}\nhtml[data-wrmc-frame] #wish-rp-root .wf-verification{width:100%;margin:0;color:var(--m3-fg2)!important}\nhtml[data-wrmc-frame] #wish-rp-root :is(.wf-tasks,.wf-next){margin:0 0 24px}\nhtml[data-wrmc-frame] #wish-rp-root :is(.wf-tasks h3,.wf-next h3){margin:0 0 8px;font-size:13px;line-height:18px;color:var(--m3-fg2);font-weight:600}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-list{border:1px solid var(--m3-line);border-radius:14px;background:var(--m3-card);overflow:hidden}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-list>p{margin:16px;color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task{padding:12px 16px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task+.wf-task{border-top:1px solid var(--m3-line2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task[hidden]{display:none}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-top{display:flex;align-items:center;gap:8px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-toggle{display:block;flex:1;min-width:0;border:0;padding:0;text-align:left;background:transparent;color:var(--m3-fg);cursor:pointer;font-family:inherit}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-title{display:flex;align-items:center;gap:8px;min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-title>b{font-size:15px;line-height:22px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;font-weight:500}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-toggle>small{display:block;margin-top:4px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--m3-fg2);font-size:12px;line-height:18px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-top>.m3-btn{flex:none;max-width:96px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-level{display:inline-flex;align-items:center;flex:none;height:22px;padding:0 6px;font-size:11px;line-height:18px;border-radius:6px;background:var(--m3-accent-soft);color:var(--m3-accent);font-weight:600}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task[data-level=\"막힘\"] .wf-level{background:color-mix(in srgb,var(--m3-danger) 12%,var(--m3-card));color:var(--m3-danger)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task[data-level=\"알림\"] .wf-level{background:var(--m3-card2);color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-detail{margin-top:12px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-detail>.m3-panel{border:0;padding:0;margin:0}\nhtml[data-wrmc-frame] #wish-rp-root .wf-section-head{display:flex;gap:8px;align-items:center;justify-content:space-between}\nhtml[data-wrmc-frame] #wish-rp-root .wf-section-head>.m3-btn{font-size:12px;padding:4px 8px;color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-tiles{display:flex;flex-direction:column;gap:0;background:var(--m3-card);border:1px solid var(--m3-line);border-radius:14px;overflow:hidden;margin:0 0 8px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-tile{border:0;border-radius:0;box-shadow:none;padding:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-tile+.m3-tile{border-top:1px solid var(--m3-line2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-tile>svg{display:none}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-txt{flex:1;min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-v{display:flex;align-items:baseline;gap:4px;font-variant-numeric:tabular-nums}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next>.m3-btn{width:100%}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next .m3-tile>.m3-btn{background:var(--m3-card)!important;color:var(--m3-fg)!important;box-shadow:none!important;border:1px solid var(--m3-line)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-task-top>.m3-btn{background:var(--m3-card)!important;color:var(--m3-fg)!important;box-shadow:none!important;border:1px solid var(--m3-line)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-next [data-key=\"auto-pause-scope\"]{margin:8px 0 0}\nhtml[data-wrmc-frame] #wish-rp-root .m3-cap{margin:0 0 24px;padding:16px;background:var(--m3-card);border:1px solid var(--m3-line);box-shadow:none}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-cap-num,.c8-total,.m3-nb,.m3-ts,.wf-size){font-variant-numeric:tabular-nums}\nhtml[data-wrmc-frame] #wish-rp-root .m3-foot{padding:8px 12px;display:block;border-top:1px solid var(--m3-line);background:var(--m3-sheet)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-line{display:flex;align-items:center;gap:8px;min-width:0;width:100%}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-label{display:flex;align-items:center;gap:6px;flex:none;font-size:12px;color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-label>.m3-dot{background:var(--m3-ok);flex:none}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-line>.m3-state{flex:1;width:auto;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-line>:is(.m3-btn,.m3-inject){flex:none;padding:6px 8px;font-size:12px;gap:4px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-injection-line>.m3-inject .m3-dot{display:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-nav{display:flex;width:76px;padding:8px 4px}\nhtml[data-wrmc-frame] #wish-rp-root .m3-bottomnav{display:none}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-nav,.m3-bottomnav)>button{position:relative;min-height:52px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px;line-height:16px;padding:4px 1px;font-weight:500;color:var(--m3-fg2)}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-nav,.m3-bottomnav)>button>span{min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-navind,.m3-bottomnav)::before{display:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-navind{display:none}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-nav,.m3-bottomnav)>button[aria-current=\"page\"]{background:var(--m3-accent-soft);color:var(--m3-accent);transform:none}\nhtml[data-wrmc-frame] #wish-rp-root .m3-nb{height:18px;line-height:18px;min-width:18px;padding:0 3px;top:0;right:0;font-size:10px;background:var(--m3-accent);color:var(--m3-accent-ink)}\nhtml[data-wrmc-frame] #wish-rp-root .m3-grip{display:block!important;width:20px;height:20px;touch-action:none}\n/* Container queries measure the content box: shell border-box 800px minus two 1px borders. */\n@container (width < 798px){html[data-wrmc-frame] #wish-rp-root .m3-nav{display:none}html[data-wrmc-frame] #wish-rp-root .m3-bottomnav{display:flex;padding:4px 6px;gap:0}html[data-wrmc-frame] #wish-rp-root .m3-bottomnav>button{flex:1}}\n@container (min-width:640px){html[data-wrmc-frame] #wish-rp-root .m3-main{padding:20px}}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings{padding:0;display:flex;flex-direction:column;gap:12px;min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .c71-head{padding:0;margin:0 0 12px;border:0;display:flex;flex-direction:column;gap:8px;align-items:stretch}\nhtml[data-wrmc-frame] #wish-rp-root .c71-heading{padding:0;margin:0;display:block}\nhtml[data-wrmc-frame] #wish-rp-root .wf-back{align-self:flex-start;border:0;padding:0;background:transparent;color:var(--m3-accent);font-family:inherit;text-align:left}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings>.m3-panel{margin:0;padding:16px;width:100%;box-sizing:border-box}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings :is(.m3-feature-overview,.m3-feature-row,.c71-feature-list){margin-left:0;margin-right:0}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings>.c71-feature-list{padding:16px;border:1px solid var(--m3-line);border-radius:14px;background:var(--m3-card)}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings>.c71-head{padding-inline:0}\nhtml[data-wrmc-frame] #wish-rp-root .c71-feature-list .m3-toggle small{min-width:0}\nhtml[data-wrmc-frame] #wish-rp-root .wf-settings-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--m3-line);border-radius:14px;background:var(--m3-card);overflow:hidden}\nhtml[data-wrmc-frame] #wish-rp-root .wf-settings-list>.m3-btn{border:0;border-radius:0;justify-content:flex-start;text-align:left;padding:12px 16px;min-height:52px;font-size:15px;background:transparent;color:var(--m3-fg)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-settings-list>.m3-btn+.m3-btn{border-top:1px solid var(--m3-line2)}\nhtml[data-wrmc-frame] #wish-rp-root .c71-settings :is(input,select,textarea){max-width:100%;box-sizing:border-box;color:var(--m3-fg)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more{align-items:flex-end}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more .m3-sheet{width:min(480px,100%);border-radius:20px 20px 0 0;background:var(--m3-sheet);animation:none}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more .m3-dialog-body{padding:16px}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more-meta{font-size:12px;color:var(--m3-fg2);margin:0 0 16px;overflow-wrap:anywhere}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more-list{background:var(--m3-card);border:1px solid var(--m3-line);border-radius:14px;overflow:hidden}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more-row{position:relative;width:100%;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center;justify-content:space-between;padding:12px 16px;border:0;background:transparent;color:var(--m3-fg);font-family:inherit;text-align:left;border-radius:0;cursor:pointer}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more-row+.wf-more-row{border-top:1px solid var(--m3-line2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-more-row>small{flex-basis:100%;color:var(--m3-fg2);font-size:12px;line-height:18px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\nhtml[data-wrmc-frame] #wish-rp-root .wf-switch{font-style:normal;font-size:12px;color:var(--m3-fg2);padding:4px 8px;border-radius:12px;background:var(--m3-card2)}\nhtml[data-wrmc-frame] #wish-rp-root .wf-audit-result{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;color:var(--m3-fg)}\nhtml[data-wrmc-frame] #wish-rp-root :is(.wf-more,.c71-injection) .m3-sheet>header>.m3-ico{width:44px;height:44px;min-width:44px;min-height:44px}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-row{display:flex;min-height:52px;gap:8px;padding:8px 16px}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-row>.m3-kind{width:64px;min-width:64px;max-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;background:var(--m3-accent-soft);color:var(--m3-accent)}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-row .m3-t{min-width:0;flex:1}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-row .m3-t>b{display:block;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}\nhtml[data-wrmc-frame] #wish-rp-quick :is(.m3-muted,small,.wf-size){color:var(--m3-fg2);font-size:12px;line-height:18px}\nhtml[data-wrmc-frame] #wish-rp-quick .wf-size{font-style:normal;flex:none;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-row.is-off{opacity:1;color:var(--m3-fg2);background:var(--m3-card2)}\nhtml[data-wrmc-frame] #wish-rp-quick :is(.m3-btn,.m3-ico):not(.m3-help){min-width:44px;min-height:44px;height:auto;padding:8px;font-weight:500}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-foot{gap:8px}\nhtml[data-wrmc-frame] #wish-rp-quick .wq-foot>.m3-muted{min-width:0;flex:1}\nhtml[data-wrmc-frame] #wish-rp-monitor .wish-mon-core{min-width:44px;min-height:44px}\n/* Motion is restricted to opacity; ongoing job/gauge indicators keep their original animation. */\nhtml[data-wrmc-frame] #wish-rp-root .m3-state .m3-dots i{animation:none!important}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-ico,.m3-navind,.m3-grip,.m3-nb,.ic,.ic *){animation:none!important;transition-property:opacity!important;transition-duration:.12s!important}\nhtml[data-wrmc-frame] #wish-rp-root .m3-toggle>i,html[data-wrmc-frame] #wish-rp-root .m3-toggle>i::after{transition:none!important}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-shell,.m3-page,.m3-panel,.m3-card,.m3-tile,.m3-btn,.m3-inject,.m3-nav button,.m3-bottomnav button,.m3-sheet,.m3-dialog,.m3-dot),html[data-wrmc-frame] #wish-rp-quick,html[data-wrmc-frame] #wish-rp-quick .wq-row{animation:none!important;transition-property:opacity!important;transition-duration:.12s!important;transform:none}\nhtml[data-wrmc-frame] #wish-rp-root :is(.m3-btn,.m3-panel,.m3-card)::before,html[data-wrmc-frame] #wish-rp-root :is(.m3-btn,.m3-panel,.m3-card)::after{animation:none!important;transition:none!important}\nhtml[data-wrmc-frame].wish-ui-simple #wish-rp-root .m3-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}\n@media(prefers-reduced-motion:reduce){html[data-wrmc-frame] #wish-rp-root .m3-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}html[data-wrmc-frame] #wish-rp-root *,html[data-wrmc-frame] #wish-rp-quick *,html[data-wrmc-frame] #wish-rp-monitor *{animation:none!important;transition:none!important}}\n@supports not (backdrop-filter:blur(1px)){html[data-wrmc-frame] #wish-rp-root .m3-overlay{-webkit-backdrop-filter:none!important}}\n/* The user's effects preference outranks every opt-in transition above, including SVG parts. */\nhtml:root[data-wrmc-frame].wish-ui-simple body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *,html:root[data-wrmc-frame].wish-ui-simple body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *::before,html:root[data-wrmc-frame].wish-ui-simple body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *::after{animation:none!important;transition:none!important}\n@media(prefers-reduced-motion:reduce){html:root[data-wrmc-frame] body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *,html:root[data-wrmc-frame] body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *::before,html:root[data-wrmc-frame] body :is(#wish-rp-root,#wish-rp-quick,#wish-rp-monitor) *::after{animation:none!important;transition:none!important}}\n";document.head.append(wfStyle);
+  /* CONTINUUM.10 frame: transform detached templates before patchKids; never move live DOM. */
+  const WF = {
+    on: (()=>{try{return localStorage.getItem('wish-frame-off')!=='1';}catch{return true;}})(),
+    mode:null, layouts:null, originalLayout:null,
+    raw:{vCheck,vMemory,vOverlay,vFoot,vQuick,vSettings,fitLayout,syncAppearance,updateMonitor},
+    // One mapping table, consumed by both the in-script audit and frame-check.cjs.
+    map:[
+      ['check','[data-key="home-head"]'],['check','[data-key="current-status"]'],['check','[data-key="home-tiles"]'],
+      ['check','[data-key="auto-pause-scope"]'],['check','[data-key="injection-error"]','막힘'],
+      ['check','[data-key="home-error"]:has(b)','막힘'],['check','[data-key="home-error"]:not(:has(b))','retry'],
+      ['check','[data-key="continuum-embedding"]','막힘'],['check','[data-key="home-reviews"]','결정'],
+      ['check','[data-key="home-shortcuts"]','결정'],['check','[data-key="home-fresh"]','결정'],
+      ['check','[data-key="semantic-search"]','결정'],['check','[data-key="continuum-spine"]','spine'],
+      ['check','[data-key="destination-migration"]','알림'],['memory','[data-key="memdiff-strip"]','알림'],
+      ['check','[data-key="feature-off-protect.facts"]','chip'],['check','.m3-cap'],
+      ['overlay','[data-key="shell-header"]'],['overlay','.m3-room-titlebar'],['overlay','.m3-headtools'],
+      ...['roomName','simpleToggle','api','kvOpen','search','closePanel'].map(a=>['overlay','[data-act="'+a+'"]']),
+      ['foot','.m3-inject'],['foot','[data-act="preview"]'],['foot','[data-act="reverify"]'],['foot','.m3-state'],
+      ['settings','.c71-settings'],['settings','.m3-setting-menu'],['settings','[data-key="simple-ui-top"]'],
+      ['settingsSub','.c71-head'],['quick','.wq-head'],['quick','.wq-list'],['quick','.wq-row'],['quick','.wq-foot'],['quick','[data-act="quickFull"]'],
+      ['injection','.m3-injection-tabs'],['injection','.c71-injection-body']
+    ]
+  };
+  const wfTemplate=html=>{const t=document.createElement('template');t.innerHTML=html;return t;};
+  const wfMake=html=>wfTemplate(html).content.firstElementChild;
+  function wfTransform(html,fn){if(!WF.on)return html;const t=wfTemplate(html);try{if(fn(t.content)===false)return html;return t.innerHTML;}catch{return html;}}
+  function wfTasks(t){
+    const out=[];
+    for(const [view,selector,level] of WF.map){if(!['check','memory'].includes(view)||!['막힘','결정','알림','spine'].includes(level))continue;
+      for(const node of t.querySelectorAll(selector)){
+        if(level==='spine'&&!node.querySelector('[data-act="spineReview"]'))continue;
+        out.push({node,level:level==='spine'?'결정':level,key:node.dataset.key});
+      }
+    }
+    return out.sort((a,b)=>['막힘','결정','알림'].indexOf(a.level)-['막힘','결정','알림'].indexOf(b.level));
+  }
+  function wfCount(){return wfTasks(wfTemplate(WF.raw.vCheck()).content);}
+  function wfTaskRow({node,level,key}){
+    const title=node.querySelector('b')?.textContent.trim()||node.querySelector('p')?.textContent.trim()||'기억 변경 비교';
+    const reason=node.querySelector('p,small')?.textContent.trim()||'내용을 펼쳐 확인하세요.';
+    const primary=node.querySelector('button[data-act]:not(.m3-help)');
+    const row=wfMake('<article class="wf-task" data-key="wf-task-'+esc(key)+'"><div class="wf-task-top"><button class="wf-task-toggle" data-act="wfDetail" data-arg="'+esc(key)+'" aria-expanded="'+S.openSet.has('wf-detail-'+key)+'"><span class="wf-task-title"><span class="wf-level">'+level+'</span><b>'+esc(title)+'</b></span><small title="'+esc(reason)+'">'+esc(reason)+'</small></button></div><div class="wf-task-detail"'+(S.openSet.has('wf-detail-'+key)?'':' hidden')+'></div></article>');
+    row.dataset.level=level;
+    if(primary)row.firstElementChild.append(primary);
+    row.lastElementChild.append(node);
+    return row;
+  }
+  vCheck=function(){const source=WF.raw.vCheck();return wfTransform(source,t=>{
+    const head=t.querySelector('[data-key="home-head"]'),chips=t.querySelector('[data-key="current-status"]'),tiles=t.querySelector('[data-key="home-tiles"]');
+    if(!head||!chips||!tiles)return false;
+    // A newly introduced top-level region has no agreed position: retain this entire view.
+    if([...t.children].some(el=>el.dataset.key&&!WF.map.some(([v,s])=>v==='check'&&el.matches(s))&&!/^(continuum-(shortcuts|evidence)|feature-off-|c8-delivery-)/.test(el.dataset.key)))return false;
+    const diff=memDiffStrip();if(diff)t.append(wfMake(diff));
+    const original=[...t.children],known=new Set([head,chips,tiles]);
+    const title=head.querySelector('h2'),auto=head.querySelector('.m3-auto-control');
+    if(!title||!auto)return false;
+    head.insertBefore(title,head.firstChild);t.insertBefore(head,t.firstChild);head.after(chips);
+    const verification=head.querySelector('.m3-home-verification');if(verification){verification.classList.add('wf-verification');chips.append(verification);}
+    const oldIdle=head.querySelector(':scope>.m3-muted');if(oldIdle)oldIdle.remove();
+    const inject=wfMake(btn('주입 '+(V.inj.armed?'켜짐':'꺼짐'),'preview',{cls:'quiet mini'}));chips.prepend(inject);
+    chips.querySelectorAll(':scope>span[aria-hidden]').forEach(e=>e.remove());
+    const tasks=wfTasks(t),section=wfMake('<section class="wf-tasks" data-key="wf-tasks"><h3>처리할 일 · '+tasks.length+'</h3><div class="wf-task-list"></div></section>');
+    const list=section.lastElementChild;
+    tasks.forEach((item,i)=>{known.add(item.node);const row=wfTaskRow(item);if(i>=3){row.dataset.extra='';row.hidden=!S.openSet.has('wf-more-tasks');}list.append(row);});
+    if(!tasks.length)list.innerHTML='<p>처리할 일 없음</p>';
+    if(tasks.length>3)section.append(wfMake(btn(S.openSet.has('wf-more-tasks')?'접기':(tasks.length-3)+'건 더 보기','wfTasks',{cls:'quiet'})));
+    chips.after(section);
+    const next=wfMake('<section class="wf-next" data-key="wf-next"><div class="wf-section-head"><h3>다음 자동 정리</h3></div></section>');
+    const toggle=auto.querySelector('[data-act="unifiedToggle"]'),all=auto.querySelector('[data-act="unifiedAll"]');
+    if(toggle){toggle.title=toggle.textContent+' · 모든 방';toggle.setAttribute('aria-label',toggle.title);toggle.querySelector('span')?.remove();toggle.textContent=(V.unified?.enabled?'일시정지':'시작')+' · 모든 방';next.firstChild.append(toggle);}
+    next.append(tiles);if(all)next.append(all);if(!auto.children.length)auto.remove();
+    const scope=t.querySelector('[data-key="auto-pause-scope"]');if(scope){known.add(scope);next.append(scope);}
+    section.after(next);
+    let anchor=next;for(const node of original.filter(e=>e.matches('.m3-cap'))){known.add(node);anchor.after(node);anchor=node;}
+    for(const retry of t.querySelectorAll('[data-key="home-error"]:not(:has(b))'))retry.remove();
+    t.querySelector('[data-key="feature-off-protect.facts"]')?.remove();
+    // Unknown siblings stay in their original relative sequence, with their entire content intact.
+    for(const node of original)if(!known.has(node)&&node.parentNode===t){anchor.after(node);anchor=node;}
+  });};
+  vMemory=function(){return wfTransform(WF.raw.vMemory(),t=>t.querySelector('[data-key="memdiff-strip"]')?.remove());};
+  vFoot=function(){return wfTransform(WF.raw.vFoot(),t=>{
+    const start=t.querySelector('.m3-inject'),manage=t.querySelector('[data-act="preview"]'),stateEl=t.querySelector('.m3-state');if(!start||!manage||!stateEl)return;
+    t.querySelector('[data-act="reverify"]')?.remove();
+    const line=wfMake('<div class="wf-injection-line"><span class="wf-injection-label"><i class="m3-dot"></i>주입 '+(V.inj.armed?'켜짐':'꺼짐')+'</span></div>');
+    stateEl.title=stateEl.textContent;line.append(stateEl,manage,start);t.prepend(line);
+  });};
+  function wfMoreBody(){
+    const t=wfTemplate(WF.raw.vOverlay()).content,actions=['roomName','simpleToggle','api','kvOpen'];
+    const labels=['방 이름 바꾸기','화면 효과 줄이기','AI 연결·모델','백업'];
+    const rows=actions.map((act,i)=>{
+      const old=t.querySelector('[data-act="'+act+'"]');if(!old)return '';
+      old.className='wf-more-row';old.innerHTML='<span>'+labels[i]+'</span>'+(act==='api'?'<small>'+esc([V.ai.providerLabel,V.ai.model].filter(Boolean).join(' · '))+'</small>':act==='kvOpen'?'<small>파일 · Koofr</small>':'');
+      old.setAttribute('aria-label',labels[i]);old.dataset.close=S.dialogs.find(d=>d.type==='wfMore')?.id||'';
+      if(act==='simpleToggle'){old.setAttribute('role','switch');old.setAttribute('aria-checked',String(simpleUI()));old.innerHTML+='<i class="wf-switch" aria-hidden="true">'+(simpleUI()?'켜짐':'꺼짐')+'</i>';delete old.dataset.close;}
+      return old.outerHTML;
+    }).join('');
+    return '<p class="wf-more-meta">Wish Core '+esc(V.version)+' · '+(V.save.saving?'저장 중…':'저장됨 '+esc(V.save.at||'—'))+'</p><div class="wf-more-list">'+rows+btn('전체 설정','wfSettings',{cls:'wf-more-row'})+'<button type="button" class="wf-more-row" data-act="wfToggle" role="switch" aria-checked="false">틀 끄기<span class="wf-switch">꺼짐</span></button></div>';
+  }
+  vOverlay=function(){return wfTransform(WF.raw.vOverlay(),t=>{
+    const shell=t.querySelector('.m3-shell');if(shell&&S.pos&&S.size){for(const [k,value] of Object.entries({x:S.pos.x,y:S.pos.y,w:S.size.w,h:S.size.h}))shell.style.setProperty('--wf-'+k,value+'px');}
+    const head=t.querySelector('[data-key="shell-header"]'),tools=head?.querySelector('.m3-headtools'),id=head?.querySelector('.m3-id'),title=head?.querySelector('.m3-room-titlebar');
+    if(!head||!tools||!id||!title)return;
+    for(const a of ['roomName','simpleToggle','api','kvOpen'])head.querySelector('[data-act="'+a+'"]')?.remove();
+    const close=tools.querySelector('[data-act="closePanel"]');if(close)close.before(wfMake('<button type="button" class="m3-ico" data-act="wfMore" aria-label="더보기" title="더보기">'+ic('more')+'</button>'));
+    id.querySelector('.m3-room-story')?.remove();id.querySelector('.m3-sub-line')?.remove();
+    const retry=V.unified?.retryNotice,status=retry||((jobLabel()||'대기')+' · '+(V.save.saving?'저장 중…':'저장됨 '+(V.save.at||'—')));
+    head.append(wfMake('<div class="wf-status" role="status"><i class="m3-dot"></i><span>'+esc(status)+'</span></div>'));
+    const count=wfCount().filter(r=>r.level!=='알림').length;
+    for(const nav of t.querySelectorAll('[data-act="nav"][data-arg="check"]')){nav.querySelector('.m3-nb')?.remove();if(count)nav.append(wfMake('<em class="m3-nb">'+count+'</em>'));}
+  });};
+  vSettings=function(){return wfTransform(WF.raw.vSettings(),t=>{
+    const menu=t.querySelector('.m3-setting-menu');if(menu)menu.classList.add('wf-settings-list');
+    const back=t.querySelector('.c71-heading>[data-act="settingsSection"]');if(back){back.className='wf-back';back.innerHTML='‹ 설정';back.parentNode.before(back);}
+    if(S.settingsSection==='advanced')t.querySelector('.c71-settings')?.append(wfMake('<section class="m3-panel" data-key="wf-audit">'+btn('틀 점검','wfAudit')+'</section>'));
+  });};
+  vQuick=function(){return wfTransform(WF.raw.vQuick(),t=>{
+    for(const row of t.querySelectorAll('.wq-row[data-key^="q-"]')){const item=V.inj.items.find(i=>'q-'+i.key===row.dataset.key);if(!item)continue;row.append(wfMake('<em class="wf-size">'+fmt(item.size)+'자</em>'));}
+    const foot=t.querySelector('.wq-foot'),button=foot?.querySelector('[data-act="quickFull"]');if(button){button.innerHTML='<span>전체 창 열기</span>';foot.querySelector('.m3-muted').textContent='길게 누르면 전체 창';}
+  });};
+  const wfInjection=DLG.injectionCurrent;
+  DLG.injectionCurrent=function(d){return wfTransform(wfInjection(d),t=>{const body=t.querySelector('.c71-injection-body');if(body&&V.inj.armed){const re=wfTemplate(WF.raw.vFoot()).content.querySelector('[data-act="reverify"]');if(re)body.prepend(re);}});};
+  DLG.wfMore=d=>sheet(d,{title:esc(V.room.name),body:wfMoreBody(),foot:closeBtn(d)}).replace('m3-dialog m3-ui','m3-dialog m3-ui wf-more');
+  DLG.wfAudit=d=>sheet(d,{title:'틀 점검',body:'<pre class="wf-audit-result">'+esc(JSON.stringify(d.report,null,2))+'</pre>',foot:closeBtn(d)});
+  BUILTIN.wfMore=()=>openSheet('wfMore');
+  BUILTIN.wfSettings=()=>{for(const d of [...S.dialogs])if(d.type==='wfMore')closeSheet(d,true);S.settingsSection='';BUILTIN.nav('settings');};
+  BUILTIN.wfToggle=()=>wfToggle();
+  BUILTIN.wfDetail=key=>{const k='wf-detail-'+key;S.openSet.has(k)?S.openSet.delete(k):S.openSet.add(k);};
+  BUILTIN.wfTasks=()=>{const k='wf-more-tasks';S.openSet.has(k)?S.openSet.delete(k):S.openSet.add(k);};
+  BUILTIN.wfAudit=()=>openSheet('wfAudit',{report:wfAudit()});
+  function wfToggle(){
+    WF.on=!WF.on;localStorage.setItem('wish-frame-off',WF.on?'0':'1');
+    for(const d of [...S.dialogs])if(d.type.startsWith('wf')){S.dialogs.splice(S.dialogs.indexOf(d),1);}
+    S.pos=null;S.size=null;S.layoutIntent=null;S.layoutViewport=null;WF.mode=null;syncAppearance();fitLayout();paint();
+  }
+  syncAppearance=function(){WF.raw.syncAppearance();document.documentElement.toggleAttribute('data-wrmc-frame',WF.on);};
+  updateMonitor=function(){WF.raw.updateMonitor();if(!WF.on)return;const m=document.getElementById(MON_ID);if(!m)return;
+    // Lightweight state for the closed-window path: no full view-model reads, no AI/network calls.
+    const inj=needsFullView()?V.inj:monitorVm.inj;
+    const blocked=!!inj?.error||!!(needsFullView()&&V.unified?.error)||!!(needsFullView()?V.continuumRoom?.embeddingIssue:state.currentRoom?.continuum?.embeddingIssue);
+    if(blocked)m.classList.add('is-alert');
+  };
+  const wfLoad=AD.loadLayout?.bind(AD),wfSave=AD.saveLayout?.bind(AD);
+  function wfMode(w=innerWidth){return w<=560?'folded':'unfolded';}
+  function wfInitLayouts(){if(WF.layouts)return;let old=null;try{old=wfLoad?.();}catch{}WF.originalLayout=old;WF.layouts={folded:old?.folded||((old?.pos&&old?.size)?{pos:old.pos,size:old.size,viewport:old.viewport}:null),unfolded:old?.unfolded||null};}
+  AD.saveLayout=function(layout){if(!WF.on)return wfSave?.(layout);wfInitLayouts();WF.layouts[wfMode()]={...layout,pos:{...layout.pos},size:{...layout.size}};return wfSave?.({...layout,...WF.layouts});};
+  AD.loadLayout=function(){if(!WF.on)return wfLoad?.();wfInitLayouts();return WF.layouts[wfMode()]||null;};
+  fitLayout=function(){
+    if(!WF.on)return WF.raw.fitLayout();wfInitLayouts();
+    const w=innerWidth,h=innerHeight,mode=wfMode(w),prior=S.layoutViewport;
+    // A height-only change is left to the mobile browser, including visualViewport events.
+    if(prior&&prior.w===w&&S.pos&&S.size)return;
+    if(WF.mode!==mode){
+      if(WF.mode&&S.pos&&S.size)WF.layouts[WF.mode]={pos:{...S.pos},size:{...(S.layoutIntent||S.size)},viewport:prior};
+      WF.mode=mode;const saved=WF.layouts[mode];S.pos=saved?.pos?{...saved.pos}:null;S.size=saved?.size?{...saved.size}:null;S.layoutIntent=saved?.size?{...saved.size}:null;
+    }
+    const px=mode==='folded'?10:20,py=mode==='folded'?24:(w>h?20:25),aw=w-px*2,ah=h-py*2;
+    if(!S.size){S.size={w:mode==='unfolded'&&w>h?Math.min(840,aw):aw,h:mode==='unfolded'&&w>h?Math.min(664,ah):ah};S.pos={x:(w-S.size.w)/2,y:(h-S.size.h)/2};S.layoutIntent={...S.size};}
+    S.size={w:Math.min(aw,Math.max(1,S.layoutIntent?.w||S.size.w)),h:Math.min(ah,Math.max(1,S.layoutIntent?.h||S.size.h))};
+    S.pos={x:Math.max(px,Math.min(S.pos?.x??px,w-px-S.size.w)),y:Math.max(py,Math.min(S.pos?.y??py,h-py-S.size.h))};S.layoutViewport={w,h};
+  };
+  // Exposed to the userscript menu and to the standalone audit; it reports names only.
+  function wfAudit(){
+    const missing=[],unmapped=[],seen=new Set(),views={};
+    const remember=(name,html)=>{(views[name]||=[]).push(html);const t=wfTemplate(html).content;for(const el of t.querySelectorAll('[data-key]'))if(!el.parentElement?.closest('[data-key]')){const key=el.dataset.key;if(!WF.map.some(([v,s])=>v===name&&el.matches(s)))unmapped.push(name+':'+key);}};
+    const prevV=V,prevS={...S},prevRoom=state.currentRoom,sem=WUISemanticStatus,migration=ContinuumInjection.migrationNotice;
+    const diff={latest:MemoryDiff.latest,seen:MemoryDiff.seen,summary:MemoryDiff.summary};
+    try{
+      const fake=normalizeRoomSlots({chatId:'frame-audit',slots:[]});state.currentRoom=fake;
+      S.openSet=new Set(S.openSet);
+      MemoryDiff.latest=()=>({id:'frame-diff',at:1});MemoryDiff.seen=()=>'';MemoryDiff.summary=()=>({total:1,counts:{state:{add:1,chg:0,del:0},log:{add:0,chg:0,del:0}}});
+      WUISemanticStatus=()=>({enabled:true,hasKey:false,cards:0,logs:0,cardTotal:1,logTotal:0,model:'fixture',issue:'가짜 오류'});
+      ContinuumInjection.migrationNotice=()=> '가짜 항목';
+      V=fill({room:{name:'틀 점검'},version:SCRIPT_VERSION,inj:{armed:true,error:'가짜 오류',items:[{key:'fixture',kind:'state',title:'가짜 항목',size:12}]},unified:{enabled:true,error:'가짜 작업 오류',retryNotice:'일시 오류 · 2분 뒤 다시 시도'},fresh:{show:true,title:'새 방 시작 설정'},reviews:[{id:'fixture',desc:'가짜 검토',acceptLabel:'적용'}],continuum:{protect:{facts:false},layer:{spine:true,shortcuts:true},subtasks:{}},continuumRoom:{embeddingIssue:{model:'fixture',at:1},spine:[],spineReview:[{id:'fixture',at:1,cards:[],diff:[]}],shortcuts:{rows:[],undecided:1,modes:[],archiveTo:[]}}},DEF);
+      V.continuum=normalizeContinuumSettings(V.continuum);
+      S.tab='check';remember('check',WF.raw.vCheck());remember('overlay',WF.raw.vOverlay());remember('foot',WF.raw.vFoot());remember('quick',WF.raw.vQuick());
+      remember('memory',memDiffStrip());
+      S.settingsSection='';remember('settings',WF.raw.vSettings());
+      for(const [key] of SETTING_SECTIONS){S.settingsSection=key;remember('settingsSub',WF.raw.vSettings());}
+      for(const [key] of NAV){S.tab=key;remember('tab-'+key,vPage());}
+      remember('injection',wfInjection({id:'frame-fixture',type:'injectionCurrent',draft:{}}));
+      remember('more',DLG.wfMore({id:'frame-more',type:'wfMore',draft:{}}));
+      for(const [name,selector] of WF.map){const key=name+' '+selector;if(seen.has(key))continue;seen.add(key);if(!(views[name]||[]).some(html=>wfTemplate(html).content.querySelector(selector)))missing.push(key);}
+    }finally{V=prevV;state.currentRoom=prevRoom;WUISemanticStatus=sem;ContinuumInjection.migrationNotice=migration;Object.assign(MemoryDiff,diff);for(const k of Object.keys(S))if(!(k in prevS))delete S[k];Object.assign(S,prevS);}
+    return {missing,unmapped:[...new Set(unmapped)],views:Object.keys(views)};
+  }
+  ui.frame={toggle:wfToggle,audit:wfAudit,map:WF.map,enabled:()=>WF.on};
+  if(typeof GM_registerMenuCommand==='function')GM_registerMenuCommand('WRMC 화면 틀 켜기/끄기',wfToggle);
 
   return { sendButton:findSendAction, mountMonitor, boot, open, close, toggle: () => (S.open ? close() : open()), paint, toast, job, openSheet, closeSheet, confirm: ask, isOpen: () => S.open, ui };
 }
