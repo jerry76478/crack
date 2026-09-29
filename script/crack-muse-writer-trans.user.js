@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ✨ Crack Muse Writer + 번역 (AI 답변 커스텀)
 // @namespace    muse writer
-// @version      5.3.5-multilang.7
+// @version      5.3.5-multilang.7.1
 // @description  Crack 캐릭터챗 입력을 맥락·프로필·유저 노트·참고자료·서사 나침반에 맞춰 다듬고, 단기·장기 기억과 최신 WRMC 자료(없으면 에리 로어)를 읽기 전용으로 참고하는 AI 집필 보조 도구 + 단일 언어 번역과 문장별 [es]·[스페인어] 태그 번역
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-muse-writer-trans.user.js
@@ -23,7 +23,7 @@
 (function () {
   "use strict";
 
-  const SCRIPT_VERSION = "5.3.5-multilang.7";
+  const SCRIPT_VERSION = "5.3.5-multilang.7.1";
   const API_BASE = "https://crack-api.wrtn.ai/crack-gen";
   const API_ORIGIN = "https://crack-api.wrtn.ai";
 
@@ -1769,7 +1769,7 @@
         .home-ref-arrow { flex:0 0 auto; color:var(--cmw-faint); font-size:16px; transition:transform .14s, color .14s; }
         .home-ref-open:hover .home-ref-arrow { color:var(--text_brand); transform:translateX(2px); }
         .home-ref-pills { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
-        .home-ref-pill { min-width:0; padding:7px 4px; border:1px solid var(--border); border-radius:7px; background:var(--bg_elevated_secondary); color:var(--text_secondary); font-size:10.5px; font-weight:700; cursor:pointer; white-space:nowrap; transition:.14s; }
+        .home-ref-pill { min-width:0; padding:7px 4px; border:1px solid var(--border); border-radius:7px; background:var(--bg_elevated_secondary); color:var(--text_secondary); font-size:10.5px; font-weight:700; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:.14s; }
         .home-ref-pill b { margin-left:3px; color:var(--cmw-subtle); font-size:9.5px; }
         .home-ref-pill.on { border-color:rgba(122,90,245,.62); background:rgba(122,90,245,.17); color:var(--cmw-active-text); }
         .home-ref-pill.on b { color:var(--text_brand); }
@@ -3178,7 +3178,7 @@
       const memN = selectedLongMemoryIds().size;
       const longLabel = isLongMemoryReferenceEnabled() ? (getLongMemoryMode() === "all" ? "전체" : memN) : "OFF";
       const loreLabel = isEriLoreReferenceEnabled() ? (getEriLoreReferenceMode() === "all" ? "전체" : selectedEriLoreKeys().size) : "OFF";
-      if (el("home-ref")) el("home-ref").textContent = `노트 ${isUserNoteReferenceEnabled() ? "ON" : "OFF"} · 단기 ${isShortMemoryReferenceEnabled() ? "ON" : "OFF"} · 장기 ${longLabel} · 로어 ${loreLabel}`;
+      if (el("home-ref")) el("home-ref").textContent = `노트 ${isUserNoteReferenceEnabled() ? "ON" : "OFF"} · 단기 ${isShortMemoryReferenceEnabled() ? "ON" : "OFF"} · 장기 ${longLabel}${referenceSource ? ` · ${referenceSource === "wrmc" ? "WRMC" : "로어"} ${loreLabel}` : ""}`;
       const c = getNarrativeCompass();
       if (el("home-compass-goal")) el("home-compass-goal").textContent = c.enabled && c.goal ? c.goal : "꺼짐 / 비어 있음";
       if (el("home-compass-toggle")) {
@@ -6526,7 +6526,7 @@ ${styleInstruction}`);
     const source=referenceSource,group=document.querySelector('.rf-group[data-kind="lore"]');
     if(group)group.hidden=!source;
     const filter=document.querySelector('.filter-chip[data-filter="lore"]');if(filter){filter.hidden=!source;filter.textContent=source==='wrmc'?'WRMC 자료':'로어';}
-    const home=document.getElementById('home-ref-lore-toggle');if(home){home.hidden=!source;const label=home.querySelector('[data-reference-label]');if(label)label.textContent=source==='wrmc'?'WRMC 자료':'로어';}
+    const home=document.getElementById('home-ref-lore-toggle');if(home){home.hidden=!source;const label=home.querySelector('[data-reference-label]');if(label)label.textContent=source==='wrmc'?'WRMC':'로어';home.title=source==='wrmc'?'WRMC 자료':'에리 로어';home.setAttribute('aria-label',home.title);}
     const name=document.getElementById('ref-lore-source-title');if(name)name.textContent=referenceLabel();
     const toggle=document.getElementById('cfg-ref-lore-enabled');if(toggle)toggle.checked=isEriLoreReferenceEnabled();
     const mode=document.getElementById('cfg-ref-lore-mode');if(mode)mode.value=getEriLoreReferenceMode();
