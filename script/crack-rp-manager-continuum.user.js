@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🪽 Wish RP Manager Core · CONTINUUM
 // @namespace    local.rp.context.manager
-// @version      1.3.32-continuum.11.1
+// @version      1.3.32-continuum.11.2
 // @description  Crack RP용 컨텍스트 주입·인지·자동 장기기억·자료집·전체 재구축을 하나로 관리합니다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-rp-manager-continuum.user.js
@@ -47,7 +47,7 @@
   // Storage IDs, ELR contract, strict AI commit validation and rollback formats are preserved.
  let WUI=null;
 
-  const SCRIPT_VERSION = '1.3.32-continuum.11.1';
+  const SCRIPT_VERSION = '1.3.32-continuum.11.2';
   const RUNTIME_KEY = '__WISH_RP_MANAGER_V1__';
   const RELOAD_GUARD_KEY = `WISH_RP_clean_reload_${SCRIPT_VERSION}`;
   const previousRuntime = window[RUNTIME_KEY];
@@ -1673,6 +1673,12 @@
     };
   }
 
+  // Shared response limit; explicit per-request limits remain authoritative.
+  function continuumAiTimeoutMinutes(value){return [3,5,10].includes(Number(value))?Number(value):5;}
+  function continuumAiTimeoutMs(settings=loadAiSettings()){return continuumAiTimeoutMinutes(settings?.aiResponseTimeoutMinutes)*60000;}
+  const c112NormalizeAiSettings=normalizeAiSettings;
+  normalizeAiSettings=function(value){return {...c112NormalizeAiSettings(value),aiResponseTimeoutMinutes:continuumAiTimeoutMinutes(value?.aiResponseTimeoutMinutes)};};
+
   function migrateProtectionDefaultOnce(){
     let raw=GM_getValue(AI_SETTINGS_KEY,null);
     if(typeof raw==='string'){try{raw=JSON.parse(raw);}catch{return;}}
@@ -1881,7 +1887,7 @@ const WLOG=(()=>{
       race(p){const c=ctl;if(!c)return p;if(c.aborted)return Promise.reject(err());return new Promise((res,rej)=>{c.rejects.add(rej);Promise.resolve(p).then(v=>{c.rejects.delete(rej);res(v);},e=>{c.rejects.delete(rej);rej(e);});});}
     };})();
 
-  function aiGmRequestJson({ method='POST', url, headers={}, body=null, timeout=120000, label='AI' }) {
+  function aiGmRequestJson({ method='POST', url, headers={}, body=null, timeout=continuumAiTimeoutMs(), label='AI' }) {
     return new Promise((resolve, reject) => {
       let handle=null;const done=()=>AiAbort.untrack(handle);
       handle=GM_xmlhttpRequest({
@@ -2119,11 +2125,11 @@ const WLOG=(()=>{
     const headers = { 'Content-Type':'application/json', 'x-goog-api-key':cfg.apiKey };
     const run = async currentOptions => {
       if (AI_GEMINI_INTERACTIONS_MODELS.has(model)) {
-        const data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:'https://generativelanguage.googleapis.com/v1beta/interactions', headers, body:buildGeminiInteractionsPayload(cfg, systemPrompt, userPrompt, currentOptions), timeout:Number(currentOptions.timeoutMs)||120000, label:'Gemini Interactions' }));
+        const data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:'https://generativelanguage.googleapis.com/v1beta/interactions', headers, body:buildGeminiInteractionsPayload(cfg, systemPrompt, userPrompt, currentOptions), timeout:Number(currentOptions.timeoutMs)||continuumAiTimeoutMs(cfg), label:'Gemini Interactions' }));
         return normalizeInteractionResponse(data);
       }
       const payload = buildGeminiPayload(cfg, systemPrompt, userPrompt, currentOptions);
-      const data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, headers, body:payload, timeout:Number(currentOptions.timeoutMs)||120000, label:'Gemini' }));
+      const data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, headers, body:payload, timeout:Number(currentOptions.timeoutMs)||continuumAiTimeoutMs(cfg), label:'Gemini' }));
       return { text:extractGeminiCandidateText(data), raw:data };
     };
     try { return await run(options); }
@@ -2145,7 +2151,7 @@ const WLOG=(()=>{
     const location = AI_GEMINI_GLOBAL_LOCATION_MODELS.has(model) ? 'global' : cfg.firebaseLocation;
     const ai = firebase.getAI(app, { backend:new firebase.VertexAIBackend(location) });
     const modelOptions = { model, systemInstruction:String(systemPrompt || ''), generationConfig:buildGeminiGenerationConfig(cfg, options) };
-    const gm = firebase.getGenerativeModel(ai, modelOptions);
+    const gm = firebase.getGenerativeModel(ai, modelOptions, {timeout:Number(options.timeoutMs)>0?Number(options.timeoutMs):continuumAiTimeoutMs(cfg)});
     try {
       const result = await WishUsage.track(cfg,options,()=>gm.generateContent({ contents:[{ role:'user', parts:[{ text:String(userPrompt || '') }] }] }));
       const response = result?.response;
@@ -2183,7 +2189,7 @@ const WLOG=(()=>{
     if (wantsJson) body.response_format = { type:'json_object' };
     let data;
     try {
-      data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:`${baseUrl}/chat/completions`, headers:{'Content-Type':'application/json',Authorization:`Bearer ${cfg.deepSeekApiKey}`}, body, timeout:Number(options.timeoutMs)||120000, label:'DeepSeek' }));
+      data = await WishUsage.track(cfg,options,()=>aiGmRequestJson({ url:`${baseUrl}/chat/completions`, headers:{'Content-Type':'application/json',Authorization:`Bearer ${cfg.deepSeekApiKey}`}, body, timeout:Number(options.timeoutMs)||continuumAiTimeoutMs(cfg), label:'DeepSeek' }));
     } catch (e) {
       const m=String(e.message||e); if (/401|403/.test(m)) throw new Error('DeepSeek 인증 오류: API Key를 확인해 주세요.'); if (/429/.test(m)) throw new Error('DeepSeek 요청 한도 초과: 잠시 후 다시 시도해 주세요.'); throw e;
     }
@@ -2216,7 +2222,7 @@ const WLOG=(()=>{
 
   async function callAiProvider(settings, systemPrompt, userPrompt, options={}) {
     const cfg = aiTaskSettings(settings,options.taskKind);
-    options={...options,timeoutMs:Number(options.timeoutMs)>0?Number(options.timeoutMs):(cfg.provider==='firebase'?180000:120000)};
+    options={...options,timeoutMs:Number(options.timeoutMs)>0?Number(options.timeoutMs):continuumAiTimeoutMs(cfg)};
     const label=options.operationLabel||WLOG.current()?.operation||'보조 AI 요청';
     const inputChars=String(systemPrompt||'').length+String(userPrompt||'').length,started=Date.now();
     const requestRoom=state.currentRoom,requestRoute=state.routeEpoch;
@@ -3009,6 +3015,43 @@ PC와 CHAR 및 CHAR끼리 방향을 따로 검토했는가; 상대의 개인적 
   })();
 
   // 2.7.2: request-local metadata only; persisted room/event schemas stay unchanged.
+  // Correct only the action/text convention immediately before the original
+  // apply entry point, shared by live, segmented and unified updates.
+  const ContinuumRelationshipIssues=(()=>{
+    const KEY='WISH_CONTINUUM_RELATION_INFORMATION_V1',LIMIT=100;
+    const clean=value=>WLOG.clean(String(value||'')).slice(0,300);
+    function safe(raw){return {at:Number(raw?.at)||0,level:'정보',operation:'관계 쟁점 표기 자동 맞춤',message:clean(raw?.message),version:clean(raw?.version),changes:Array.isArray(raw?.changes)?raw.changes.map(x=>({direction:clean(x.direction),from:['keep','replace','clear'].includes(x.from)?x.from:'',to:['keep','replace','clear'].includes(x.to)?x.to:''})):[]};}
+    let records=[];try{const saved=GM_getValue(KEY,[]);if(Array.isArray(saved))records=saved.slice(-LIMIT).map(safe);}catch{}
+    function record(changes){const message='관계 쟁점 표기 '+changes.length+'개를 자동으로 맞췄어요',row=safe({at:Date.now(),message,version:SCRIPT_VERSION,changes});records.push(row);records=records.slice(-LIMIT);try{GM_setValue(KEY,records);}catch{}notify(message,'info');}
+    const normal=value=>value.replace(/\s+/gu,' ').trim();
+    function prepare(existing,changes,resolve){
+      if(!Array.isArray(changes))return {changes,adjusted:[]};
+      const rows=WishRelationships.normalize(structuredClone(existing||[])),adjusted=[];
+      const fixed=changes.map(x=>{
+        if(!x||!['keep','replace','clear'].includes(x.unresolved_action)||typeof x.unresolved!=='string'||x.unresolved.length>400)return x;
+        let from,to;try{from=resolve(x.speaker_ref);to=resolve(x.target_ref);}catch{return x;}
+        if(!from||!to)return x;
+        const pair=WishRelationships.key(from.name,to.name),old=rows.find(r=>(r.speakerActorId===from.id&&r.targetActorId===to.id)||WishRelationships.key(r.speaker,r.target)===pair);
+        let action=x.unresolved_action,unresolved=x.unresolved;
+        if(action==='replace'&&!unresolved.trim())action='keep';
+        else if(action==='keep'&&unresolved.trim()){
+          if(old&&normal(unresolved)===normal(old.unresolved))unresolved='';else action='replace';
+        }else if(action==='clear'&&unresolved.trim())action='replace';
+        if(action===x.unresolved_action&&unresolved===x.unresolved)return x;
+        adjusted.push({direction:from.name+' → '+to.name,from:x.unresolved_action,to:action});
+        return {...x,unresolved_action:action,unresolved};
+      });return {changes:fixed,adjusted};
+    }
+    const originalApply=WishRelationships.apply;
+    WishRelationships.apply=function(existing,changes,resolve,rp,options){const fixed=prepare(existing,changes,resolve),result=originalApply(existing,fixed.changes,resolve,rp,options);if(fixed.adjusted.length)record(fixed.adjusted);return result;};
+    // Informational diagnostics stay separate from failure/warning counts. The
+    // existing diagnostic export includes them without logging issue bodies.
+    const exportText=WLOG.exportText;
+    WLOG.exportText=function(){const text=exportText();if(!records.length)return text;const value=JSON.parse(text);value.information=structuredClone(records);return JSON.stringify(value,null,2);};
+    WLOG.information=()=>structuredClone(records);
+    return {prepare,originalApply};
+  })();
+
   const WishMemorySafety=(()=>{
     const REQUEST_MAX=300000,EVENT_BUDGET=60000,INDEX_BUDGET=8000;
     const normal=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/\s+/g,' ').trim();
@@ -11671,7 +11714,7 @@ async function convertTextToLoreEntries(sourceText, options = {}) {return await 
     const leaseId='wish-lease:'+rid,owner=crypto.randomUUID();
     const renew=()=>new Promise((resolve,reject)=>{
       const tx=state.db.transaction(APP.runtimeStoreName,'readwrite'),st=tx.objectStore(APP.runtimeStoreName),q=st.get(leaseId);let conflict=false;
-      q.onsuccess=()=>{const current=q.result;if(current&&current.owner!==owner&&current.until>Date.now()){conflict=true;tx.abort();return;}st.put({id:leaseId,kind:'wish-lease',owner,until:Date.now()+180000});};
+      q.onsuccess=()=>{const current=q.result;if(current&&current.owner!==owner&&current.until>Date.now()){conflict=true;tx.abort();return;}st.put({id:leaseId,kind:'wish-lease',owner,until:Date.now()+continuumAiTimeoutMs()+30000});};
       tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(new Error(conflict?'다른 탭에서 이 방을 처리 중입니다. 잠시 뒤 다시 시도해 주세요.':'방 작업 잠금 저장 실패'));
     });
     await renew();roomLeases.set(rid,owner);let lost=false;
@@ -17794,6 +17837,13 @@ diff:`<div class="m3-shell">
     return result;
   };
 
+  const c112SettingsLegacy=vSettingsLegacy;
+  vSettingsLegacy=function(){return c11HTML(c112SettingsLegacy(),t=>{
+    const card=t.querySelector('[data-key="ai-settings"]');if(!card)return;
+    const value=loadAiSettings().aiResponseTimeoutMinutes;
+    card.append(c11Node('<div class="m3-setting-row" data-key="continuum-ai-timeout"><label for="wish-ai-response-timeout">AI 응답 제한 시간</label>'+selc('continuumAi.timeoutMinutes',value,[[3,'3분'],[5,'5분'],[10,'10분']],'m3-select',' id="wish-ai-response-timeout" aria-label="AI 응답 제한 시간"')+'</div><p class="m3-muted">긴 정리에서 pro 모델이 늦으면 늘리세요. 시간을 넘긴 요청도 요금은 나갈 수 있어요.</p>'));
+  });};
+
   /* 11.1: transform detached page HTML only; frame-off retains its original layout. */
   function c111Layout(html){return c11HTML(html,t=>{
     const on=WF.on;
@@ -18564,6 +18614,7 @@ Object.assign(WUI_ADAPTER.act,{
 });
 
 for(const path of Object.keys(WUI_FIELD_MAP))WUI_ADAPTER.bind[path]=v=>{WUISettingsDraft()[path]=v;};
+WUI_ADAPTER.bind['continuumAi.timeoutMinutes']=value=>{const settings=loadAiSettings();saveAiSettings({...settings,aiResponseTimeoutMinutes:continuumAiTimeoutMinutes(value)});WUIRefreshSettings();};
 WUI_ADAPTER.bind['relationships.on']=v=>WishRelationships.mutate(state.currentRoom,r=>{r.relationshipConfig={enabled:!!v};});
 for(const [path,key] of Object.entries({'state.inject':'slot-enable','logs.inject':'slot-enable','char.enabled':'slot-enable','extra.enabled':'slot-enable','pack.active':'lore-pack-active','fact.mode':'cog-injection-mode','speech.on':'speech-enabled','lore.auto.enabled':'lore-auto-enabled'}))WUI_ADAPTER.bind[path]=async(v,id)=>{const arg=path==='state.inject'?'currentState':path==='logs.inject'?'logSummary':id||'';if(path==='pack.active'&&v===true){const pack=(state.v2LorePacks||[]).find(p=>String(p.scopeId)===String(id));if(pack?.ownerChatId&&String(pack.ownerChatId)!==String(state.currentRoom?.chatId||''))throw Error('다른 방 소유 자료집은 직접 공유하지 않습니다. 자료 관리 → 다른 방 자료 복사하기에서 독립 사본으로 가져와 주세요.');}const selector='[data-v2-'+key+(arg?'="'+arg+'"':'')+']';return WUIInvoke(key,arg,{[selector]:v});};
 for(const [path,kind,slotId] of [['state.inject','currentState','currentState'],['pol.state','currentState','currentState'],['logs.inject','log','logSummary'],['pol.log','log','logSummary'],['lore.enabled','lore',''],['pol.lore','lore','']])WUI_ADAPTER.bind[path]=async value=>{
