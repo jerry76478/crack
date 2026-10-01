@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.5.9.1
-// @description  입력창 아래 버튼 개별 숨기기, 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
+// @version      4.5.13.1
+// @description  입력창 아래 버튼 개별 숨기기, 허브 SVG 복원, 모델 맨 왼쪽 배치 및 전환 버튼 간격 수정. 미니사이드바 다크/라이트·소설/채팅 전환. 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
@@ -30,7 +30,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.5.9.1';
+    const VERSION = '4.5.13.1';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -390,6 +390,8 @@
         hotStart: 1900,
         editor: null,
         editorObserver: null,
+        placementObserver: null,
+        layoutDirty: true,
         editorHandlers: null,
         updateFrame: 0,
         delayedTimer: 0,
@@ -1313,18 +1315,18 @@
       font-size: calc(1em * var(--cmu-font-scale, 1)) !important;
     }
 
-    html.cmu-enabled main [data-message-group-id] .wrtn-markdown :is(p, li, blockquote, h1, h2, h3, h4, h5, h6):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] [class*="wrtn-markdown"] :is(p, li, blockquote, h1, h2, h3, h4, h5, h6):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] .markdown-body :is(p, li, blockquote, h1, h2, h3, h4, h5, h6):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] .prose :is(p, li, blockquote, h1, h2, h3, h4, h5, h6):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)) {
+    html.cmu-enabled main [data-message-group-id] .wrtn-markdown :is(p, li, blockquote):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
+    html.cmu-enabled main [data-message-group-id] [class*="wrtn-markdown"] :is(p, li, blockquote):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
+    html.cmu-enabled main [data-message-group-id] .markdown-body :is(p, li, blockquote):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)),
+    html.cmu-enabled main [data-message-group-id] .prose :is(p, li, blockquote):not(:where(pre, pre *, code, .wrtn-codeblock, .wrtn-codeblock *)) {
       font-size: inherit !important;
       line-height: inherit !important;
     }
 
-    html.cmu-enabled main [data-message-group-id] .wrtn-markdown :is(p, li, blockquote, h1, h2, h3, h4, h5, h6) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] [class*="wrtn-markdown"] :is(p, li, blockquote, h1, h2, h3, h4, h5, h6) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] .markdown-body :is(p, li, blockquote, h1, h2, h3, h4, h5, h6) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *)),
-    html.cmu-enabled main [data-message-group-id] .prose :is(p, li, blockquote, h1, h2, h3, h4, h5, h6) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *)) {
+    html.cmu-enabled main [data-message-group-id] .wrtn-markdown :is(p, li, blockquote) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *, h1, h2, h3, h4, h5, h6)),
+    html.cmu-enabled main [data-message-group-id] [class*="wrtn-markdown"] :is(p, li, blockquote) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *, h1, h2, h3, h4, h5, h6)),
+    html.cmu-enabled main [data-message-group-id] .markdown-body :is(p, li, blockquote) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *, h1, h2, h3, h4, h5, h6)),
+    html.cmu-enabled main [data-message-group-id] .prose :is(p, li, blockquote) :not(:where(pre, pre *, code, code *, .wrtn-codeblock, .wrtn-codeblock *, h1, h2, h3, h4, h5, h6)) {
       font-size: inherit !important;
     }
 
@@ -2645,7 +2647,7 @@
     /* 짧은 이름표와 함께 380px에서 두세 줄에 들어가도록 조금 촘촘하게 */
     #cmu-settings-panel .qputil #g-composer.chips { gap: 5px; padding: 10px 8px 12px; }
     #cmu-settings-panel .qputil #g-composer .chip {
-      min-height: 36px;
+      min-height: 44px;
       max-width: 100%;
       min-width: 0;
       gap: 3px;
@@ -3592,6 +3594,9 @@
     `);
     function applyState() {
         const html = document.documentElement;
+        const setRootAttribute = (name, value) => {
+            if (html.getAttribute(name) !== value) html.setAttribute(name, value);
+        };
         const active = shouldRun();
         // 유저노트가 떠 있는 동안에는 CMU의 페이지 레이아웃/합성 레이어를
         // 통째로 휴면시켜 iOS 선택 손잡이가 순정 좌표계만 사용하게 한다.
@@ -3620,7 +3625,7 @@
             (sgbOwned && (html.classList.contains('sgb-bg-active') !== themeActive || html.getAttribute('data-sgb-theme') !== cmuTheme)))
             cmuFreezeThemeTransition();
         html.classList.toggle('cmu-theme-active', themeActive);
-        html.setAttribute('data-cmu-external-theme', externalThemeProvider || 'none');
+        setRootAttribute('data-cmu-external-theme', externalThemeProvider || 'none');
         if (sgbOwned) {
             html.classList.toggle('sgb-bg-room', themeActive);
             html.classList.toggle('sgb-bg-active', themeActive);
@@ -3634,28 +3639,28 @@
         html.classList.toggle('cmu-hide-stat-bar', layoutActive && isChatRoomPath() && isMobileLike() && !!settings.hideStatBar);
         if (!userNoteOpen)
             scheduleCmuStatBarMark();
-        html.setAttribute('data-cmu-theme', cmuTheme);
-        html.setAttribute('data-cmu-ui-style', 'borderless');
+        setRootAttribute('data-cmu-theme', cmuTheme);
+        setRootAttribute('data-cmu-ui-style', 'borderless');
         html.removeAttribute('data-cmu-selected-ui-style');
-        html.setAttribute('data-cmu-chat-borderless-only', themeChatBorderlessOnly ? '1' : '0');
-        html.setAttribute('data-cmu-native-ui-mode', cmuThemeUiModeForSettings() || 'unknown');
-        html.setAttribute('data-cmu-theme-dialogue', themeFxActive && settings.themeDialogue !== false ? 'on' : 'off');
-        html.setAttribute('data-cmu-theme-thought', themeFxActive && settings.themeThought !== false ? 'on' : 'off');
-        html.setAttribute('data-cmu-theme-italic', themeFxActive && settings.themeItalic !== false ? 'on' : 'off');
-        html.setAttribute('data-cmu-theme-strong', themeFxActive && settings.themeStrong !== false ? 'on' : 'off');
-        html.setAttribute('data-cmu-theme-code', themeFxActive && settings.themeCode !== false ? 'on' : 'off');
-        html.setAttribute('data-cmu-theme-markdown', themeFxActive && settings.themeMarkdown !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-chat-borderless-only', themeChatBorderlessOnly ? '1' : '0');
+        setRootAttribute('data-cmu-native-ui-mode', cmuThemeUiModeForSettings() || 'unknown');
+        setRootAttribute('data-cmu-theme-dialogue', themeFxActive && settings.themeDialogue !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-theme-thought', themeFxActive && settings.themeThought !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-theme-italic', themeFxActive && settings.themeItalic !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-theme-strong', themeFxActive && settings.themeStrong !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-theme-code', themeFxActive && settings.themeCode !== false ? 'on' : 'off');
+        setRootAttribute('data-cmu-theme-markdown', themeFxActive && settings.themeMarkdown !== false ? 'on' : 'off');
         if (sgbOwned) {
-            html.setAttribute('data-sgb-theme', cmuTheme);
-            html.setAttribute('data-sgb-ui-style', 'borderless');
-            html.setAttribute('data-sgb-theme-colors', 'on');
-            html.setAttribute('data-sgb-dialogue-bg', themeFxActive && settings.themeDialogue !== false ? 'on' : 'off');
-            html.setAttribute('data-sgb-thought-bg', themeFxActive && settings.themeThought !== false ? 'on' : 'off');
-            html.setAttribute('data-sgb-code-bg', themeFxActive && settings.themeCode !== false ? 'on' : 'off');
-            html.setAttribute('data-sgb-italic-bg', themeFxActive && settings.themeItalic !== false ? 'on' : 'off');
-            html.setAttribute('data-sgb-strong-bg', themeFxActive && settings.themeStrong !== false ? 'on' : 'off');
-            html.setAttribute('data-sgb-text-shadow', themeActive ? 'on' : 'off');
-            html.setAttribute('data-sgb-text-shadow-tone', cmuTheme);
+            setRootAttribute('data-sgb-theme', cmuTheme);
+            setRootAttribute('data-sgb-ui-style', 'borderless');
+            setRootAttribute('data-sgb-theme-colors', 'on');
+            setRootAttribute('data-sgb-dialogue-bg', themeFxActive && settings.themeDialogue !== false ? 'on' : 'off');
+            setRootAttribute('data-sgb-thought-bg', themeFxActive && settings.themeThought !== false ? 'on' : 'off');
+            setRootAttribute('data-sgb-code-bg', themeFxActive && settings.themeCode !== false ? 'on' : 'off');
+            setRootAttribute('data-sgb-italic-bg', themeFxActive && settings.themeItalic !== false ? 'on' : 'off');
+            setRootAttribute('data-sgb-strong-bg', themeFxActive && settings.themeStrong !== false ? 'on' : 'off');
+            setRootAttribute('data-sgb-text-shadow', themeActive ? 'on' : 'off');
+            setRootAttribute('data-sgb-text-shadow-tone', cmuTheme);
         }
         if (externalThemeLocked) {
             if (!cmuExternalThemeCleanupDone) {
@@ -4090,6 +4095,14 @@
             dialog.dataset.cmuChatListHeightFixed = '1';
         }
     }
+    let cmuEdgeMenuSyncFrame = 0;
+    function scheduleCmuEdgeMenuSyncFrame() {
+        if (cmuEdgeMenuSyncFrame || document.hidden) return;
+        cmuEdgeMenuSyncFrame = requestAnimationFrame(() => {
+            cmuEdgeMenuSyncFrame = 0;
+            syncCmuEdgeMenuOpenState();
+        });
+    }
     function scheduleMobileChatListPopoverLayoutSettle() {
         if (scheduleMobileChatListPopoverLayoutSettle._busy)
             return;
@@ -4097,7 +4110,7 @@
         const steps = [0, 16, 48, 120, 260, 520];
         steps.forEach((ms, i) => setTimeout(() => {
             forceMobileChatListPopoverLayout();
-            syncCmuEdgeMenuOpenState();
+            scheduleCmuEdgeMenuSyncFrame();
             if (i === steps.length - 1)
                 scheduleMobileChatListPopoverLayoutSettle._busy = false;
         }, ms));
@@ -5004,6 +5017,8 @@
         document.documentElement.dataset.cmuComposerExpandBound = '1';
     }
     function cmuInputCounterRestoreHost() {
+        CMU_INPUT_COUNTER.placementObserver?.disconnect();
+        CMU_INPUT_COUNTER.placementObserver = null;
         const host = CMU_INPUT_COUNTER.host;
         const saved = CMU_INPUT_COUNTER.hostPosition;
         const savedPadding = CMU_INPUT_COUNTER.hostPaddingTop;
@@ -5047,6 +5062,9 @@
             editor.removeEventListener('paste', handlers.delayed, true);
         }
         CMU_INPUT_COUNTER.editorObserver?.disconnect?.();
+        CMU_INPUT_COUNTER.placementObserver?.disconnect();
+        CMU_INPUT_COUNTER.placementObserver = null;
+        CMU_INPUT_COUNTER.layoutDirty = true;
         CMU_INPUT_COUNTER.editor = null;
         CMU_INPUT_COUNTER.editorObserver = null;
         CMU_INPUT_COUNTER.editorHandlers = null;
@@ -5146,10 +5164,18 @@
     function cmuInputCounterSetHost(host) {
         if (!(host instanceof HTMLElement))
             return;
-        if (CMU_INPUT_COUNTER.host === host)
+        if (CMU_INPUT_COUNTER.host === host && CMU_INPUT_COUNTER.placementObserver)
             return;
         cmuInputCounterRestoreHost();
         CMU_INPUT_COUNTER.host = host;
+        CMU_INPUT_COUNTER.placementObserver?.disconnect();
+        CMU_INPUT_COUNTER.placementObserver = new MutationObserver(records => {
+            if (records.some(record => !record.target.closest?.('#' + ID.inputCounterWrap))) scheduleCmuInputCounterSync();
+        });
+        CMU_INPUT_COUNTER.placementObserver.observe(host, {
+            childList: true, subtree: true, attributes: true,
+            attributeFilter: ['class', 'style', 'hidden', 'disabled'],
+        });
         host.setAttribute('data-cmu-input-counter-host', '1');
         try {
             const css = getComputedStyle(host);
@@ -5301,7 +5327,7 @@
         cmuInputCounterUnbindEditor();
         CMU_INPUT_COUNTER.editor = editor;
         CMU_INPUT_COUNTER.resizeObserver?.observe(editor);
-        CMU_INPUT_COUNTER.editorObserver = cmuComposerSubscribe(editor, scheduleCmuInputCounterSync);
+        CMU_INPUT_COUNTER.editorObserver = cmuComposerSubscribe(editor, () => scheduleCmuInputCounterSync(false));
     }
     function renderCmuInputCounter() {
         CMU_INPUT_COUNTER.updateFrame = 0;
@@ -5317,7 +5343,11 @@
             return;
         }
         bindCmuInputCounterEditor(editor);
-        const countEl = ensureCmuInputCounterPlacement(editor);
+        let countEl = CMU_INPUT_COUNTER.renderedElement;
+        if (CMU_INPUT_COUNTER.layoutDirty || !countEl?.isConnected || !CMU_INPUT_COUNTER.host?.isConnected) {
+            CMU_INPUT_COUNTER.layoutDirty = false;
+            countEl = ensureCmuInputCounterPlacement(editor);
+        }
         if (!(countEl instanceof HTMLElement))
             return;
         const count = cmuInputCounterLength(cmuInputCounterText(editor));
@@ -5341,7 +5371,8 @@
         CMU_INPUT_COUNTER.renderedElement = countEl;
         CMU_INPUT_COUNTER.renderedTheme = detectCmuTheme();
     }
-    function scheduleCmuInputCounterSync() {
+    function scheduleCmuInputCounterSync(layout = true) {
+        if (layout !== false) CMU_INPUT_COUNTER.layoutDirty = true;
         if (CMU_INPUT_COUNTER.disposed || CMU_INPUT_COUNTER.updateFrame || cmuUserNoteGuardActive())
             return;
         CMU_INPUT_COUNTER.updateFrame = requestAnimationFrame(renderCmuInputCounter);
@@ -6112,6 +6143,47 @@
             cmuLogCaptureStartSelection();
         }
     }
+    function lcCloneCaptureContent(root) {
+        const clone = root.cloneNode(true);
+        // Read the live source before sanitizing styles. Do not measure individual lines.
+        const sources = [root, ...root.querySelectorAll('*')];
+        const copies = [clone, ...clone.querySelectorAll('*')];
+        const preserving = new Set(['pre', 'pre-wrap', 'pre-line', 'break-spaces']);
+        sources.forEach((source, index) => {
+            if (!(source instanceof HTMLElement)) return;
+            const copy = copies[index];
+            const css = getComputedStyle(source);
+            if (preserving.has(css.whiteSpace)) copy.setAttribute('data-cmu-lc-whitespace', source.closest('pre') ? 'pre-wrap' : css.whiteSpace);
+            // Inline tags can be visual blocks in the source (e.g. styled spans).
+            if (source.matches('span, strong, em, b, i') && css.display === 'block')
+                copy.setAttribute('data-cmu-lc-display', 'block');
+        });
+        return clone;
+    }
+    function lcCaptureBlockNodes(root) {
+        const blocks = [];
+        let inline = null;
+        const flush = () => {
+            if (!inline) return;
+            if (inline.textContent.trim() || inline.querySelector('br, img')) blocks.push(inline);
+            inline = null;
+        };
+        // Keep semantic roots such as a paragraph, list or code block intact.
+        if (root.matches('p, pre, blockquote, ul, ol, table, h1, h2, h3, h4, h5, h6')) return [root];
+        for (const node of root.childNodes) {
+            const isBlock = node instanceof HTMLElement && node.matches('p, div, pre, blockquote, ul, ol, table, h1, h2, h3, h4, h5, h6, hr, [data-cmu-lc-display="block"]');
+            if (isBlock) { flush(); blocks.push(node.cloneNode(true)); continue; }
+            if (node.nodeType !== Node.TEXT_NODE && !(node instanceof HTMLElement)) continue;
+            if (!inline) {
+                inline = document.createElement('p');
+                if (root.style.whiteSpace) inline.style.whiteSpace = root.style.whiteSpace;
+            }
+            inline.appendChild(node.cloneNode(true));
+        }
+        flush();
+        return blocks;
+    }
+
     function lcSanitizeClone(root) {
         if (!(root instanceof HTMLElement))
             return root;
@@ -6139,6 +6211,11 @@
         });
         root.removeAttribute('style');
         root.removeAttribute('class');
+        for (const el of [root, ...root.querySelectorAll('[data-cmu-lc-whitespace], [data-cmu-lc-display]')]) {
+            const whitespace = el.getAttribute('data-cmu-lc-whitespace');
+            if (['pre', 'pre-wrap', 'pre-line', 'break-spaces'].includes(whitespace)) el.style.whiteSpace = whitespace;
+            if (el.getAttribute('data-cmu-lc-display') === 'block') el.style.display = 'block';
+        }
         return root;
     }
     function lcParseTextRules(raw = []) {
@@ -6202,10 +6279,11 @@
         if (!node)
             return null;
         if (node.nodeType === Node.TEXT_NODE) {
-            const txt = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+            const txt = String(node.textContent || '').replace(/\r\n?/g, '\n');
             if (!txt)
                 return null;
             const p = document.createElement('p');
+            p.style.whiteSpace = 'pre-wrap';
             p.textContent = txt;
             return p;
         }
@@ -6272,10 +6350,10 @@
         if (!(root instanceof HTMLElement))
             return null;
         const role = isUserGroupByDom(group) ? 'user' : 'assistant';
-        const clone = lcSanitizeClone(root.cloneNode(true));
+        const clone = lcSanitizeClone(lcCloneCaptureContent(root));
         lcAppendMissingMessageImages(group, clone);
         lcApplyTextRules(clone);
-        const rawNodes = Array.from(clone.childNodes || []).map(lcNormalizeBlockNode).filter(Boolean);
+        const rawNodes = lcCaptureBlockNodes(clone);
         const nodes = rawNodes.length ? rawNodes : [clone];
         const blocks = nodes.map(node => {
             const wrap = document.createElement('div');
@@ -8261,7 +8339,7 @@
         const steps = CMU_EDGE_SYNC_STEPS;
         steps.forEach((ms) => {
             const timer = setTimeout(() => {
-                syncCmuEdgeMenuOpenState();
+                scheduleCmuEdgeMenuSyncFrame();
                 if (ms === steps[steps.length - 1])
                     cmuEdgeMenuStateTimers = [];
             }, ms);
@@ -9066,12 +9144,15 @@
         ['deducted', '차감']
     ];
     const SIDE_PART_LABELS = [
-        ['modelButton', '모델'], ['guideButton', '가이드'], ['profileButton', '프로필'], ['profileBoxButton', '프로필 박스'], ['noteButton', '노트'],
+        ['modelButton', '모델'], ['themeButton', '다크/라이트'], ['episodeModeButton', '소설/채팅'],
+        ['guideButton', '가이드'], ['profileButton', '프로필'], ['profileBoxButton', '프로필 박스'], ['noteButton', '노트'],
         ['outputButton', '출력'], ['summaryButton', '요약'], ['imageButton', '이미지'], ['archiveButton', '보관함'],
         ['roomBackgroundButton', '이미지 테마'], ['scenePainterButton', '모바일 삽화'], ['wishManagerButton', 'Wish RP'], ['guideManagerButton', '지침 관리'], ['sceneBlurButton', 'CSP 테마'],
         ['startButton', '시작'], ['loreButton', '로어'], ['translatorButton', '번역'], ['aiSummaryButton', 'AI 요약'], ['gameHudButton', '게임 HUD']
     ];
     const SIDE_PART_ICON_KEYS = Object.freeze({
+        themeButton: 'theme',
+        episodeModeButton: 'episodeMode',
         modelButton: 'model',
         guideButton: 'guide',
         profileButton: 'profile',
@@ -11494,6 +11575,8 @@
     };
     DASH_ICON.bittenCracker = DASH_ICON.cracker;
     const DASH_SIDE_DEFAULT_VISIBLE = {
+        themeButton: true,
+        episodeModeButton: true,
         modelButton: true,
         guideButton: true,
         profileButton: true,
@@ -11562,7 +11645,234 @@
         }
         catch (_) { }
     }
+    // Quick mode controls adapted from h-ap5/study chathub.user.js.
+    const QUICK_MODE_ICON = {
+        light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="chud-btn-icon" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>`,
+        dark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" class="chud-btn-icon" aria-hidden="true"><path d="M20.2 15.6A8.6 8.6 0 0 1 8.4 3.8 8.7 8.7 0 1 0 20.2 15.6Z"/></svg>`,
+        novel: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="chud-btn-icon" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="8.3" cy="12" r="3.1" fill="currentColor" stroke="none"/><path d="M14.4 10h4M14.4 12h4M14.4 14h2.7" stroke-width="1.1"/></svg>`,
+        chat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" class="chud-btn-icon" aria-hidden="true"><rect x="2.5" y="6.5" width="19" height="11" rx="5.5"/><circle cx="15.7" cy="12" r="3.1" fill="currentColor" stroke="none"/><path d="M5.5 10h4M5.5 12h4M6.8 14h2.7" stroke-width="1.1"/></svg>`
+    };
+
+    function getQuickThemeMode() {
+        const bodyMode = document.body?.dataset?.theme;
+        if (bodyMode === 'light' || bodyMode === 'dark') return bodyMode;
+        const root = document.documentElement;
+        if (root.dataset.theme === 'light' || root.dataset.theme === 'dark') return root.dataset.theme;
+        if (root.classList.contains('dark')) return 'dark';
+        if (root.classList.contains('light')) return 'light';
+        try {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light' || saved === 'dark') return saved;
+        } catch (e) {}
+        return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function getQuickEpisodeMode() {
+        const group = document.querySelector('[data-message-group-id]');
+        const list = group?.closest?.('.flex-col-reverse');
+        if (list?.classList.contains('gap-0')) return 'chat';
+        if (list?.classList.contains('gap-10')) return 'novel';
+        try {
+            const saved = localStorage.getItem('crack_ui_episode_ui_mode') || localStorage.getItem('chud_episode_ui_mode');
+            if (saved === 'chat' || saved === 'novel') return saved;
+        } catch (e) {}
+        return 'novel';
+    }
+
+    function writeCrackThemeCookie(mode) {
+        try {
+            const expires = new Date();
+            expires.setFullYear(expires.getFullYear() + 99);
+            const base = `crack-user-theme=${mode}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+            const count = () => (String(document.cookie || '').match(/(?:^|;\s*)crack-user-theme=/g) || []).length;
+            const domain = '.' + location.hostname.split('.').slice(-2).join('.');
+            const before = count();
+            document.cookie = `${base}; domain=${domain}`;
+            if (count() > Math.max(1, before)) {
+                document.cookie = `crack-user-theme=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; domain=${domain}`;
+                document.cookie = base;
+            }
+        } catch (e) {}
+    }
+
+    function toggleQuickTheme() {
+        const next = getQuickThemeMode() === 'dark' ? 'light' : 'dark';
+        // UI Plus가 실행 중이면 숨겨진 설정 패널의 기존 버튼을 사용한다.
+        // 이렇게 해야 UI Plus 내부 themeMode와 DOM 감시기의 상태도 함께 바뀐다.
+        const uiPlusChoice = document.querySelector(`#crack-ui-settings-panel [data-crack-ui-theme-mode="${next}"]`);
+        if (uiPlusChoice?.dataset.crackUiBound === '1') {
+            try { localStorage.removeItem('chud_pending_theme_mode'); } catch (e) {}
+            uiPlusChoice.click();
+            syncCmuQuickModeButtons();
+            return;
+        }
+        try {
+            localStorage.setItem('theme', next);
+            localStorage.removeItem('crack_ui_theme_mode');
+            // 쿠키에 바로 저장하므로 크랙 설정창을 대신 눌러 줄 필요가 없다(남아 있으면 나중에 설정에서 고른 테마를 되돌렸다).
+            localStorage.removeItem('chud_pending_theme_mode');
+        } catch (e) {}
+        writeCrackThemeCookie(next);
+        const root = document.documentElement;
+        root.classList.toggle('dark', next === 'dark');
+        root.classList.toggle('light', next === 'light');
+        root.dataset.theme = next;
+        root.style.colorScheme = next;
+        if (document.body) {
+            document.body.dataset.theme = next;
+            document.body.style.colorScheme = next;
+        }
+        syncCmuQuickModeButtons();
+    }
+
+    let quickEpisodeSaveBusy = false;
+    function readQuickCookie(name) {
+        const prefix = `${encodeURIComponent(name)}=`;
+        const item = String(document.cookie || '').split(';').map((part) => part.trim()).find((part) => part.startsWith(prefix));
+        if (!item) return '';
+        const raw = item.slice(prefix.length);
+        try { return decodeURIComponent(raw); } catch (e) { return raw; }
+    }
+
+    function getQuickAccessToken() {
+        const cookieToken = readQuickCookie('access_token');
+        if (cookieToken) return cookieToken;
+        try {
+            for (const key of ['access_token', 'accessToken', 'crack_access_token', 'wrtn_access_token']) {
+                const value = localStorage.getItem(key);
+                if (value && (/^eyJ/.test(value) || /^Bearer\s/i.test(value))) return value;
+            }
+        } catch (e) {}
+        return '';
+    }
+
+    async function requestQuickEpisodeMode(mode) {
+        const token = getQuickAccessToken();
+        const headers = {
+            Accept: 'application/json, text/plain, */*',
+            'Content-Type': 'application/json',
+            platform: 'web',
+            'wrtn-locale': 'ko-KR'
+        };
+        if (token) headers.Authorization = /^Bearer\s/i.test(token) ? token : `Bearer ${token}`;
+        const wrtnId = readQuickCookie('__w_id');
+        if (wrtnId) headers['x-wrtn-id'] = wrtnId;
+        const mixpanelId = readQuickCookie('Mixpanel-Distinct-Id');
+        if (mixpanelId) headers['mixpanel-distinct-id'] = mixpanelId;
+        const payload = JSON.stringify({ isEpisodeBubbleEnabled: mode === 'chat' });
+        const controller = new AbortController();
+        CMU_RESOURCES.controllers.add(controller);
+        const timeout = setTimeout(() => controller.abort(), 10000);
+        try {
+            const response = await fetch('https://crack-api.wrtn.ai/crack-api/profiles/ui-setting', {
+                method: 'PATCH', credentials: 'include', cache: 'no-store',
+                headers, body: payload, signal: controller.signal
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return;
+        } catch (fetchError) {
+            if (CMU_RUNTIME.disposed) throw fetchError;
+            if (typeof GM_xmlhttpRequest !== 'function') throw fetchError;
+            await new Promise((resolve, reject) => {
+                GM_xmlhttpRequest({
+                    method: 'PATCH', url: 'https://crack-api.wrtn.ai/crack-api/profiles/ui-setting', headers, data: payload,
+                    withCredentials: true, anonymous: false, timeout: 10000,
+                    onload: (response) => response.status >= 200 && response.status < 300
+                        ? resolve() : reject(new Error(`HTTP ${response.status}`)),
+                    onerror: () => reject(new Error('네트워크 오류')),
+                    ontimeout: () => reject(new Error('요청 시간 초과'))
+                });
+            });
+        } finally {
+            clearTimeout(timeout);
+            CMU_RESOURCES.controllers.delete(controller);
+        }
+    }
+
+    async function toggleQuickEpisodeMode() {
+        if (quickEpisodeSaveBusy) return;
+        const next = getQuickEpisodeMode() === 'chat' ? 'novel' : 'chat';
+        const uiPlusChoice = document.querySelector(`#crack-ui-settings-panel [data-crack-ui-episode-ui-mode="${next}"]`);
+        if (uiPlusChoice?.dataset.crackUiBound === '1') {
+            // UI Plus의 API 저장·실패 안내·재로드 흐름을 그대로 사용한다.
+            quickEpisodeSaveBusy = true;
+            syncCmuQuickModeButtons();
+            let timeoutId;
+            const release = () => {
+                clearTimeout(timeoutId);
+                cmuUnlisten(window, 'crack-ui-episode-ui-mode-change', onSaved);
+                quickEpisodeSaveBusy = false;
+                syncCmuQuickModeButtons();
+            };
+            const onSaved = () => {
+                cmuUnlisten(window, 'crack-ui-episode-ui-mode-change', onSaved);
+                clearTimeout(timeoutId);
+                // UI Plus가 성공 후 450ms 뒤 새로고침하므로 그 사이의 중복 클릭을 막는다.
+                timeoutId = setTimeout(release, 4000);
+            };
+            cmuListen(window, 'crack-ui-episode-ui-mode-change', onSaved);
+            timeoutId = setTimeout(release, 23000);
+            try { cmuDraftFlush('episode-mode-delegate'); uiPlusChoice.click(); } catch (error) {
+                release();
+                showToast(`작품 UI를 바꾸지 못했어요 · ${error.message || error}`);
+            }
+            return;
+        }
+        quickEpisodeSaveBusy = true;
+        let saved = false;
+        syncCmuQuickModeButtons();
+        try {
+            await requestQuickEpisodeMode(next);
+            if (CMU_RUNTIME.disposed) return;
+            try {
+                localStorage.setItem('chud_episode_ui_mode', next);
+                localStorage.setItem('crack_ui_episode_ui_mode', next);
+                localStorage.removeItem('crack_ui_pending_episode_ui_mode');
+            } catch (e) {}
+            saved = true;
+            window.dispatchEvent(new CustomEvent('crack-ui-episode-ui-mode-change', {
+                detail: { mode: next, isEpisodeBubbleEnabled: next === 'chat' }
+            }));
+            setTimeout(() => {
+                cmuDraftFlush('episode-mode-reload');
+                window.location.reload();
+            }, 450);
+        } catch (error) {
+            if (CMU_RUNTIME.disposed) return;
+            showToast(`작품 UI를 바꾸지 못했어요 · ${error.message || error}`);
+        } finally {
+            if (!saved) quickEpisodeSaveBusy = false;
+            syncCmuQuickModeButtons();
+        }
+    }
+
+        function syncCmuQuickModeButtons() {
+            const btns = DASH_SIDE.btns || {};
+            const theme = getQuickThemeMode();
+            if (btns.themeButton) {
+                if (btns.themeButton.dataset.mode !== theme) btns.themeButton.innerHTML = QUICK_MODE_ICON[theme];
+                btns.themeButton.dataset.mode = theme;
+                btns.themeButton.title = theme === 'dark' ? '다크 모드 · 라이트 모드로 전환' : '라이트 모드 · 다크 모드로 전환';
+                btns.themeButton.setAttribute('aria-label', btns.themeButton.title);
+                btns.themeButton.setAttribute('aria-pressed', String(theme === 'dark'));
+            }
+            const episode = getQuickEpisodeMode();
+            if (btns.episodeModeButton) {
+                if (btns.episodeModeButton.dataset.mode !== episode) btns.episodeModeButton.innerHTML = QUICK_MODE_ICON[episode];
+                btns.episodeModeButton.dataset.mode = episode;
+                btns.episodeModeButton.disabled = quickEpisodeSaveBusy;
+                btns.episodeModeButton.title = quickEpisodeSaveBusy
+                    ? '작품 UI 변경 중'
+                    : episode === 'chat' ? '채팅형 UI · 소설형으로 전환' : '소설형 UI · 채팅형으로 전환';
+                btns.episodeModeButton.setAttribute('aria-label', btns.episodeModeButton.title);
+                btns.episodeModeButton.setAttribute('aria-pressed', String(episode === 'chat'));
+                btns.episodeModeButton.setAttribute('aria-busy', String(quickEpisodeSaveBusy));
+            }
+        }
+
     const SIDE_ICON = {
+        theme: QUICK_MODE_ICON.light,
+        episodeMode: QUICK_MODE_ICON.chat,
         model: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chud-btn-icon"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path><path d="M12 12l8-4.5"></path><path d="M12 12v9"></path><path d="M12 12L4 7.5"></path></svg>',
         guide: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15" class="chud-btn-icon"><path fill-rule="evenodd" d="M15.43 6.9c.5-.25 1.07-.14 1.44.23s.48.93.23 1.44l-2.61 5.33q-.2.4-.6.6l-5.33 2.6c-.5.26-1.08.15-1.44-.22a1.25 1.25 0 0 1-.23-1.44L9.5 10.1q.2-.4.6-.6zm-6.65 8.32 3.72-1.82-1.9-1.9z" clip-rule="evenodd"></path><path fill-rule="evenodd" d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20m0 1.6a8.41 8.41 0 0 0 0 16.8 8.41 8.41 0 0 0 0-16.8" clip-rule="evenodd"></path></svg>',
         profile: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15" class="chud-btn-icon"><path d="M7.97 4.3v-.77h11.82V16.6h-.78v1.6h1.08c.7 0 1.3-.57 1.3-1.3V3.23c0-.7-.57-1.3-1.3-1.3H7.67c-.7 0-1.3.57-1.3 1.3V4.3z"></path><path d="M10.11 8.9a2.66 2.66 0 1 0 0 5.32 2.66 2.66 0 0 0 0-5.32m0 6.13c-1 0-1.94.23-2.7.64a3.2 3.2 0 0 0-1.58 1.8c-.2.7.35 1.3.99 1.3h6.58c.64 0 1.2-.62 1-1.3a3.2 3.2 0 0 0-1.6-1.8 6 6 0 0 0-2.69-.64"></path><path fill-rule="evenodd" d="M3.9 5.7c-.72 0-1.3.58-1.3 1.3v13.68c0 .72.58 1.3 1.3 1.3h12.43c.72 0 1.3-.58 1.3-1.3V7c0-.72-.58-1.3-1.3-1.3zm.3 14.68V7.3h11.83v13.08z" clip-rule="evenodd"></path></svg>',
@@ -12165,6 +12475,8 @@
         }
         DASH_SIDE.availableAt = now;
         DASH_SIDE.available = {
+            themeButton: true,
+            episodeModeButton: true,
             modelButton: true,
             guideButton: true,
             profileButton: true,
@@ -13468,6 +13780,8 @@
             content.id = 'chud-side-content';
             DASH_SIDE.content = content;
             const buttons = {
+                themeButton: makeSideButton('themeButton', 'chud-theme-mode-btn', '다크/라이트 전환', QUICK_MODE_ICON[getQuickThemeMode()], toggleQuickTheme),
+                episodeModeButton: makeSideButton('episodeModeButton', 'chud-episode-mode-btn', '소설/채팅 전환', QUICK_MODE_ICON[getQuickEpisodeMode()], toggleQuickEpisodeMode),
                 modelButton: makeSideButton('modelButton', 'chud-model-btn', '모델 빠른 선택', SIDE_ICON.model, openCompactModelPicker),
                 guideButton: makeSideButton('guideButton', 'chud-guide-btn', '플레이 가이드', SIDE_ICON.guide, () => clickFirst([/플레이\s*가이드/], '플레이 가이드')),
                 profileButton: makeSideButton('profileButton', 'chud-native-profile-btn', '크랙 기본 프로필', SIDE_ICON.profile, () => clickFirst([/대화\s*프로필/], '대화 프로필')),
@@ -13494,7 +13808,7 @@
             buttons.profileButton.dataset.sideKey = 'nativeProfileButton';
             buttons.profileBoxButton.dataset.cpmExternalProfileLauncher = 'true';
             DASH_SIDE.btns = buttons;
-            content.append(buttons.modelButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
+            content.append(buttons.modelButton, buttons.themeButton, buttons.episodeModeButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
             bar.append(content);
         }
         if (bar.parentElement !== shell)
@@ -13512,6 +13826,7 @@
         DASH_SIDE.btns = {};
     }
     function applySideVisible() {
+        syncCmuQuickModeButtons();
         const visible = sideLoadVisible();
         const available = DASH_SIDE.available || refreshSideAvailability();
         Object.entries(DASH_SIDE.btns || {}).forEach(([key, btn]) => {
@@ -14783,6 +15098,7 @@
         return `${brand.charAt(0).toUpperCase()}${version || ''}${descriptorInitials}`.slice(0, 8) || 'M';
     }
     function isRsModelSlug(value) {
+    if (Array.isArray(igxV2Models) && igxV2Models.includes(value)) return true;
         const slug = String(value || '').trim().toLowerCase();
         if (!/^[a-z0-9][a-z0-9._-]*$/i.test(slug)) return false;
         if (EXCLUDED_MODELS.has(slug) || NON_MODEL_SLUGS.has(slug)) return false;
@@ -15445,88 +15761,274 @@
         }
       }
 
-      let igxV2Models = null;
-      let igxV2ModelsAt = 0;
+      // Official IGX v2 contract, with cancellable userscript transport.
+  var igxV2Models = null;
+  let igxModelListPromise = null;
+  const igxMetricCache = new Map();
+  const igxMetricInflight = new Map();
+  const igxMetricFailures = new Map();
+  const igxPendingRequests = [];
+  const igxActiveAborts = new Set();
+  let igxRunningRequests = 0;
 
-      async function fetchIgxV2Snapshot() {
-        if (!igxV2Models || Date.now() - igxV2ModelsAt >= 5 * 60 * 1000) {
-          const payload = await gmGetJson(IGX_BASE_URL + '/api/v2/models');
-          if (payload?.success !== true || !Array.isArray(payload.data)) throw new Error('invalid v2 models');
-          const slugs = [...new Set(payload.data.filter(looksLikeModelSlug))];
-          if (slugs.length < 2) throw new Error('insufficient v2 models');
-          igxV2Models = slugs;
-          igxV2ModelsAt = Date.now();
-        }
-        const results = await Promise.allSettled(igxV2Models.map(async slug => {
-          const payload = await gmGetJson(IGX_BASE_URL + '/api/v2/simple/' + encodeURIComponent(slug));
-          if (payload?.success !== true) throw new Error('v2 simple failed');
-          const record = metricRecordFromObject(payload.data, slug);
-          if (!record) throw new Error('invalid v2 simple');
-          return [slug, record];
-        }));
-        // 부분 실패 시 기존 전체 스냅샷 폴백을 사용하여 모델 목록 누락을 방지한다.
-        if (results.some(result => result.status !== 'fulfilled')) throw new Error('incomplete v2 snapshot');
-        return new Map(results.map(result => result.value));
-      }
-
-      async function fetchIgxSnapshot({ force = false } = {}) {
-        const now = Date.now();
-        if (!force && igxSnapshotCache?.size && now - igxSnapshotCacheAt < 15000) {
-          return igxSnapshotCache;
-        }
-
-        try {
-          const entries = await fetchIgxV2Snapshot();
-          igxSnapshotCache = entries;
-          igxSnapshotCacheAt = Date.now();
-          return entries;
-        } catch (_) {}
-
-        if (igxWorkingBulkRoute) {
-          try {
-            const entries = await tryBulkRoute(igxWorkingBulkRoute);
-            const finalized = await finalizeIgxSnapshot(entries);
-            igxSnapshotCache = finalized;
-            igxSnapshotCacheAt = Date.now();
-            return finalized;
-          } catch (_) {
-            igxWorkingBulkRoute = null;
+  function igxAbortError() {
+    const error = new Error('IGX request cancelled');
+    error.name = 'AbortError';
+    return error;
+  }
+  function igxCanRequest() {
+    return !document.hidden && shouldRun() && settings.radiosonde && isChatRoomPath();
+  }
+  function cancelIgxRequests() {
+    for (const abort of [...igxActiveAborts]) abort();
+    for (const job of igxPendingRequests.splice(0)) job.reject(igxAbortError());
+  }
+  function pumpIgxRequests() {
+    if (!igxCanRequest()) {
+      cancelIgxRequests();
+      return;
+    }
+    while (igxRunningRequests < 4 && igxPendingRequests.length) {
+      const job = igxPendingRequests.shift();
+      igxRunningRequests++;
+      Promise.resolve().then(() => {
+        if (!igxCanRequest()) throw igxAbortError();
+        return job.run();
+      }).then(job.resolve, job.reject).finally(() => {
+        igxRunningRequests--;
+        pumpIgxRequests();
+      });
+    }
+  }
+  function igxRequestJson(endpoint, { rawText = false, withHeaders = false, url = '', envelope = true } = {}) {
+    const target = url || (rawText ? IGX_BASE_URL + '/' : IGX_BASE_URL + '/api/v2/' + endpoint);
+    // Catalog headers need extension access. Statistics use the SDK's browser-fetch path first.
+    const nativeFirst = !rawText && !withHeaders;
+    return new Promise((resolve, reject) => {
+      igxPendingRequests.push({ resolve, reject, run: () => new Promise((done, fail) => {
+        let settled = false, stage = 0, phaseTimer, hardTimer, request, controller;
+        const closeStage = () => {
+          stage++;
+          clearTimeout(phaseTimer);
+          try { controller?.abort(); } catch (_) {}
+          try { request?.abort?.(); } catch (_) {}
+          controller = request = null;
+        };
+        const finish = (error, value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(hardTimer);
+          igxActiveAborts.delete(abort);
+          closeStage();
+          if (error) fail(error); else done(value);
+        };
+        const abort = () => finish(igxAbortError());
+        const parse = response => {
+          const status = Number(response.status) || 0;
+          if (status && (status < 200 || status >= 300)) throw new Error('HTTP ' + status);
+          if (rawText) {
+            if (!response.responseText) throw new Error('Empty response');
+            return response.responseText;
           }
-        }
-
-        const catalog = await loadIgxRouteCatalog();
-        for (const route of catalog.bulk.slice(0, 10)) {
+          const payload = JSON.parse(response.responseText);
+          if (envelope && payload?.success !== true) throw new Error(payload?.message || 'IGX request failed');
+          const data = envelope ? payload.data : payload;
+          return withHeaders ? { data, headers: response.responseHeaders || '' } : data;
+        };
+        const start = (useFetch, canFallback) => {
+          if (settled) return;
+          if (!igxCanRequest()) { abort(); return; }
+          closeStage();
+          const token = stage;
+          const current = () => !settled && token === stage;
+          const failure = error => {
+            if (!current()) return;
+            if (!igxCanRequest()) { abort(); return; }
+            if (canFallback) start(!useFetch, false);
+            else finish(error instanceof Error ? error : new Error('Network request failed'));
+          };
+          const loaded = response => {
+            if (!current()) return;
+            try { finish(null, parse(response)); } catch (error) { failure(error); }
+          };
+          if (canFallback) phaseTimer = setTimeout(() => failure(new Error('Request transport timeout')), 8000);
           try {
-            const entries = await tryBulkRoute(route);
-            igxWorkingBulkRoute = route;
-            const finalized = await finalizeIgxSnapshot(entries);
-            igxSnapshotCache = finalized;
-            igxSnapshotCacheAt = Date.now();
-            return finalized;
-          } catch (_) {}
-        }
-
-        // 새 API 경로가 또 바뀐 순간에도 대시보드 자체가 살아 있으면 현재값을 계속 보여준다.
-        try {
-          const entries = await fetchDashboardSnapshot();
-          const finalized = await finalizeIgxSnapshot(entries);
-          igxSnapshotCache = finalized;
-          igxSnapshotCacheAt = Date.now();
-          return finalized;
-        } catch (_) {}
-
-        // 최후 호환: 구형 statistics가 아직 살아 있으면 사용.
-        const entries = await fetchLegacyStatisticsSnapshot();
-        const finalized = await finalizeIgxSnapshot(entries);
-        igxSnapshotCache = finalized;
-        igxSnapshotCacheAt = Date.now();
-        return finalized;
+            if (useFetch) {
+              if (typeof fetch !== 'function' || typeof AbortController !== 'function') throw new Error('Browser fetch unavailable');
+              controller = new AbortController();
+              fetch(target, { method: 'GET', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+                headers: { Accept: rawText ? 'text/html' : 'application/json' } }).then(async response => {
+                const responseText = await response.text();
+                let responseHeaders = '';
+                response.headers.forEach((value, name) => { responseHeaders += name + ': ' + value + '\r\n'; });
+                loaded({ status: response.status, responseText, responseHeaders });
+              }).catch(failure);
+            } else {
+              if (typeof GM_xmlhttpRequest !== 'function') throw new Error('Extension request unavailable');
+              request = GM_xmlhttpRequest({ method: 'GET', url: target, timeout: 18000,
+                headers: { Accept: rawText ? 'text/html' : 'application/json' }, onload: loaded,
+                onerror: () => failure(new Error('Extension network error')),
+                ontimeout: () => failure(new Error('Extension request timeout')),
+                onabort: () => failure(new Error('Extension request aborted')),
+              });
+              // Support managers that additionally return a Promise; duplicate callbacks are ignored.
+              if (request && typeof request.then === 'function') request.then(response => {
+                if (response && typeof response.responseText === 'string') loaded(response);
+              }, failure);
+            }
+          } catch (error) { failure(error); }
+        };
+        igxActiveAborts.add(abort);
+        hardTimer = setTimeout(() => finish(new Error('Request timeout')), 18000);
+        start(nativeFirst, true);
+      }) });
+      pumpIgxRequests();
+    });
+  }
+  let igxDashboardMetrics = null;
+  let igxDashboardMetricsAt = 0;
+  let igxDashboardMetricsPromise = null;
+  let igxDashboardRetryAt = 0;
+  function rememberIgxDashboardMetrics(html) {
+    const entries = dashboardEntriesFromHtml(html);
+    if (!entries.size) throw new Error('No dashboard statistics');
+    igxDashboardMetrics = entries;
+    igxDashboardMetricsAt = Date.now();
+    return entries;
+  }
+  function recentIgxDashboardMetrics() {
+    return igxDashboardMetrics && Date.now() - igxDashboardMetricsAt < 5 * 60 * 1000
+      ? igxDashboardMetrics : new Map();
+  }
+  function recoverIgxDashboardMetrics() {
+    const recent = recentIgxDashboardMetrics();
+    if (recent.size) return Promise.resolve(recent);
+    if (igxDashboardMetricsPromise) return igxDashboardMetricsPromise;
+    if (Date.now() < igxDashboardRetryAt || !igxCanRequest()) return Promise.resolve(new Map());
+    igxDashboardRetryAt = Date.now() + 5 * 60 * 1000;
+    igxDashboardMetricsPromise = igxRequestJson(null, { rawText: true })
+      .then(rememberIgxDashboardMetrics).catch(() => new Map())
+      .finally(() => { igxDashboardMetricsPromise = null; });
+    return igxDashboardMetricsPromise;
+  }
+  function igxModelSlugs(data) {
+    if (!Array.isArray(data)) throw new Error('Invalid IGX model list');
+    const slugs = [...new Set(data.filter(value => typeof value === 'string' &&
+      /^[a-z0-9][a-z0-9._-]*$/i.test(value) && !EXCLUDED_MODELS.has(value.toLowerCase())))];
+    if (!slugs.length) throw new Error('Empty IGX model list');
+    return slugs;
+  }
+  function igxCatalogIsStale(headers) {
+    // The CDN can serve an old catalog despite max-age=15 and no-cache requests.
+    const stamp = /^cdn-cachedat:\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*$/im.exec(headers);
+    if (stamp) {
+      const [, month, day, year, hour, minute, second] = stamp.map(Number);
+      return Date.now() - Date.UTC(year, month - 1, day, hour, minute, second) > 5 * 60 * 1000;
+    }
+    const age = /^age:\s*(\d+)\s*$/im.exec(headers);
+    return !!age && Number(age[1]) > 300;
+  }
+  function igxDashboardModelSlugs(html) {
+    // Read only the serialized model IDs; never evaluate dashboard JavaScript.
+    const match = /\bmodels["']?\s*:\s*(\[[a-z0-9._",\s-]{1,32768}\])/i.exec(html);
+    if (!match) throw new Error('Missing IGX dashboard model list');
+    return igxModelSlugs(JSON.parse(match[1]));
+  }
+  async function getIgxOfficialModels() {
+    if (igxV2Models) return igxV2Models;
+    // One discovery per page, including its stale-CDN fallback. No polling of catalogs.
+    if (!igxModelListPromise) igxModelListPromise = (async () => {
+      let slugs;
+      let needsDashboard = false;
+      try {
+        const response = await igxRequestJson('models', { withHeaders: true });
+        slugs = igxModelSlugs(response.data);
+        needsDashboard = igxCatalogIsStale(response.headers);
+      } catch (error) {
+        if (error.name === 'AbortError') throw error;
+        needsDashboard = true;
       }
+      if (needsDashboard) {
+        try {
+          const html = await igxRequestJson(null, { rawText: true });
+          slugs = igxDashboardModelSlugs(html);
+          try { rememberIgxDashboardMetrics(html); } catch (_) { /* Catalog remains usable. */ }
+        } catch (error) {
+          if (error.name === 'AbortError' || !slugs) throw error;
+          // Keep a usable API catalog if the optional dashboard request fails.
+        }
+      }
+      igxV2Models = slugs;
+      return slugs;
+    })();
+    return igxModelListPromise;
+  }
+  function fetchIgxOfficialModel(slug, { force = false } = {}) {
+    if (igxMetricInflight.has(slug)) return igxMetricInflight.get(slug);
+    const cached = igxMetricCache.get(slug);
+    if (!force && cached && Date.now() - cached.at < 15000) return Promise.resolve(cached.record);
+    const failure = igxMetricFailures.get(slug);
+    if (failure && Date.now() < failure.retryAt) return Promise.reject(new Error('IGX retry cooldown'));
+    const task = igxRequestJson('simple/' + encodeURIComponent(slug)).then(data => {
+      const record = metricRecordFromObject(data, slug);
+      if (!record) throw new Error('Invalid IGX simple statistics');
+      igxMetricCache.set(slug, { at: Date.now(), record });
+      igxMetricFailures.delete(slug);
+      return record;
+    }).catch(error => {
+      if (error.name !== 'AbortError') {
+        const count = Math.min(4, (failure?.count || 0) + 1);
+        igxMetricFailures.set(slug, { count, retryAt: Date.now() + Math.min(300000, 30000 * 2 ** (count - 1)) });
+      }
+      throw error;
+    }).finally(() => igxMetricInflight.delete(slug));
+    igxMetricInflight.set(slug, task);
+    return task;
+  }
+  async function fetchIgxSnapshot({ force = false, slugs = [], onRecord } = {}) {
+    const requested = [...new Set(slugs)];
+    // Reuse statistics already downloaded for catalog recovery without another request.
+    if (igxCanRequest() && onRecord) {
+      const dashboard = recentIgxDashboardMetrics();
+      for (const slug of requested) {
+        const record = dashboard.get(slug);
+        if (record && !igxMetricCache.has(slug)) onRecord(slug, record);
+      }
+    }
+    const results = await Promise.allSettled(requested.map(async slug => {
+      const record = await fetchIgxOfficialModel(slug, { force });
+      if (igxCanRequest() && onRecord) onRecord(slug, record);
+      return record;
+    }));
+    const entries = new Map();
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') entries.set(requested[index], result.value);
+    });
+    // A shared, bounded dashboard fallback also covers extension-specific API failures.
+    if (entries.size < requested.length && igxCanRequest()) {
+      const dashboard = await recoverIgxDashboardMetrics();
+      for (const slug of requested) {
+        if (entries.has(slug)) continue;
+        const record = dashboard.get(slug);
+        const latest = igxMetricCache.get(slug);
+        if (record && (!latest || igxDashboardMetricsAt >= latest.at)) {
+          entries.set(slug, record);
+          if (igxCanRequest() && onRecord) onRecord(slug, record);
+        }
+      }
+    }
+    // Never rebuild the catalog or probe legacy routes during a statistics refresh.
+    return entries;
+  }
 
-      function modelsFromSnapshot(entries) {
+    cmuListen(document, 'visibilitychange', () => { if (document.hidden) cancelIgxRequests(); });
+    cmuListen(window, 'pagehide', cancelIgxRequests);
+    CMU_RESOURCES.cleanups.push(cancelIgxRequests);
+
+function modelsFromSnapshot(entries) {
         if (!(entries instanceof Map) || !entries.size) return [];
         return ensureUniqueShorts(
-          [...entries.keys()]
+          [...new Set([...(igxV2Models || []), ...entries.keys()])]
             .filter(slug => looksLikeModelSlug(slug))
             .map(makeModelMeta)
         );
@@ -15561,34 +16063,17 @@
 
       // bulk snapshot이 실패했을 때만 쓰는 모델별 최후 폴백.
       async function fetchIgxModelWithRetry(slug) {
-        try {
-          return await fetchIgxModelFromDiscoveredRoute(slug);
-        } catch (_) {}
+    return fetchIgxOfficialModel(slug);
+  }
 
-        try {
-          const payload = await gmGetJson(LEGACY_API_BASE + encodeURIComponent(slug));
-          const entries = collectIgxMetricEntries(payload, slug);
-          const record = entries.get(slug) || [...entries.values()][0];
-          if (record) return record;
-          throw new Error("legacy simple returned no metrics");
-        } catch (_) {
-          await sleep(1200);
-          const payload = await gmGetJson(LEGACY_API_BASE + encodeURIComponent(slug));
-          const entries = collectIgxMetricEntries(payload, slug);
-          const record = entries.get(slug) || [...entries.values()][0];
-          if (record) return record;
-          throw new Error("legacy simple returned no metrics");
-        }
-      }
-
-    async function discoverRsModels(force = false) {
+  async function discoverRsModels(force = false) {
         if (RS.discoveryPromise) return RS.discoveryPromise;
         RS.discoveryPromise = (async () => {
             const previous = JSON.stringify(RS.models);
             try {
-                const snapshot = await fetchIgxSnapshot({ force: !!force });
-                const discovered = modelsFromSnapshot(snapshot);
-                if (discovered.length < 2) throw new Error('insufficient model list');
+                const slugs = await getIgxOfficialModels();
+                const discovered = ensureUniqueShorts(slugs.map(makeModelMeta));
+                if (discovered.length < 1) throw new Error('insufficient model list');
                 RS.models = [...YAME_MODELS, ...discovered];
             }
             catch (_) {
@@ -15607,14 +16092,9 @@
         finally { RS.discoveryPromise = null; }
     }
 
-    async function fetchYameStatus() {
-        const url = `${RS.yameStatus}?t=${Date.now()}`;
-        try { return await gmGetJson(url, 20000); }
-        catch (_) {
-            await sleep(1200);
-            return await gmGetJson(`${RS.yameStatus}?t=${Date.now()}`, 20000);
-        }
-    }
+  async function fetchYameStatus() {
+    return igxRequestJson(null, { url: RS.yameStatus + '?t=' + Date.now(), envelope: false });
+  }
     function normalizeYamePayload(payload) {
         const normalized = new Map();
         if (!payload || !Array.isArray(payload.models)) return normalized;
@@ -15666,6 +16146,7 @@
     async function refreshRadiosonde({ manual = false } = {}) {
         if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) return;
         if (RS.busy) {
+            RS.pendingRefresh = true;
             if (manual) {
                 RS.pendingRefresh = true;
                 renderRsLine('갱신중…', true);
@@ -15679,8 +16160,6 @@
 
             // 첫 실행에서는 참고 확프와 동일하게 실제 스냅샷으로 모델 목록부터 확정한다
             if (!RS.discoveryAt) await discoverRsModels(true);
-            else if (Date.now() - RS.discoveryAt >= 5 * 60 * 1000 && !RS.discoveryPromise)
-                void discoverRsModels(true).catch(() => {});
 
             if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) return;
             const models = getRsVisibleModels();
@@ -15688,10 +16167,27 @@
             const igxModels = models.filter(model => model.source !== 'yame');
 
             const yameTask = yameModels.length
-                ? fetchYameStatus().then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }))
+                ? fetchYameStatus().then(value => {
+                    if (igxCanRequest()) {
+                      const records = normalizeYamePayload(value);
+                      for (const model of yameModels) {
+                        const record = records.get(model.apiId);
+                        if (record) RS.last.set(model.slug, { fetchedAt: Date.now(), status: normalizeStatus(record.status),
+                          score: fmt0(record.score) ?? '—', lat: latencySeconds(record.latency) ?? '—' });
+                      }
+                      renderRsLine();
+                    }
+                    return { status: 'fulfilled', value };
+                  }, reason => ({ status: 'rejected', reason }))
                 : Promise.resolve(null);
             const igxTask = igxModels.length
-                ? fetchIgxSnapshot({ force: manual }).then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }))
+                ? fetchIgxSnapshot({ force: manual, slugs: igxModels.map(model => model.apiId || model.slug),
+              onRecord: (slug, record) => {
+                const model = igxModels.find(model => (model.apiId || model.slug) === slug);
+                if (model) { RS.last.set(model.slug, { fetchedAt: Date.now(), status: normalizeStatus(record.status),
+                    score: fmt0(record.score) ?? '—', lat: latencySeconds(record.latency) ?? '—' });
+                  renderRsLine(); }
+              } }).then(value => ({ status: 'fulfilled', value }), reason => ({ status: 'rejected', reason }))
                 : Promise.resolve(null);
 
             const [igxResult, yameResult] = await Promise.all([igxTask, yameTask]);
@@ -15704,17 +16200,7 @@
                 }
             }
 
-            // 스냅샷에서 빠진 모델만 참고 확프의 모델별 최후 폴백을 사용
-            const missingIgx = igxModels.filter(model => !igxBySlug.has(model.slug));
-            if (missingIgx.length) {
-                const fallbackResults = await Promise.allSettled(
-                    missingIgx.map(model => fetchIgxModelWithRetry(model.apiId || model.slug))
-                );
-                fallbackResults.forEach((result, index) => {
-                    if (result.status === 'fulfilled') igxBySlug.set(missingIgx[index].slug, result.value);
-                });
-            }
-
+            // Failed models retain the previous value and use the shared retry cooldown.
             for (const model of igxModels) {
                 const record = igxBySlug.get(model.slug);
                 if (!record) {
@@ -15772,6 +16258,7 @@
 
     function restartRsAutoTimer() {
         if (!shouldRun() || !settings.radiosonde || !isChatRoomPath()) {
+            cancelIgxRequests();
             clearInterval(rsTimer);
             rsTimer = 0;
             return;
@@ -19187,6 +19674,7 @@
             if (next === CMU_DOM_WATCH.themeSignature)
                 return;
             CMU_DOM_WATCH.themeSignature = next;
+            syncCmuQuickModeButtons();
             CMU_DOM_ROUTER.themeDirty = true;
             scheduleCmuDomRouterFlush();
         });
@@ -20148,6 +20636,7 @@
         }
         BADGE.cacheKey = '';
         resetBadgeCacheIfNeeded();
+        cancelIgxRequests();
         RS.discovered = false;
         CMI.uiModeAt = 0;
         CMI.uiMode = '';
@@ -20195,6 +20684,20 @@
     ['fullscreenchange', 'webkitfullscreenchange'].forEach(type => {
         cmuListen(document, type, () => syncCmuFullscreenControls(document), true);
     });
+    // 모바일 전체화면에서는 키보드가 화면을 밀어 올리지 못해 입력창이 가려지므로, 채팅 입력을 시작하면 전체화면을 푼다.
+    const exitCmuFullscreenForChatInput = e => {
+        if (!isCmuFullscreenActive() || !isMobileLike() || !isChatInputElement(e.target))
+            return;
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (!exit)
+            return;
+        try {
+            Promise.resolve(exit.call(document)).catch(() => { }).then(() => syncCmuFullscreenControls());
+        }
+        catch (_) { }
+    };
+    cmuListen(document, 'focusin', exitCmuFullscreenForChatInput, true);
+    cmuListen(document, 'pointerdown', exitCmuFullscreenForChatInput, true);
     cmuRegisterGlobalGesture('native-situation-image', signal => {
         ['pointerdown', 'mousedown', 'touchstart'].forEach(type => {
             cmuGestureListen(signal, document, type, e => {
@@ -20233,6 +20736,11 @@
     }, true);
     if (settings.logCapture)
         installLogCaptureHandlers();
+    cmuListen(window, 'storage', e => {
+        if (e.key === null || ['theme', 'crack_ui_theme_mode', 'crack_ui_episode_ui_mode', 'chud_episode_ui_mode'].includes(e.key))
+            syncCmuQuickModeButtons();
+    });
+    cmuListen(window, 'crack-ui-episode-ui-mode-change', syncCmuQuickModeButtons);
     hookHistory();
     installCmuMessageLongPressMenu();
     cmuDraftInstall();
