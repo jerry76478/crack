@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.5.13.1
-// @description  입력창 아래 버튼 개별 숨기기, 허브 SVG 복원, 모델 맨 왼쪽 배치 및 전환 버튼 간격 수정. 미니사이드바 다크/라이트·소설/채팅 전환. 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
+// @version      4.6.0.1
+// @description  4.6.0: 입력창 아래 버튼 개별 숨기기, 9/30 크랙 개편 대응(분기 방 배지·전송 감지·초안 정리·캐릭터 채팅·유저노트 길게 눌러 선택), 긴 방·홈·방 이동 반복 작업과 메모리 누수 최적화, 라디오존데 복구(CDN 직접 조회·신규 모델 자동 추가·GM.xmlHttpRequest 호환)와 줄 간격 고정, 미니사이드바 문체 변경, 정보바 숫자 애니메이션, 전체화면·입력창 펼치기 SVG 아이콘. 허브 SVG 복원, 모델 맨 왼쪽 배치 및 전환 버튼 간격 수정. 미니사이드바 다크/라이트·소설/채팅 전환. 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
@@ -10,8 +10,10 @@
 // @run-at       document-idle
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
 // @connect      rs.igx.kr
+// @connect      igx-radiosonde-api-striker.b-cdn.net
 // @connect      claude-radiosonde.chyoyam.chatgpt.site
 // @connect      crack-api.wrtn.ai
 // @connect      contents-api.wrtn.ai
@@ -30,7 +32,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.5.13.1';
+    const VERSION = '4.6.0.1';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -260,6 +262,7 @@
         radiosonde: true,
         radiosondeLatency: true,
         dashboard: true,
+        dashboardNumberAnimation: true,
         dashboardSidebar: true,
         badgeChars: true,
         badgeTime: true,
@@ -545,15 +548,6 @@
         document.head.appendChild(style);
         CMU_RESOURCES.styles.add(style);
     }
-    function readLS(key, fallback = null) {
-        try {
-            const v = localStorage.getItem(key);
-            return v == null ? fallback : v;
-        }
-        catch (_) {
-            return fallback;
-        }
-    }
     function normalizeLogCaptureRules(value) {
         let source = value;
         if (typeof source === 'string') {
@@ -751,6 +745,9 @@
     function isEpisodePath() {
         return /^\/stories\/[^/?#]+\/episodes\/[^/?#]+/.test(location.pathname || '');
     }
+    function cmuIsCharacterChatPath(path = location.pathname || '') {
+        return /^\/characters\/[^/?#]+\/chats\/[^/?#]+/.test(path);
+    }
     function isChatRoomPath() {
         const path = location.pathname || '';
         return /\/stories\/[^/?#]+\/episodes\/[^/?#]+/.test(path) || /\/episodes\/[^/?#]+/.test(path) || /\/chats?\/[^/?#]+/.test(path);
@@ -834,7 +831,8 @@
         const room = cmuRoomData(chatId);
         for (const msg of rows || []) {
             const id = messageIdOf(msg);
-            if (!id || (msg.chatId && String(msg.chatId) !== chatId)) continue;
+            // Branched rooms return inherited messages with the source room's chatId; rows come from this room's URL.
+            if (!id) continue;
             const previous = room.messages.get(id);
             room.messages.delete(id);
             room.messages.set(id, { ...previous, ...msg });
@@ -875,7 +873,7 @@
         try {
             const url = new URL(String(value || ''), location.href);
             if (!['crack-api.wrtn.ai', 'contents-api.wrtn.ai'].includes(url.hostname)) return null;
-            const match = url.pathname.match(/^\/(?:crack-gen|character-chat)\/v3\/chats\/([^/]+)\/messages(?:\/([^/]+))?\/?$/);
+            const match = url.pathname.match(/^\/(?:crack-gen|character-chat)\/(?:v3\/chats|character-chats)\/([^/]+)\/messages(?:\/([^/]+))?\/?$/);
             if (!match) return null;
             method = String(method || 'GET').toUpperCase();
             if (!['GET', 'PATCH', 'DELETE'].includes(method)) return null;
@@ -932,13 +930,20 @@
         if (!force && cached && Date.now() - cached.at < (cursor ? 60000 : 1600)) return cached.page;
         if (room.inflight.has(key)) return room.inflight.get(key);
         const task = (async () => {
-            const url = `https://crack-api.wrtn.ai/crack-gen/v3/chats/${encodeURIComponent(chatId)}/messages?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+            // Character chats (/characters/:id/chats/:chatId) use their own endpoint; v3/chats answers 404 there.
+            const resource = cmuIsCharacterChatPath() ? 'character-chats' : 'v3/chats';
+            // The head page is re-read on room entry and after generations; long messages make 100 rows ~280KB.
+            // Deeper pages (dashboard turn scans) keep 100 rows to limit the number of requests.
+            const limit = cursor ? 100 : 40;
+            const url = `https://crack-api.wrtn.ai/crack-gen/${resource}/${encodeURIComponent(chatId)}/messages?limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
             // This layer deduplicates by revision; URL-only reuse could return a pre-edit response.
             const json = cmuAssertPayload(await apiGet(url, { roomId: chatId, dedupe: false }));
             if (!shouldRun() || getChatId() !== chatId) throw new Error('Room changed');
             if (room.revision !== revision) throw new Error('Message changed during request');
             if (!Array.isArray(json.data?.messages)) throw new Error('Invalid message page');
-            const page = { arr: json.data.messages, cursor: json.data.nextCursor || '', hasNext: json.data.hasNext === true };
+            // Character chat pages omit hasNext; a cursor means more pages.
+            const page = { arr: json.data.messages, cursor: json.data.nextCursor || '',
+                hasNext: json.data.hasNext === true || (json.data.hasNext === undefined && !!json.data.nextCursor) };
             cmuRememberMessages(chatId, page.arr);
             room.pages.set(cursor, { at: Date.now(), page });
             while (room.pages.size > 4) room.pages.delete(room.pages.keys().next().value);
@@ -1077,42 +1082,23 @@
     function messageIdOf(msg) {
         return String(msg?._id || msg?.id || msg?.messageId || msg?.messageID || msg?.uuid || '');
     }
-    function gmGetJson(url, timeoutMs = 15000) {
-        if (!shouldRun())
-            return Promise.reject(new Error('runtime disposed'));
-        return new Promise((resolve, reject) => {
-            if (typeof GM_xmlhttpRequest !== 'function') {
-                fetch(url, { headers: { accept: 'application/json' } })
-                    .then(res => {
-                    if (!res.ok)
-                        throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                    .then(resolve, reject);
-                return;
-            }
-            GM_xmlhttpRequest({
-                method: 'GET',
-                url,
-                timeout: timeoutMs,
-                headers: { Accept: 'application/json' },
-                onload: (res) => {
-                    const status = Number(res.status) || 0;
-                    if (status && (status < 200 || status >= 300)) {
-                        reject(new Error(`HTTP ${status}`));
-                        return;
-                    }
-                    try {
-                        resolve(JSON.parse(res.responseText));
-                    }
-                    catch (err) {
-                        reject(err);
-                    }
-                },
-                onerror: () => reject(new Error('network error')),
-                ontimeout: () => reject(new Error('timeout')),
-            });
-        });
+    // Tampermonkey/Violentmonkey expose GM_xmlhttpRequest; Safari Userscripts and some mobile managers only GM.xmlHttpRequest.
+    function cmuGmXhrAvailable() {
+        if (typeof GM_xmlhttpRequest === 'function')
+            return true;
+        try { return typeof GM !== 'undefined' && typeof GM?.xmlHttpRequest === 'function'; } catch (_) { return false; }
+    }
+    function cmuGmXhr(details) {
+        if (typeof GM_xmlhttpRequest === 'function')
+            return GM_xmlhttpRequest(details);
+        let settled = false;
+        const once = fn => (...args) => { if (!settled) { settled = true; fn?.(...args); } };
+        const wrapped = { ...details, onload: once(details.onload), onerror: once(details.onerror),
+            ontimeout: once(details.ontimeout), onabort: once(details.onabort) };
+        const result = GM.xmlHttpRequest(wrapped);
+        // Promise-style managers may resolve without invoking callbacks.
+        Promise.resolve(result).then(res => { if (res && res.status !== undefined) wrapped.onload(res); }, err => wrapped.onerror(err));
+        return { abort() { settled = true; try { result?.abort?.(); } catch (_) { } } };
     }
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -1769,7 +1755,8 @@
       fill: none !important;
       stroke: currentColor !important;
     }
-    #${ID.settingsButton}.cmu-native-toolbar-btn svg {
+    #${ID.settingsButton}.cmu-native-toolbar-btn svg,
+    #${ID.fullscreenButton}.cmu-native-toolbar-btn svg {
       width: 16px !important;
       height: 16px !important;
       color: hsl(var(--line-gray-2, 0 0% 62%)) !important;
@@ -1780,12 +1767,7 @@
       justify-content: center !important;
       width: 16px !important;
       height: 16px !important;
-      line-height: 1 !important;
-      font-size: 15px !important;
-      font-weight: 700 !important;
-      color: hsl(var(--line-gray-2, 0 0% 62%)) !important;
       pointer-events: none !important;
-      transform: translateY(-.5px);
     }
 
     #${ID.composerExpandButton}.cmu-composer-expand-overlay {
@@ -1833,6 +1815,14 @@
     }
     #${ID.composerExpandButton}.cmu-composer-expand-overlay.cmu-composer-expand-visible {
       display: inline-flex !important;
+    }
+    #${ID.composerExpandButton}.cmu-composer-expand-overlay svg {
+      display: block !important;
+      width: 16px !important;
+      height: 16px !important;
+      fill: none !important;
+      stroke: currentColor !important;
+      pointer-events: none !important;
     }
     #${ID.composerExpandButton}.cmu-composer-expand-overlay:hover,
     #${ID.composerExpandButton}.cmu-composer-expand-overlay:focus-visible {
@@ -2827,6 +2817,22 @@
     body[data-theme="dark"] #chud-infobar,
     html[data-theme="dark"] #chud-infobar { color: rgba(255,255,255,.58); }
 
+    #chud-info-text .chud-num { display: inline-block; }
+    #chud-info-text .chud-num.chud-num-up { animation: chud-num-up .55s cubic-bezier(.2,.75,.3,1); }
+    #chud-info-text .chud-num.chud-num-down { animation: chud-num-down .55s cubic-bezier(.2,.75,.3,1); }
+    @keyframes chud-num-up {
+      0% { transform: translateY(40%) scale(1.14); opacity: .55; }
+      60% { transform: translateY(-8%) scale(1.06); opacity: 1; }
+      100% { transform: none; }
+    }
+    @keyframes chud-num-down {
+      0% { transform: translateY(-40%) scale(1.14); opacity: .55; }
+      60% { transform: translateY(8%) scale(1.06); opacity: 1; }
+      100% { transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #chud-info-text .chud-num { animation: none !important; }
+    }
     #chud-info-text {
       display: flex;
       align-items: center;
@@ -3212,7 +3218,8 @@
       .chud-part { padding: 1px; }
     }
 
-    .crack-ui-empty-send-blocked {
+    /* The same button turns into ■ stop while generating; never dim the stop state. */
+    .crack-ui-empty-send-blocked:not(:has(path[d^="M6 6h12v12H6"])) {
       opacity: .50 !important;
       cursor: not-allowed !important;
       filter: grayscale(.22) !important;
@@ -3220,6 +3227,9 @@
     .crack-ui-empty-send-blocked svg { pointer-events: none !important; }
 
     .igx-inline-overlay-host { position: relative !important; }
+    .igx-inline-overlay-host.igx-inline-overlay-pad { padding-top: 28px !important; }
+    /* 7px from the padding edge leaves a 6px visual gap above the box's 1px border. */
+    #igx-live-popup.inline.igx-anchor-shell { top: auto !important; bottom: calc(100% + 7px) !important; }
     #igx-live-popup {
       --bg-main: rgba(20, 20, 20, .92);
       --border-main: rgba(255, 255, 255, .12);
@@ -4260,6 +4270,21 @@
         }, true);
         syncNow();
     }
+    // The site's dialog scroll lock (react-remove-scroll, body[data-scroll-locked]) cancels touchmove at a text
+    // field's scroll edge, which breaks long-press selection in the user note and other dialogs on phones.
+    // Stop those moves on <body>: React (#__next) has already handled them, only the document-level lock is skipped.
+    function cmuReleaseDialogTextTouch(event) {
+        const target = event.target instanceof Element ? event.target : null;
+        if (target?.closest('textarea, [contenteditable="true"]') && target.closest('[role="dialog"]') &&
+            document.body?.hasAttribute('data-scroll-locked'))
+            event.stopPropagation();
+    }
+    function installCmuDialogTextTouchRelease() {
+        if (!document.body)
+            return;
+        cmuListen(document.body, 'touchmove', cmuReleaseDialogTextTouch, { passive: true });
+        addStyle(`[role="dialog"] :is(textarea, [contenteditable="true"]) { overscroll-behavior: contain; }`);
+    }
     function isInsideKnownPopup(el) {
         if (!(el instanceof Element))
             return false;
@@ -4318,6 +4343,19 @@
         ].filter(Boolean).join(' ');
         return /메시지|message/i.test(attrs);
     }
+    // Empty composer shows ▶ (autoplay), typed composer shows → (send); ■ (stop) is never a send button.
+    const CMU_SEND_ICON_SELECTOR = 'path[d^="M18.77 11.13"], path[d^="M18.38 12.88"]';
+    const CMU_STOP_ICON_SELECTOR = 'path[d^="M6 6h12v12H6"]';
+    function cmuHasSendIcon(btn) {
+        if (!(btn instanceof HTMLButtonElement) || btn.querySelector(CMU_STOP_ICON_SELECTOR))
+            return false;
+        if (btn.querySelector(CMU_SEND_ICON_SELECTOR))
+            return true;
+        // Icon paths change between releases; the trailing submit button of the composer action row is the send button.
+        const row = btn.parentElement;
+        return btn.type === 'submit' && !!row?.classList.contains('justify-between') && row.lastElementChild === btn &&
+            !btn.closest('[id^="cmu-"], [id^="chud-"]') && !!btn.previousElementSibling?.querySelector?.('button');
+    }
     function isRawSendButton(btn) {
         if (!(btn instanceof HTMLButtonElement))
             return false;
@@ -4326,7 +4364,7 @@
         const label = `${btn.getAttribute('aria-label') || ''} ${btn.title || ''} ${btn.textContent || ''}`;
         if (/전송|보내기|send/i.test(label))
             return true;
-        return !!btn.querySelector('path[d^="M18.77 11.13"]');
+        return cmuHasSendIcon(btn);
     }
     function hasRawSendButtonNear(el) {
         if (!(el instanceof Element))
@@ -4378,6 +4416,12 @@
     function findChatInput(force = false) {
         if (!force && cmuCachedInputUsable(cmuCachedChatInput))
             return cmuCachedChatInput;
+        // Only chat rooms have a composer; elsewhere every miss used to rescan the page.
+        if (!isChatRoomPath()) {
+            if (cmuCachedChatInput)
+                invalidateCmuChatInputCache();
+            return null;
+        }
         const prioritySelectors = [
             '.__chat_input_textarea',
             'p[data-placeholder*="메시지"], p[data-placeholder*="Message"], p[data-placeholder*="message"]',
@@ -4455,7 +4499,9 @@
                 candidates.push(btn);
         };
         document.querySelectorAll('button[aria-label]').forEach(add);
-        document.querySelectorAll('path[d^="M18.77 11.13"]').forEach(path => add(path.closest('button')));
+        document.querySelectorAll(CMU_SEND_ICON_SELECTOR).forEach(path => add(path.closest('button')));
+        // The send button has no type attribute (submit by default), so match structure, not [type].
+        document.querySelectorAll('main .justify-between > button:last-child').forEach(add);
         if (!candidates.length) {
             cmuCachedSendButtonAt = now;
             return null;
@@ -4632,9 +4678,11 @@
         return btn;
     }
     const COMPOSER_EXPAND_STYLE_PROPS = ['height', 'max-height', 'overflow-y'];
+    // Arrow glyphs turn into emoji on iOS; use stroke icons like the toolbar.
+    const composerExpandSvg = d => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="${d}"></path></svg>`;
     const COMPOSER_EXPAND_ICONS = Object.freeze({
-        expand: '↗',
-        collapse: '↙',
+        expand: composerExpandSvg('M7 17 17 7M8 7h9v9'),
+        collapse: composerExpandSvg('M17 7 7 17M16 17H7V8'),
     });
     function snapshotComposerExpandStyles(target) {
         const snapshot = {};
@@ -4783,7 +4831,7 @@
         const nextState = expanded ? 'collapse' : 'expand';
         if (btn.dataset.cmuComposerExpandState !== nextState) {
             btn.dataset.cmuComposerExpandState = nextState;
-            btn.textContent = COMPOSER_EXPAND_ICONS[nextState];
+            btn.innerHTML = COMPOSER_EXPAND_ICONS[nextState];
             const label = expanded ? '입력창 원래 크기로' : '입력창 펼치기';
             btn.title = label;
             btn.setAttribute('aria-label', label);
@@ -4968,7 +5016,7 @@
         btn.classList.remove('cmu-composer-expand-visible');
         btn.tabIndex = -1;
         btn.setAttribute('aria-hidden', 'true');
-        btn.textContent = COMPOSER_EXPAND_ICONS.expand;
+        btn.innerHTML = COMPOSER_EXPAND_ICONS.expand;
         btn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); });
         btn.addEventListener('click', e => {
             e.preventDefault();
@@ -6275,27 +6323,6 @@
         });
         return leaves.sort((a, b) => String(b.textContent || '').length - String(a.textContent || '').length)[0] || null;
     }
-    function lcNormalizeBlockNode(node) {
-        if (!node)
-            return null;
-        if (node.nodeType === Node.TEXT_NODE) {
-            const txt = String(node.textContent || '').replace(/\r\n?/g, '\n');
-            if (!txt)
-                return null;
-            const p = document.createElement('p');
-            p.style.whiteSpace = 'pre-wrap';
-            p.textContent = txt;
-            return p;
-        }
-        if (!(node instanceof HTMLElement))
-            return null;
-        if (node.tagName === 'IMG') {
-            const wrap = document.createElement('div');
-            wrap.appendChild(node.cloneNode(true));
-            return wrap;
-        }
-        return node.cloneNode(true);
-    }
     function lcCaptureImageSource(img) {
         if (!(img instanceof HTMLImageElement))
             return '';
@@ -6921,8 +6948,8 @@
                 try { window.htmlToImage = lib; } catch (_) { }
                 resolve(lib);
             };
-            if (typeof GM_xmlhttpRequest === 'function') {
-                GM_xmlhttpRequest({
+            if (cmuGmXhrAvailable()) {
+                cmuGmXhr({
                     method: 'GET',
                     url: libraryUrl,
                     timeout: 18000,
@@ -7050,10 +7077,10 @@
         }
 
         let gmError = null;
-        if (typeof GM_xmlhttpRequest === 'function') {
+        if (cmuGmXhrAvailable()) {
             try {
                 return await new Promise((resolve, reject) => {
-                    GM_xmlhttpRequest({
+                    cmuGmXhr({
                         method: 'GET',
                         url: source,
                         responseType: 'blob',
@@ -7755,7 +7782,7 @@
         { id: 'message', icon: Q_ICONS.message, label: '길게 누르기', keys: ['messageLongPressMenu'] },
         { id: 'theme', icon: Q_ICONS.theme, label: '테마', keys: ['themeSkin'] },
         { id: 'radiosonde', icon: Q_ICONS.radio, label: '라존데', keys: ['radiosonde'] },
-        { id: 'dashboard', icon: Q_ICONS.dash, label: '대시보드', keys: ['dashboard', 'dashboardSidebar', 'composerButtons'] },
+        { id: 'dashboard', icon: Q_ICONS.dash, label: '대시보드', keys: ['dashboard', 'dashboardNumberAnimation', 'dashboardSidebar', 'composerButtons'] },
         { id: 'badge', icon: Q_ICONS.badge, label: '배지', keys: ['badgeChars', 'badgeTime', 'modelIcon', 'answerCost', 'hideImageGenerateButton'] },
         { id: 'nativemodel', icon: Q_ICONS.filter, label: '모델', keys: ['nativeModelFilter', 'outputModelFilter'] },
         { id: 'capture', icon: Q_ICONS.capture, label: '로그 캡처', keys: ['logCapture'] }
@@ -7929,14 +7956,19 @@
             return false;
         }
     }
+    // innerWidth/clientWidth force a synchronous layout and this runs on many hot paths; measure once per resize.
+    let cmuViewportWidthCache = 0;
     function cmuViewportWidth() {
+        if (cmuViewportWidthCache)
+            return cmuViewportWidthCache;
         const values = [
             window.innerWidth,
             document.documentElement?.clientWidth,
             window.visualViewport?.width,
             window.screen?.width,
         ].map(Number).filter(v => Number.isFinite(v) && v > 0);
-        return values.length ? Math.min(...values) : (window.innerWidth || 0);
+        cmuViewportWidthCache = values.length ? Math.min(...values) : (window.innerWidth || 0);
+        return cmuViewportWidthCache;
     }
     function isCmuEdgeMenuViewport() {
         return isMobileLike() && cmuViewportWidth() <= 820;
@@ -8046,9 +8078,12 @@
                 continue;
             const state = String(panel.getAttribute('data-state') || '');
             const cls = String(panel.className || '');
-            const text = cmuEdgeText(panel).slice(0, 600);
             const hasList = !!panel.querySelector?.('[data-testid="virtuoso-scroller"], [data-virtuoso-scroller="true"], [role="tablist"]');
-            if (panel.getAttribute('role') === 'dialog' && state === 'open' && hasList && (cls.includes('md:hidden') || panel.closest('[data-radix-popper-content-wrapper]')) && /에피소드|보관함|파티챗/.test(text))
+            if (panel.getAttribute('role') !== 'dialog' || state !== 'open' || !hasList || !(cls.includes('md:hidden') || panel.closest('[data-radix-popper-content-wrapper]')))
+                continue;
+            // Read the tab labels instead of innerText of the whole (layout-forcing) chat list.
+            const tabs = panel.querySelector('[role="tablist"]')?.textContent || '';
+            if (/에피소드|보관함|파티챗/.test(tabs) || /에피소드|보관함|파티챗/.test(cmuEdgeText(panel).slice(0, 600)))
                 return panel;
         }
         return null;
@@ -8141,6 +8176,14 @@
         if (cachedCmuRoomPanel?.isConnected && scoreCmuRoomPanel(cachedCmuRoomPanel) >= 10) {
             observeCmuRoomPanelState(cachedCmuRoomPanel);
             return cachedCmuRoomPanel;
+        }
+        // The room panel is rebuilt on every room change; try its known class before scoring every div in <main>.
+        const known = document.querySelector('main .border-l.border-outline_tertiary');
+        if (known && scoreCmuRoomPanel(known) >= 10) {
+            cachedCmuRoomPanel = known;
+            CMU_DOM_WATCH.roomPanelMissUntil = 0;
+            observeCmuRoomPanelState(known);
+            return known;
         }
         const root = document.querySelector('main') || document;
         if (CMU_DOM_WATCH.roomPanelSearchRoot === root && Date.now() < CMU_DOM_WATCH.roomPanelMissUntil)
@@ -8320,12 +8363,13 @@
     }
     function syncCmuEdgeMenuOpenState() {
         try {
-            if (syncCmuUserNoteDialogState())
-                return;
+            // Edge menus and the user note only exist in chat rooms; skip the dialog scan elsewhere.
             if (!(shouldRun() && isChatRoomPath() && isCmuEdgeMenuViewport())) {
                 document.documentElement.classList.remove('cmu-mobile-chat-list-open', 'cmu-mobile-room-panel-open', 'cmu-chat-list-height-fixed');
                 return;
             }
+            if (syncCmuUserNoteDialogState())
+                return;
             releaseCmuMobileChatListStaleMarkers();
             syncCmuMobileChatListOpenState();
             syncCmuRightRoomMenuOpenState();
@@ -8954,14 +8998,20 @@
     }
     function renderFullscreenRow() {
         const supported = isCmuFullscreenSupported();
-        return qSwitch('fullscreenButton', '전체화면 버튼 표시', supported ? '톱니 옆 ⛶/✕ 빠른 전환 버튼 표시' : '현재 브라우저/기기에서 Fullscreen API 미지원', { disabled: !supported, forceOffWhenDisabled: true });
+        return qSwitch('fullscreenButton', '전체화면 버튼 표시', supported ? '톱니 옆에 전체화면 켜기/끄기 버튼 표시' : '현재 브라우저/기기에서 Fullscreen API 미지원', { disabled: !supported, forceOffWhenDisabled: true });
     }
+    // Text glyphs (⛶ ✕) fall back to emoji fonts on iOS/Android; draw the same stroke icons as the gear.
+    const CMU_FULLSCREEN_ICON = Object.freeze({
+        enter: 'M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4',
+        exit: 'M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4',
+    });
     function setCmuFullscreenToolbarIcon(btn) {
         if (!(btn instanceof HTMLButtonElement))
             return;
         const active = isCmuFullscreenActive();
-        const icon = active ? '✕' : '⛶';
-        btn.innerHTML = `<span class="cmu-fullscreen-icon" aria-hidden="true">${icon}</span>`;
+        const path = active ? CMU_FULLSCREEN_ICON.exit : CMU_FULLSCREEN_ICON.enter;
+        if (btn.querySelector('.cmu-fullscreen-icon path')?.getAttribute('d') !== path)
+            btn.innerHTML = `<span class="cmu-fullscreen-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" focusable="false" style="fill:none!important;stroke:currentColor!important;"><path d="${path}"></path></svg></span>`;
         btn.title = active ? '전체화면 해제' : '전체화면 전환';
         btn.setAttribute('aria-label', active ? '전체화면 해제' : '전체화면 전환');
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
@@ -9146,7 +9196,7 @@
     const SIDE_PART_LABELS = [
         ['modelButton', '모델'], ['themeButton', '다크/라이트'], ['episodeModeButton', '소설/채팅'],
         ['guideButton', '가이드'], ['profileButton', '프로필'], ['profileBoxButton', '프로필 박스'], ['noteButton', '노트'],
-        ['outputButton', '출력'], ['summaryButton', '요약'], ['imageButton', '이미지'], ['archiveButton', '보관함'],
+        ['proseStyleButton', '문체'], ['outputButton', '출력'], ['summaryButton', '요약'], ['imageButton', '이미지'], ['archiveButton', '보관함'],
         ['roomBackgroundButton', '이미지 테마'], ['scenePainterButton', '모바일 삽화'], ['wishManagerButton', 'Wish RP'], ['guideManagerButton', '지침 관리'], ['sceneBlurButton', 'CSP 테마'],
         ['startButton', '시작'], ['loreButton', '로어'], ['translatorButton', '번역'], ['aiSummaryButton', 'AI 요약'], ['gameHudButton', '게임 HUD']
     ];
@@ -9158,6 +9208,7 @@
         profileButton: 'profile',
         profileBoxButton: 'profileBox',
         noteButton: 'note',
+        proseStyleButton: 'proseStyle',
         outputButton: 'output',
         summaryButton: 'summary',
         imageButton: 'image',
@@ -9229,7 +9280,7 @@
     }
     const RS_GROUPS = [
         ['fable', 'Fable'], ['opus', 'Opus'], ['gpt', 'GPT'], ['gemini', 'Gemini'],
-        ['sonnet', 'Sonnet'], ['haiku', 'Haiku'], ['other', '기타'],
+        ['sonnet', 'Sonnet'], ['haiku', 'Haiku'], ['deepseek', 'DeepSeek'], ['other', '기타'],
     ];
     function rsModelGroup(model) {
         const text = `${model.slug} ${model.label || ''}`.toLowerCase();
@@ -9404,14 +9455,42 @@
         }
         catch (_) { }
     }
+    let cmuComposerSendObserver = null;
+    let cmuComposerSendRow = null;
+    function cmuComposerMarkSendButtons() {
+        const candidates = new Set();
+        document.querySelectorAll(CMU_SEND_ICON_SELECTOR).forEach(path => {
+            const btn = path.closest('button');
+            if (btn) candidates.add(btn);
+        });
+        document.querySelectorAll('main .justify-between > button:last-child').forEach(btn => candidates.add(btn));
+        document.querySelectorAll('main [data-cmu-send-button]').forEach(btn => candidates.add(btn));
+        for (const btn of candidates) {
+            if (cmuHasSendIcon(btn))
+                btn.setAttribute('data-cmu-send-button', '1');
+            else
+                btn.removeAttribute('data-cmu-send-button');
+        }
+        const row = Array.from(candidates).find(btn => btn.closest('main'))?.parentElement || null;
+        if (row !== cmuComposerSendRow) {
+            cmuComposerSendObserver?.disconnect();
+            cmuComposerSendObserver = null;
+            cmuComposerSendRow = row;
+            if (row) {
+                cmuComposerSendObserver = new MutationObserver(cmuComposerMarkSendButtons);
+                cmuComposerSendObserver.observe(row, { subtree: true, childList: true, attributes: true, attributeFilter: ['d'] });
+            }
+        }
+    }
     function cmuComposerHideCss(map = cmuComposerHiddenMap()) {
-        const guard = `:not(#${ID.settingsButton}):not([data-crack-ui-empty-send-guard])`;
+        cmuComposerMarkSendButtons();
+        const guard = `:not(#${ID.settingsButton}):not([data-crack-ui-empty-send-guard]):not([data-cmu-send-button]):not(:has(:is(${CMU_SEND_ICON_SELECTOR})))`;
         const depthScope = [1, 2, 3, 4, 5, 6]
             .map(depth => `> ${'* > '.repeat(depth - 1)}:is(${CMU_COMPOSER_INPUT_SELECTOR})`)
             .join(', ');
         // 입력창에서 6단계 안쪽 조상 중 메시지를 품지 않은 곳 = 입력 영역.
         const scope = `main :is(form, div):has(${depthScope}):not(:has([data-message-group-id]))`;
-        const outside = `:not([data-message-group-id] *):not(:is(#${ID.panel}, #${ID.dashboard}, #${ID.dashboardSidebar}, #igx-live-popup) *):not(:has(path[d^="M18.77 11.13"]))`;
+        const outside = `:not([data-message-group-id] *):not(:is(#${ID.panel}, #${ID.dashboard}, #${ID.dashboardSidebar}, #igx-live-popup) *):not(:has(:is(${CMU_SEND_ICON_SELECTOR})))`;
         const rules = [];
         for (const key of Object.keys(map)) {
             const sel = cmuComposerKeySelector(key);
@@ -9469,6 +9548,7 @@
             !all.some(other => other instanceof Element && other !== root && other.contains(root)));
     }
     function cmuComposerMarkBar(input = findChatInput()) {
+        cmuComposerMarkSendButtons();
         const marked = document.querySelector('main [data-cmu-composer-bar="1"]');
         if (marked?.parentElement?.contains(input))
             return;
@@ -9943,7 +10023,7 @@
         ${qSwitch('mobileRightMenuButton', '우측 메뉴 버튼', '모바일 오른쪽 손잡이로 방 설정 패널 열기')}
         ${qSwitch('composerExpandButton', '입력창 펼치기 버튼', '스크롤이 생기면 입력창 오른쪽 위에 표시')}
         ${qSwitch('inputCharacterCounter', '입력 글자수 표시', '전송 버튼 위쪽 · 2,000자 경고')}
-        ${qSwitch('emptySendGuard', '빈 메시지 전송 막기')}
+        ${qSwitch('emptySendGuard', '빈 입력 ▶ 자동진행 막기', '빈 입력창의 ▶는 크래커를 쓰는 스토리 자동진행이라 실수로 누르지 않게 막음')}
       `)}
 
       <div class="sec">채팅창 임시 저장</div>
@@ -10011,6 +10091,7 @@
       ${qCard(`
         ${qSwitch('dashboard', '정보바 표시', '턴수 · 누적 사용 · 잔여 · 차감', { group: 'g-info' })}
         ${qChipWrap('g-info', renderDashboardPartRows(), !!settings.dashboard)}
+        ${qSwitch('dashboardNumberAnimation', '숫자 변화 애니메이션', '값이 바뀔 때만 잠깐 올라가는 효과 · 기기의 동작 줄이기 설정을 따름', { dep: 'dashboard' })}
       `)}
       ${sideSection}
 
@@ -10719,12 +10800,21 @@
         const global = findChatInput();
         return global && isButtonInsideChatComposer(btn) ? global : null;
     }
+    // classList.add/remove and dataset writes record a mutation even when nothing changes; this runs per keystroke
+    // and every record wakes the input counter's placement observer, so only write real changes.
+    function setEmptySendGuardButtonState(btn, blocked) {
+        const guard = settings.emptySendGuard ? '1' : '0';
+        if (btn.dataset.crackUiEmptySendGuard !== guard)
+            btn.dataset.crackUiEmptySendGuard = guard;
+        if (btn.dataset.crackUiEmptySendBlocked !== (blocked ? '1' : '0'))
+            btn.dataset.crackUiEmptySendBlocked = blocked ? '1' : '0';
+        if (btn.classList.contains('crack-ui-empty-send-blocked') !== blocked)
+            btn.classList.toggle('crack-ui-empty-send-blocked', blocked);
+    }
     function clearEmptySendGuardButton(btn) {
         if (!(btn instanceof HTMLElement))
             return;
-        btn.classList.remove('crack-ui-empty-send-blocked');
-        btn.dataset.crackUiEmptySendGuard = settings.emptySendGuard ? '1' : '0';
-        btn.dataset.crackUiEmptySendBlocked = '0';
+        setEmptySendGuardButtonState(btn, false);
     }
     function updateEmptySendGuardState() {
         const btn = getSendButton();
@@ -10751,14 +10841,7 @@
         });
         if (!btn)
             return;
-        btn.dataset.crackUiEmptySendGuard = settings.emptySendGuard ? '1' : '0';
-        btn.dataset.crackUiEmptySendBlocked = blocked ? '1' : '0';
-        if (blocked) {
-            btn.classList.add('crack-ui-empty-send-blocked');
-        }
-        else {
-            clearEmptySendGuardButton(btn);
-        }
+        setEmptySendGuardButtonState(btn, blocked);
     }
     function scheduleEmptySendGuardUiUpdate() {
         if (!scheduleEmptySendGuardUiUpdate._raf) {
@@ -10773,14 +10856,13 @@
     function isSendButton(btn) {
         if (!(btn instanceof HTMLButtonElement))
             return false;
+        // Cheap label/icon checks first: pairing a button with the composer walks nine ancestors per button.
+        const label = `${btn.getAttribute('aria-label') || ''} ${btn.title || ''}`;
+        if (!/전송|보내기|send/i.test(label) && !cmuHasSendIcon(btn))
+            return false;
         if (btn.closest(`#${ID.panel}, [role="dialog"], [data-radix-popper-content-wrapper], [data-radix-dialog-content], [data-radix-dialog-content-wrapper]`))
             return false;
-        if (!findChatInputForSendButton(btn))
-            return false;
-        const label = `${btn.getAttribute('aria-label') || ''} ${btn.title || ''}`;
-        if (/전송|보내기|send/i.test(label))
-            return true;
-        return !!btn.querySelector('path[d^="M18.77 11.13"]');
+        return !!findChatInputForSendButton(btn);
     }
     function bindEmptySendGuard() {
         if (document.documentElement.dataset.cmuSendGuardBound === '1')
@@ -11582,6 +11664,7 @@
         profileButton: true,
         profileBoxButton: true,
         noteButton: true,
+        proseStyleButton: true,
         outputButton: true,
         summaryButton: true,
         imageButton: true,
@@ -11772,9 +11855,9 @@
             return;
         } catch (fetchError) {
             if (CMU_RUNTIME.disposed) throw fetchError;
-            if (typeof GM_xmlhttpRequest !== 'function') throw fetchError;
+            if (!cmuGmXhrAvailable()) throw fetchError;
             await new Promise((resolve, reject) => {
-                GM_xmlhttpRequest({
+                cmuGmXhr({
                     method: 'PATCH', url: 'https://crack-api.wrtn.ai/crack-api/profiles/ui-setting', headers, data: payload,
                     withCredentials: true, anonymous: false, timeout: 10000,
                     onload: (response) => response.status >= 200 && response.status < 300
@@ -11882,6 +11965,8 @@
         summary: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="15" height="15" class="chud-btn-icon"><path d="M16.25 10.8a5.39 5.39 0 1 0 .02 10.78 5.39 5.39 0 0 0-.02-10.78m0 9.16a3.78 3.78 0 1 1 0-7.57 3.78 3.78 0 0 1 0 7.57"></path><path d="M17.02 13.43h-1.5v3.12l2.02 1.55.91-1.2-1.43-1.09z"></path><path d="M6.8 19.54v-3.29h-3V4.15h14.9V9.5h1.6V3.85c0-.72-.58-1.3-1.3-1.3H3.5c-.72 0-1.3.58-1.3 1.3v12.7c0 .72.58 1.3 1.3 1.3h1.7v3.2a.9.9 0 0 0 .89.89q.3 0 .58-.21l3.35-2.81-1.03-1.22z"></path><path d="M16.5 6.72H6v1.6h10.5zM11 10.03H6v1.6h5z"></path></svg>',
         image: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="chud-btn-icon"><path d="m11.7 6.08 6.36 3.67-6.36 3.67z"></path><path fill-rule="evenodd" d="M6.71 3.91c0-.94.76-1.7 1.7-1.7H20.1c.94 0 1.7.76 1.7 1.7V15.6c0 .94-.76 1.7-1.7 1.7h-2.81v2.8c0 .94-.76 1.7-1.7 1.7H3.9a1.7 1.7 0 0 1-1.7-1.7V8.41c0-.94.76-1.7 1.7-1.7h2.81zm1.7-.1a.1.1 0 0 0-.1.1V15.6q0 .1.1.1H20.1a.1.1 0 0 0 .1-.1V3.91a.1.1 0 0 0-.1-.1zm0 13.49h7.28v2.8a.1.1 0 0 1-.1.1H3.9a.1.1 0 0 1-.1-.1V8.41q0-.1.1-.1h2.81v7.29c0 .94.76 1.7 1.7 1.7" clip-rule="evenodd"></path></svg>',
         archive: '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="chud-btn-icon"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>',
+        // Site's own "문체 변경" icon from the room panel (2026-10-01).
+        proseStyle: '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" class="chud-btn-icon"><path d="m17.83 7.17 1.07 3.2 3.2 1.07a.6.6 0 0 1 0 1.13l-3.2 1.07-1.07 3.2a.6.6 0 0 1-1.13 0l-1.07-3.2-3.2-1.07a.6.6 0 0 1 0-1.13l3.2-1.07 1.07-3.2a.6.6 0 0 1 1.13 0M3.14 13.28a1.28 1.28 0 1 0 0-2.56 1.28 1.28 0 0 0 0 2.56m5.11 0a1.28 1.28 0 1 0 0-2.56 1.28 1.28 0 0 0 0 2.56"></path></svg>',
         external: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v7H3V3h7"/></svg>',
         roomBackground: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="currentColor" class="chud-btn-icon chud-room-bg-icon" aria-hidden="true"><path d="M4.2 4.2c0-.88.72-1.6 1.6-1.6h12.4c.88 0 1.6.72 1.6 1.6v15.6c0 .88-.72 1.6-1.6 1.6H5.8c-.88 0-1.6-.72-1.6-1.6zm1.6 0v15.6h12.4V4.2z"></path><path d="M7.4 16.7 10.2 13l2 2.35 2.7-3.45 2.1 4.8z"></path><circle cx="9.1" cy="8.1" r="1.45"></circle></svg>',
         sceneBlur: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="currentColor" class="chud-btn-icon chud-scene-blur-icon" aria-hidden="true"><path d="M4.2 4.2c0-.88.72-1.6 1.6-1.6h12.4c.88 0 1.6.72 1.6 1.6v15.6c0 .88-.72 1.6-1.6 1.6H5.8c-.88 0-1.6-.72-1.6-1.6zm1.6 0v15.6h12.4V4.2z"></path><path d="M8.1 8.2h7.8v1.45H8.1zm0 3.05h7.8v1.45H8.1zm0 3.05h4.6v1.45H8.1z" opacity=".65"></path><path d="M17.4 13.1c1.52 1.44 2.35 2.67 2.35 3.74a2.35 2.35 0 1 1-4.7 0c0-1.07.83-2.3 2.35-3.74"></path></svg>',
@@ -11937,9 +12022,15 @@
         catch (_) { }
         return window;
     }
+    let cmuExternalThemeCheckedAt = 0;
     function detectCmuExternalThemeProvider() {
         if (cmuExternalThemeProvider)
             return cmuExternalThemeProvider;
+        // Asked per message group; a theme that loads later is still picked up within two seconds
+        // (and immediately when its DOM markers appear, which clears this timestamp).
+        if (Date.now() - cmuExternalThemeCheckedAt < 2000)
+            return '';
+        cmuExternalThemeCheckedAt = Date.now();
         const w = getPublicWindow();
         const hasFlag = (name) => {
             try {
@@ -12061,8 +12152,9 @@
     }
     function findExternalClickable(patterns, visibleOnly = false) {
         const regs = patterns.map(p => p instanceof RegExp ? p : new RegExp(String(p).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
-        for (const el of document.querySelectorAll('button, [role="button"], a')) {
-            if (isOwnElement(el) || el.closest('[data-message-group-id], [contenteditable="true"]')) continue;
+        // Let the selector engine skip message buttons; long rooms hold thousands of them.
+        for (const el of document.querySelectorAll(':is(button, [role="button"], a):not([data-message-group-id] *):not([contenteditable="true"] *)')) {
+            if (isOwnElement(el)) continue;
             const text = getClickableLabelLite(el);
             if (!text || text.length > 120 || !regs.some(re => re.test(text))) continue;
             if (!visibleOnly || visibleClickable(el)) return el;
@@ -12470,7 +12562,8 @@
     function refreshSideAvailability(force = false) {
         const now = Date.now();
         const age = now - Number(DASH_SIDE.availableAt || 0);
-        if (DASH_SIDE.available && age < (force ? 1500 : 4000)) {
+        // Late extensions are caught by their ready events and the route probes; routine checks can be sparse.
+        if (DASH_SIDE.available && age < (force ? 1500 : 15000)) {
             return DASH_SIDE.available;
         }
         DASH_SIDE.availableAt = now;
@@ -12482,6 +12575,8 @@
             profileButton: true,
             profileBoxButton: isProfileBoxInstalledLite(),
             noteButton: true,
+            // Character chats have no prose style presets.
+            proseStyleButton: !cmuIsCharacterChatPath(),
             outputButton: true,
             summaryButton: true,
             startButton: true,
@@ -12644,22 +12739,36 @@
         showToast('AI 요약 준비 중 · 잠시 후 자동으로 열림');
         return true;
     }
+    let cmuSideAvailabilitySignature = '';
     function refreshIntegratedSideButtonsLite() {
         try {
             DASH_SIDE.availableAt = 0;
-            refreshSideAvailability(true);
+            // Seven route-change probes wait for late extensions; rebuild the composer blocks only when one appeared.
+            const signature = JSON.stringify(refreshSideAvailability(true));
+            if (signature === cmuSideAvailabilitySignature && document.getElementById(ID.dashboardSidebar)?.isConnected)
+                return false;
+            cmuSideAvailabilitySignature = signature;
             ensureInlineBlocks();
             applySideVisible();
+            return true;
         }
-        catch (_) { }
+        catch (_) {
+            return true;
+        }
     }
     cmuListen(document, 'crack-ai-summary:ready', refreshIntegratedSideButtonsLite);
     cmuListen(document, 'wish-rp-manager:ready', refreshIntegratedSideButtonsLite);
+    let cmuSideRouteProbeToken = 0;
     function scheduleIntegratedSideButtonsRouteRefreshLite() {
+        if (!settings.dashboardSidebar)
+            return;
+        // Extensions are already loaded on in-app navigation; stop probing after two unchanged results.
+        const token = ++cmuSideRouteProbeToken;
+        let unchanged = 0;
         [0, 120, 320, 700, 1300, 2200, 3600].forEach(ms => setTimeout(() => {
-            if (!isChatRoomPath())
+            if (token !== cmuSideRouteProbeToken || unchanged >= 2 || !isChatRoomPath())
                 return;
-            refreshIntegratedSideButtonsLite();
+            unchanged = refreshIntegratedSideButtonsLite() ? 0 : unchanged + 1;
         }, ms));
     }
     function getStartSettingTriggerLite() {
@@ -13787,6 +13896,7 @@
                 profileButton: makeSideButton('profileButton', 'chud-native-profile-btn', '크랙 기본 프로필', SIDE_ICON.profile, () => clickFirst([/대화\s*프로필/], '대화 프로필')),
                 profileBoxButton: makeSideButton('profileBoxButton', 'chud-profile-box-btn', '프로필 박스', SIDE_ICON.profileBox, openProfileBoxLite),
                 noteButton: makeSideButton('noteButton', 'chud-note-btn', '유저 노트', SIDE_ICON.note, () => clickFirst([/유저\s*노트/], '유저 노트')),
+                proseStyleButton: makeSideButton('proseStyleButton', 'chud-prose-style-btn', '문체 변경', SIDE_ICON.proseStyle, () => clickFirst([/문체\s*변경/], '문체 변경')),
                 outputButton: makeSideButton('outputButton', 'chud-output-btn', '답변 길이 및 생각 조절', SIDE_ICON.output, openNativeOutputSettings),
                 summaryButton: makeSideButton('summaryButton', 'chud-summary-btn', '요약 메모리', SIDE_ICON.summary, openSummaryMemoryLite),
                 imageButton: makeSideButton('imageButton', 'chud-image-btn', '이미지 ON/OFF', SIDE_ICON.image, openNativeSituationImageToggleLite),
@@ -13808,7 +13918,7 @@
             buttons.profileButton.dataset.sideKey = 'nativeProfileButton';
             buttons.profileBoxButton.dataset.cpmExternalProfileLauncher = 'true';
             DASH_SIDE.btns = buttons;
-            content.append(buttons.modelButton, buttons.themeButton, buttons.episodeModeButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
+            content.append(buttons.modelButton, buttons.themeButton, buttons.episodeModeButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.proseStyleButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
             bar.append(content);
         }
         if (bar.parentElement !== shell)
@@ -13816,7 +13926,6 @@
         DASH_SIDE.el = bar;
         refreshSideAvailability();
         applySideVisible();
-        applyDashboardLayout(shell, input);
     }
     function removeDashboardSidebar() {
         closeCompactModelPicker({ closeNative: true });
@@ -13888,9 +13997,15 @@
             bar.style.removeProperty('visibility');
         }
     }
+    const DASH_BAR_SCROLL = new WeakMap();
     function applyDashboardBarScroll(bar, scrollTop) {
         if (!bar || !DASH_SCROLL.shell || bar.parentElement !== DASH_SCROLL.shell)
             return;
+        // Layout passes re-run this without scrolling; skip identical style writes.
+        const key = `${scrollTop}|${bar.style.top}`;
+        if (DASH_BAR_SCROLL.get(bar) === key && bar.style.transform)
+            return;
+        DASH_BAR_SCROLL.set(bar, key);
         const baseTop = parseFloat(bar.style.top) || 0;
         const height = Math.max(1, bar.offsetHeight || 1);
         const clippedTop = Math.max(0, scrollTop - baseTop);
@@ -14021,7 +14136,10 @@
             return;
         }
         let bar = document.getElementById(ID.dashboard);
+        // Composer re-renders call this repeatedly; only a new/moved bar, a room change or missing data needs a fetch.
+        let needsUpdate = !DASH.state.logs;
         if (!bar) {
+            needsUpdate = true;
             bar = document.createElement('div');
             bar.id = ID.dashboard;
             bar.addEventListener('pointerdown', () => { DASH.touchHold = true; }, true);
@@ -14054,14 +14172,20 @@
         else {
             DASH.textSpan = bar.querySelector('#chud-info-text');
         }
-        if (bar.parentElement !== shell)
+        if (bar.parentElement !== shell) {
             shell.insertBefore(bar, shell.firstChild || null);
+            needsUpdate = true;
+        }
         DASH.el = bar;
         const currentChatId = getChatId();
-        if (currentChatId && DASH.state.chatId && DASH.state.chatId !== currentChatId)
-            clearDashboardForRoom(currentChatId);
-        applyDashboardLayout(shell, input);
-        scheduleDashboardUpdate(true);
+        if (currentChatId && DASH.state.chatId !== currentChatId) {
+            if (DASH.state.chatId)
+                clearDashboardForRoom(currentChatId);
+            needsUpdate = true;
+        }
+        // ensureInlineBlocks applies the shared layout once after the sidebar and the info bar.
+        if (needsUpdate)
+            scheduleDashboardUpdate(true);
     }
     function syncDashMenu() {
         const visible = getDashVisible();
@@ -14087,33 +14211,9 @@
         return role === 'assistant' || role === 'char' || role === 'character' || role === 'bot' || role === 'ai';
     }
     function isRawPrologueMessage(msg) {
+        if (msg?.isIntroMessage === true)
+            return true;
         return /prologue|opening|intro/i.test(String(msg?.type || msg?.messageType || msg?.source || msg?.subType || msg?.message?.type || ''));
-    }
-    function pickRawMessageArray(json) {
-        const candidates = [
-            json?.data?.messages,
-            json?.messages,
-            json?.data?.items,
-            json?.items,
-            json?.data?.list,
-            json?.list,
-            json?.data,
-        ];
-        for (const v of candidates) {
-            if (Array.isArray(v))
-                return v;
-        }
-        return [];
-    }
-    function pickRawMessageCursor(json) {
-        const data = json?.data && typeof json.data === 'object' ? json.data : json;
-        return data?.nextCursor
-            || data?.next_cursor
-            || data?.next
-            || data?.cursor
-            || json?.nextCursor
-            || json?.next_cursor
-            || '';
     }
     async function fetchRawMessagePage(chatId, cursor = '') {
         return cmuSharedMessagePage(chatId, cursor);
@@ -14385,11 +14485,19 @@
         DASH_LOGS_INFLIGHT.set(chatId, task);
         return task;
     }
+    // Boot, late boots and composer re-renders each schedule a dashboard update; reuse one balance read.
+    const DASH_BALANCE = { at: 0, value: null };
     async function fetchBalance() {
+        if (getDashVisible().cracker === false)
+            return DASH.state.balance;
+        if (DASH_BALANCE.at && Date.now() - DASH_BALANCE.at < 10000)
+            return DASH_BALANCE.value;
         try {
             const json = await apiGet('https://crack-api.wrtn.ai/crack-cash/crackers');
             const q = json?.data?.quantity;
-            return typeof q === 'number' ? q : null;
+            DASH_BALANCE.value = typeof q === 'number' ? q : null;
+            DASH_BALANCE.at = Date.now();
+            return DASH_BALANCE.value;
         }
         catch (_) {
             return null;
@@ -14468,6 +14576,8 @@
     }
     function clearDashboardForRoom(chatId) {
         DASH.state.chatId = chatId || '';
+        // Numbers of the previous room must not count into the next room's values.
+        DASH_NUM.prev = {};
         DASH.state.logs = null;
         DASH.state.balance = null;
         DASH.state.cumulative = 0;
@@ -14557,9 +14667,10 @@
         const domGroups = justMoved ? 0 : document.querySelectorAll('div[data-message-group-id]').length;
         const turns = logs ? Math.max(0, Number(logs.officialTurnCount ?? logs.userTurnCount) || 0) : (justMoved ? null : Math.max(0, Math.floor(domGroups / 2) - 1));
         const parts = [];
-        const turnText = turns == null ? '—' : `${dashFmt(turns)}${logs?.complete === false ? '+' : ''}`;
-        const turnSummary = `${DASH_ICON.clock}<span style="font-weight:700;">${turnText}</span>턴`;
-        let turnDetail = `${DASH_ICON.clock}<span style="opacity:.75;margin-right:2px;">진행</span><span style="font-weight:700;">${turnText}</span>턴`;
+        // A DOM-based estimate is shown until the message scan finishes; don't animate from it.
+        const turnNum = turns == null ? '—' : dashNum('turn', turns, !!logs, logs?.complete === false ? '+' : '');
+        const turnSummary = `${DASH_ICON.clock}${turnNum}턴`;
+        let turnDetail = `${DASH_ICON.clock}<span style="opacity:.75;margin-right:2px;">진행</span>${turnNum}턴`;
         const hints = logs?.complete === false ? ['일부 집계'] : [];
         if (logs?.userTurnCount > 0)
             hints.push(`유저 ${dashFmt(logs.userTurnCount)}개`);
@@ -14573,14 +14684,14 @@
             turnDetail += `&nbsp;<span style="opacity:.75;">(${hints.join(' · ')})</span>`;
         parts.push({ key: 'turn', summaryHtml: turnSummary, detailHtml: turnDetail });
         const cum = DASH.state.cumulative;
-        const cumSummary = `${DASH_ICON.bittenCracker}<span style="font-weight:700;">${dashFmt(cum)}</span>개`;
-        const cumDetail = `${DASH_ICON.bittenCracker}<span style="opacity:.75;margin-right:2px;">누적 사용 크래커 · 추정 포함</span><span style="font-weight:700;">${dashFmt(cum)}</span>개`;
+        const cumSummary = `${DASH_ICON.bittenCracker}${dashNum('cumulative', cum)}개`;
+        const cumDetail = `${DASH_ICON.bittenCracker}<span style="opacity:.75;margin-right:2px;">누적 사용 크래커 · 추정 포함</span>${dashNum('cumulative', cum)}개`;
         parts.push({ key: 'cumulative', summaryHtml: cumSummary, detailHtml: cumDetail });
         const bal = DASH.state.balance;
         if (bal !== null && bal !== undefined) {
             const b = Number(bal) || 0;
-            const balSummary = `${DASH_ICON.cracker}<span style="font-weight:700;">${dashFmt(b)}</span>개`;
-            const balDetail = `${DASH_ICON.cracker}<span style="opacity:.75;margin-right:2px;">잔여</span><span style="font-weight:700;">${dashFmt(b)}</span>개`;
+            const balSummary = `${DASH_ICON.cracker}${dashNum('cracker', b)}개`;
+            const balDetail = `${DASH_ICON.cracker}<span style="opacity:.75;margin-right:2px;">잔여</span>${dashNum('cracker', b)}개`;
             parts.push({ key: 'cracker', summaryHtml: balSummary, detailHtml: balDetail });
         }
         else {
@@ -14588,7 +14699,7 @@
         }
         const diff = DASH.state.lastDiff || 0;
         if (diff > 0) {
-            const html = `<span style="display:inline-flex;align-items:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px;flex-shrink:0;"><polygon points="4,8 20,8 12,18"></polygon></svg><span style="font-weight:700;">${dashFmt(diff)}</span>개</span>`;
+            const html = `<span style="display:inline-flex;align-items:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right:2px;flex-shrink:0;"><polygon points="4,8 20,8 12,18"></polygon></svg>${dashNum('deducted', diff)}개</span>`;
             parts.push({ key: 'deducted', summaryHtml: html, detailHtml: html });
         }
         const vis = parts.filter(p => visible[p.key] !== false);
@@ -14597,6 +14708,60 @@
             return;
         textSpan.innerHTML = html || '<span class="chud-part">대시보드 대기중…</span>';
         DASH.lastHtml = html;
+        animateDashboardNumbers(textSpan);
+    }
+    // Count-up on change only: a few frames of text updates plus a transform-only bump; nothing runs while idle.
+    const DASH_NUM = { prev: {}, frame: 0 };
+    function dashNum(key, value, exact = true, suffix = '') {
+        const n = Math.max(0, Number(value) || 0);
+        return `<span class="chud-num" data-num-key="${key}" data-num="${n}"${exact ? '' : ' data-num-estimate="1"'}${suffix ? ` data-num-suffix="${suffix}"` : ''} style="font-weight:700;">${dashFmt(n)}${suffix}</span>`;
+    }
+    function dashNumberAnimationWanted() {
+        if (settings.dashboardNumberAnimation === false || document.hidden)
+            return false;
+        try {
+            return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        }
+        catch (_) {
+            return true;
+        }
+    }
+    function animateDashboardNumbers(root) {
+        if (DASH_NUM.frame) {
+            cancelAnimationFrame(DASH_NUM.frame);
+            DASH_NUM.frame = 0;
+        }
+        const animate = dashNumberAnimationWanted();
+        const jobs = [];
+        const seen = new Set();
+        for (const el of root.querySelectorAll('.chud-num[data-num-key]')) {
+            const key = el.dataset.numKey;
+            const to = Number(el.dataset.num);
+            if (!Number.isFinite(to) || el.dataset.numEstimate === '1')
+                continue;
+            const from = DASH_NUM.prev[key];
+            if (!seen.has(key))
+                DASH_NUM.prev[key] = to;
+            seen.add(key);
+            if (!animate || from === undefined || from === to)
+                continue;
+            el.classList.add(to > from ? 'chud-num-up' : 'chud-num-down');
+            jobs.push({ el, from, to, suffix: el.dataset.numSuffix || '' });
+        }
+        if (!jobs.length)
+            return;
+        const start = performance.now();
+        const duration = 450;
+        const step = now => {
+            const t = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - t, 3);
+            for (const job of jobs) {
+                if (job.el.isConnected)
+                    job.el.textContent = dashFmt(Math.round(job.from + (job.to - job.from) * eased)) + job.suffix;
+            }
+            DASH_NUM.frame = t < 1 ? requestAnimationFrame(step) : 0;
+        };
+        DASH_NUM.frame = requestAnimationFrame(step);
     }
     function getOrCreateDashTabId() {
         try {
@@ -14646,19 +14811,6 @@
                 return Math.abs(v);
         }
         return 0;
-    }
-    function objectIdTime(id) {
-        if (!/^[a-f0-9]{24}$/i.test(String(id || '')))
-            return 0;
-        const sec = parseInt(String(id).slice(0, 8), 16);
-        return Number.isFinite(sec) && sec > 0 ? sec * 1000 : 0;
-    }
-    function getHistoryRecordTime(rec) {
-        const raw = rec?.date || rec?.createdAt || rec?.created_at || rec?.updatedAt || rec?.timestamp || rec?.time || '';
-        const t = new Date(raw).getTime();
-        if (Number.isFinite(t) && t > 0)
-            return t;
-        return objectIdTime(rec?._id || rec?.id || rec?.historyId || rec?.transactionId || '');
     }
     function makeHistoryKey(rec) {
         const id = rec?._id || rec?.id || rec?.historyId || rec?.transactionId || '';
@@ -14776,6 +14928,7 @@
             else
                 expireDashboardRoomStats(chatId);
         }
+        DASH_BALANCE.at = 0;
         if (getChatId() === chatId)
             scheduleDashboardUpdate(true);
 
@@ -15011,22 +15164,20 @@
     const YAME_MODELS = [
         { slug: 'yame-fable5', apiId: 'fable5', source: 'yame', label: 'Fable 5.0', short: 'F5' },
     ];
+    // Built-in list for offline discovery (rs.igx.kr dashboard, 2026-10-01); live discovery adds newer models.
     const FALLBACK_MODELS = [
-        { slug: 'claude-fable-5.1', apiId: 'claude-fable-5.1', source: 'igx', label: 'Claude Fable 5.1', short: 'F5.1' },
-        { slug: 'claude-opus-5', apiId: 'claude-opus-5', source: 'igx', label: 'Claude Opus 5', short: 'O5' },
-        { slug: 'claude-opus-4.8', apiId: 'claude-opus-4.8', source: 'igx', label: 'Claude Opus 4.8', short: 'O4.8' },
-        { slug: 'claude-opus-4.7', apiId: 'claude-opus-4.7', source: 'igx', label: 'Claude Opus 4.7', short: 'O4.7' },
-        { slug: 'claude-opus-4.6', apiId: 'claude-opus-4.6', source: 'igx', label: 'Claude Opus 4.6', short: 'O4.6' },
-        { slug: 'claude-sonnet-5', apiId: 'claude-sonnet-5', source: 'igx', label: 'Claude Sonnet 5', short: 'S5' },
-        { slug: 'gemini-3.1-pro-preview', apiId: 'gemini-3.1-pro-preview', source: 'igx', label: 'Gemini 3.1 Pro (Preview)', short: 'G3.1P' },
-        { slug: 'gemini-2.5-pro', apiId: 'gemini-2.5-pro', source: 'igx', label: 'Gemini 2.5 Pro', short: 'G2.5P' },
-        { slug: 'gemini-3.6-flash', apiId: 'gemini-3.6-flash', source: 'igx', label: 'Gemini 3.6 Flash', short: 'G3.6F' },
-        { slug: 'gemini-3.5-flash', apiId: 'gemini-3.5-flash', source: 'igx', label: 'Gemini 3.5 Flash', short: 'G3.5F' },
-        { slug: 'gemini-3.5-flash-lite', apiId: 'gemini-3.5-flash-lite', source: 'igx', label: 'Gemini 3.5 Flash Lite', short: 'G3.5FL' },
-        { slug: 'gpt-5.6-sol', apiId: 'gpt-5.6-sol', source: 'igx', label: 'ChatGPT 5.6 Sol', short: 'G5.6S' },
-        { slug: 'gpt-5.6-terra', apiId: 'gpt-5.6-terra', source: 'igx', label: 'ChatGPT 5.6 Terra', short: 'G5.6T' },
-        { slug: 'gpt-5.6-luna', apiId: 'gpt-5.6-luna', source: 'igx', label: 'ChatGPT 5.6 Luna', short: 'G5.6L' },
-    ];
+        ['claude-fable-5.1', 'Claude Fable 5.1', 'F5.1'], ['claude-opus-5.5', 'Claude Opus 5.5', 'O5.5'],
+        ['claude-opus-5', 'Claude Opus 5', 'O5'], ['claude-opus-4.8', 'Claude Opus 4.8', 'O4.8'],
+        ['claude-opus-4.7', 'Claude Opus 4.7', 'O4.7'], ['claude-opus-4.6', 'Claude Opus 4.6', 'O4.6'],
+        ['claude-sonnet-5.5', 'Claude Sonnet 5.5', 'S5.5'], ['claude-sonnet-5', 'Claude Sonnet 5', 'S5'],
+        ['gemini-3.1-pro-preview', 'Gemini 3.1 Pro (Preview)', 'G3.1P'], ['gemini-2.5-pro', 'Gemini 2.5 Pro', 'G2.5P'],
+        ['gemini-3.8-flash', 'Gemini 3.8 Flash', 'G3.8F'], ['gemini-3.7-flash', 'Gemini 3.7 Flash', 'G3.7F'],
+        ['gemini-3.6-flash', 'Gemini 3.6 Flash', 'G3.6F'], ['gemini-3.5-flash', 'Gemini 3.5 Flash', 'G3.5F'],
+        ['gemini-3.5-flash-lite', 'Gemini 3.5 Flash Lite', 'G3.5FL'], ['gpt-6-sol', 'ChatGPT 6 Sol', 'G6S'],
+        ['gpt-6-luna', 'ChatGPT 6 Luna', 'G6L'], ['gpt-5.6-sol', 'ChatGPT 5.6 Sol', 'G5.6S'],
+        ['gpt-5.6-terra', 'ChatGPT 5.6 Terra', 'G5.6T'], ['gpt-5.6-luna', 'ChatGPT 5.6 Luna', 'G5.6L'],
+        ['deepseek-v4.1-flash', 'DeepSeek V4.1 Flash', 'D4.1F'], ['deepseek-v4-pro', 'DeepSeek V4 Pro', 'D4P'],
+    ].map(([slug, label, short]) => ({ slug, apiId: slug, source: 'igx', label, short }));
     const DEFAULT_RS_MODELS = [...YAME_MODELS, ...FALLBACK_MODELS];
     const EXCLUDED_MODELS = new Set(['gemini-3-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']);
     const NON_MODEL_SLUGS = new Set([
@@ -15037,15 +15188,11 @@
     const MODEL_OVERRIDES = new Map(FALLBACK_MODELS.map(model => [model.slug, model]));
 
     const IGX_BASE_URL = 'https://rs.igx.kr';
-    const IGX_DOCS_URL = `${IGX_BASE_URL}/docs`;
-    const IGX_OPENAPI_URL = `${IGX_BASE_URL}/openapi.json`;
-    const IGX_DASHBOARD_URL = `${IGX_BASE_URL}/`;
-    const LEGACY_API_BASE = `${IGX_BASE_URL}/api/simple/`;
-    const LEGACY_STATISTICS_URL = `${IGX_BASE_URL}/api/statistics`;
 
     function titleWord(word) {
         const known = {
-            api: 'API', ai: 'AI', gpt: 'GPT', claude: 'Claude', gemini: 'Gemini',
+            api: 'API', ai: 'AI', gpt: 'GPT', claude: 'Claude', gemini: 'Gemini', deepseek: 'DeepSeek',
+            qwen: 'Qwen', grok: 'Grok', llama: 'Llama', mistral: 'Mistral', kimi: 'Kimi', glm: 'GLM',
             fable: 'Fable', opus: 'Opus', sonnet: 'Sonnet', haiku: 'Haiku',
             pro: 'Pro', flash: 'Flash', lite: 'Lite', mini: 'Mini', preview: 'Preview',
             thinking: 'Thinking', sol: 'Sol', terra: 'Terra', luna: 'Luna', max: 'Max', turbo: 'Turbo',
@@ -15054,7 +15201,9 @@
         return known[word] || (word ? word.charAt(0).toUpperCase() + word.slice(1) : '');
     }
     function parseSlug(slug) {
-        const tokens = String(slug || '').toLowerCase().split('-').map(value => value.trim()).filter(Boolean);
+        // "v4.1" style versions (deepseek-v4.1-flash) count as version numbers.
+        const tokens = String(slug || '').toLowerCase().split('-').map(value => value.trim()).filter(Boolean)
+            .map((token, index) => index > 0 && /^v\d+(?:\.\d+)*$/.test(token) ? token.slice(1) : token);
         const brand = tokens[0] || 'model';
         const isNumber = token => /^\d+(?:\.\d+)*$/.test(token);
         const numberIndex = tokens.findIndex((token, index) => index > 0 && isNumber(token));
@@ -15134,945 +15283,329 @@
     // 아래 별칭은 참고 확프의 검증된 데이터 파서를 그대로 가져오기 위한 연결점
     const looksLikeModelSlug = isRsModelSlug;
     const makeModelMeta = rsModelMeta;
-      function gmGetText(url, timeoutMs = 15000, accept = "text/plain,*/*") {
-        return new Promise((resolve, reject) => {
-          GM_xmlhttpRequest({
-            method: "GET",
-            url,
-            timeout: timeoutMs,
-            headers: { Accept: accept },
-            onload: (res) => {
-              const status = Number(res.status) || 0;
-              if (status && (status < 200 || status >= 300)) {
-                reject(new Error(`HTTP ${status}`));
-                return;
-              }
-              resolve(String(res.responseText || ""));
-            },
-            onerror: () => reject(new Error("network error")),
-            ontimeout: () => reject(new Error("timeout")),
-          });
-        });
-      }
-
-      function absoluteIgxUrl(value) {
-        try {
-          return new URL(String(value || ""), IGX_BASE_URL).href;
-        } catch {
-          return "";
-        }
-      }
-
-      async function loadIgxOpenApiSpec() {
-        const directCandidates = [
-          IGX_OPENAPI_URL,
-          `${IGX_BASE_URL}/api/openapi.json`,
-          `${IGX_BASE_URL}/docs/openapi.json`,
-        ];
-
-        for (const url of directCandidates) {
-          try {
-            const spec = await gmGetJson(url, 16000);
-            if (spec?.paths && typeof spec.paths === "object") return spec;
-          } catch (_) {}
-        }
-
-        // /docs가 Swagger/Scalar/ReDoc 어느 쪽으로 바뀌어도 HTML 안의 OpenAPI JSON 경로를 한 번 찾는다.
-        try {
-          const html = await gmGetText(IGX_DOCS_URL, 16000, "text/html,application/xhtml+xml");
-          const candidates = new Set();
-          const patterns = [
-            /https?:\/\/[^"'\s<>]+openapi[^"'\s<>]*\.json[^"'\s<>]*/gi,
-            /(?:url|spec-url|specUrl|data-url)\s*[:=]\s*["']([^"']+\.json[^"']*)["']/gi,
-            /["']([^"']*openapi[^"']*\.json[^"']*)["']/gi,
-          ];
-
-          for (const pattern of patterns) {
-            let match;
-            while ((match = pattern.exec(html))) {
-              const raw = match[1] || match[0];
-              const url = absoluteIgxUrl(raw);
-              if (url && url.startsWith(IGX_BASE_URL)) candidates.add(url);
-            }
-          }
-
-          for (const url of candidates) {
-            try {
-              const spec = await gmGetJson(url, 16000);
-              if (spec?.paths && typeof spec.paths === "object") return spec;
-            } catch (_) {}
-          }
-        } catch (_) {}
-
-        throw new Error("IGX OpenAPI spec not found");
-      }
-      let igxRouteCatalog = null;
-      let igxRouteCatalogTried = false;
-      let igxWorkingBulkRoute = null;
-      let igxWorkingModelRoute = null;
-      let igxSnapshotCache = null;
-      let igxSnapshotCacheAt = 0;
-      let igxSupplementCache = null;
-      let igxSupplementCacheAt = 0;
-      let igxWorkingSupplementRoute = null;
-      const IGX_SUPPLEMENT_CACHE_MS = 5 * 60 * 1000;
-
-
-      function firstFinite(...values) {
+    function firstFinite(...values) {
         for (const value of values) {
-          if (value === null || value === undefined || value === "") continue;
-          const number = Number(value);
-          if (Number.isFinite(number)) return number;
+            if (value === null || value === undefined || value === '') continue;
+            const number = Number(value);
+            if (Number.isFinite(number)) return number;
         }
         return null;
-      }
-
-      function secondsToMs(value) {
-        const number = firstFinite(value);
-        return number === null ? null : number * 1000;
-      }
-
-      function firstText(...values) {
-        for (const value of values) {
-          if (typeof value === "string" && value.trim()) return value.trim();
-        }
-        return "";
-      }
-
-      function metricRecordFromObject(source, impliedSlug = "") {
-        if (!source || typeof source !== "object" || Array.isArray(source)) return null;
-
-        const nested = [
-          source.data,
-          source.metrics,
-          source.metric,
-          source.latest,
-          source.current,
-          source.result,
-          source.health,
-        ].filter(value => value && typeof value === "object" && !Array.isArray(value));
-
-        const merged = Object.assign({}, source, ...nested);
-        const slug = firstText(
-          merged.slug,
-          merged.model_slug,
-          merged.modelSlug,
-          merged.model_id,
-          merged.modelId,
-          typeof merged.model === "string" ? merged.model : "",
-          typeof merged.id === "string" ? merged.id : "",
-          impliedSlug,
-        );
-
+    }
+    // IGX v2 /simple/{model}: { status, measuredAt, latency(ms), tps, score, failureCount }.
+    function metricRecordFromObject(source, impliedSlug = '') {
+        if (!source || typeof source !== 'object' || Array.isArray(source)) return null;
+        const slug = String(source.slug || source.model || impliedSlug || '');
         if (!looksLikeModelSlug(slug)) return null;
-
-        const score = firstFinite(
-          merged.score,
-          merged.health_score,
-          merged.healthScore,
-          merged.experience_score?.value,
-          merged.experienceScore?.value,
-          merged.rating,
-        );
-
-        const latency = firstFinite(
-          merged.latency,
-          merged.latency?.value,
-          merged.latency?.ms,
-          secondsToMs(merged.latency?.seconds),
-          merged.latency_ms,
-          merged.latencyMs,
-          secondsToMs(merged.latency_sec),
-          secondsToMs(merged.latencySec),
-          secondsToMs(merged.latency_seconds),
-          secondsToMs(merged.latencySeconds),
-          merged.avg_latency,
-          merged.avgLatency,
-          merged.average_latency,
-          merged.averageLatency,
-          merged.ttft,
-          merged.ttft?.value,
-          merged.ttft?.ms,
-          secondsToMs(merged.ttft?.seconds),
-          merged.ttft_ms,
-          merged.ttftMs,
-          secondsToMs(merged.ttft_sec),
-          secondsToMs(merged.ttftSec),
-          secondsToMs(merged.ttft_seconds),
-          secondsToMs(merged.ttftSeconds),
-          merged.avg_ttft,
-          merged.avgTtft,
-          merged.response_time,
-          merged.responseTime,
-          merged.response_time?.value,
-          merged.response_time?.ms,
-          secondsToMs(merged.response_time?.seconds),
-          merged.response_time_ms,
-          merged.responseTimeMs,
-          secondsToMs(merged.response_time_sec),
-          secondsToMs(merged.responseTimeSec),
-          secondsToMs(merged.response_time_seconds),
-          secondsToMs(merged.responseTimeSeconds),
-          merged.avg_response_time,
-          merged.avgResponseTime,
-          merged.average_response_time,
-          merged.averageResponseTime,
-          merged.first_token_ms,
-          merged.firstTokenMs,
-          merged.first_token_latency,
-          merged.firstTokenLatency,
-          merged.first_token_latency_ms,
-          merged.firstTokenLatencyMs,
-          merged.time_to_first_token,
-          merged.timeToFirstToken,
-          merged.time_to_first_token_ms,
-          merged.timeToFirstTokenMs,
-        );
-
-        const tps = firstFinite(
-          merged.tps,
-          merged.tokens_per_second,
-          merged.tokensPerSecond,
-          merged.output_tps,
-          merged.outputTps,
-          merged.speed,
-        );
-
-        const rawStatus = firstText(
-          merged.status,
-          merged.state,
-          merged.health_status,
-          merged.healthStatus,
-          merged.condition,
-        );
-
-        const failureCount = firstFinite(
-          merged.failureCount,
-          merged.failure_count,
-          merged.failures,
-          merged.failure,
-          merged.error_count,
-          merged.errorCount,
-        ) ?? 0;
-
-        if (score === null && latency === null && tps === null && !rawStatus && !merged.time && !merged.measuredAt) return null;
-
-        return {
-          slug,
-          status: normalizeStatus(rawStatus),
-          score,
-          latency,
-          tps,
-          failureCount,
-        };
-      }
-
-      function collectIgxMetricEntries(payload, impliedRootSlug = "") {
-        const bySlug = new Map();
-        const seen = new WeakSet();
-
-        const add = (record) => {
-          if (!record || EXCLUDED_MODELS.has(record.slug)) return;
-          const previous = bySlug.get(record.slug);
-          if (!previous) {
-            bySlug.set(record.slug, record);
-            return;
-          }
-
-          // 같은 모델이 여러 번 보이면 실제 수치가 더 많이 들어있는 쪽을 우선한다.
-          const richness = value =>
-            Number(value?.score !== null && value?.score !== undefined) +
-            Number(value?.latency !== null && value?.latency !== undefined) +
-            Number(value?.tps !== null && value?.tps !== undefined) +
-            Number(value?.status && value.status !== "unknown");
-
-          if (richness(record) >= richness(previous)) bySlug.set(record.slug, record);
-        };
-
-        const walk = (value, impliedSlug = "", depth = 0) => {
-          if (depth > 7 || value === null || value === undefined) return;
-
-          if (Array.isArray(value)) {
-            // 응답 배열 순서에 의존하지 않고 측정 시각이 최신인 기록을 선택한다.
-            const ordered = impliedSlug ? [...value].sort((a, b) =>
-              (Date.parse(b?.time || b?.measuredAt || '') || 0) -
-              (Date.parse(a?.time || a?.measuredAt || '') || 0)
-            ) : value;
-            for (const item of ordered) {
-              const record = metricRecordFromObject(item, impliedSlug);
-              if (record) {
-                add(record);
-                if (impliedSlug) break;
-              }
-              walk(item, impliedSlug, depth + 1);
-            }
-            return;
-          }
-
-          if (typeof value !== "object") return;
-          if (seen.has(value)) return;
-          seen.add(value);
-
-          const direct = metricRecordFromObject(value, impliedSlug);
-          if (direct) add(direct);
-
-          const ownSlug = firstText(value.slug, value.model_slug, value.modelSlug,
-            value.model_id, value.modelId, typeof value.model === 'string' ? value.model : '', value.id);
-          const parentSlug = looksLikeModelSlug(ownSlug) ? ownSlug : impliedSlug;
-          for (const [key, child] of Object.entries(value)) {
-            if (child === null || child === undefined) continue;
-            const nextImplied = looksLikeModelSlug(key) ? key : parentSlug;
-            if (typeof child === "object") walk(child, nextImplied, depth + 1);
-          }
-        };
-
-        walk(payload, impliedRootSlug);
-        return bySlug;
-      }
-
-      function routeOperationText(path, operation) {
-        const tags = Array.isArray(operation?.tags) ? operation.tags.join(" ") : "";
-        return `${path} ${operation?.operationId || ""} ${operation?.summary || ""} ${operation?.description || ""} ${tags}`.toLowerCase();
-      }
-
-      function routeScore(path, operation, mode) {
-        const text = routeOperationText(path, operation);
-        let score = 0;
-
-        if (text.includes("latest")) score += 10;
-        if (text.includes("current")) score += 9;
-        if (text.includes("status")) score += 8;
-        if (text.includes("model")) score += 6;
-        if (text.includes("metric")) score += 6;
-        if (text.includes("health")) score += 5;
-        if (text.includes("simple")) score += 4;
-        if (text.includes("statistics")) score += 3;
-        if (text.includes("history")) score -= 4;
-        if (text.includes("badge")) score -= 10;
-        if (text.includes("graph")) score -= 6;
-        if (path.startsWith("/api/")) score += 4;
-        if (mode === "bulk" && !path.includes("{")) score += 3;
-        if (mode === "model" && path.includes("{")) score += 3;
-
-        return score;
-      }
-
-      function requiredOperationParams(operation) {
-        return [
-          ...(Array.isArray(operation?.parameters) ? operation.parameters : []),
-        ].filter(param => param && param.required);
-      }
-
-      function makeRoute(path, operation, mode) {
-        const placeholders = [...String(path).matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
-        const required = requiredOperationParams(operation);
-        let modelParam = "";
-
-        if (mode === "model") {
-          if (placeholders.length === 1) {
-            modelParam = placeholders[0];
-          } else if (placeholders.length === 0) {
-            const queryModel = required.find(param =>
-              param.in === "query" && /^(model|slug|model_id|modelId)$/i.test(String(param.name || "")));
-            if (queryModel) modelParam = queryModel.name;
-          }
-          if (!modelParam) return null;
-        } else if (placeholders.length) {
-          return null;
-        }
-
-        const unrelatedRequired = required.filter(param => {
-          if (mode !== "model") return true;
-          if (param.in === "path" && param.name === modelParam) return false;
-          if (param.in === "query" && param.name === modelParam) return false;
-          return true;
-        });
-        if (unrelatedRequired.length) return null;
-
-        return {
-          path,
-          modelParam,
-          modelParamInPath: placeholders.includes(modelParam),
-          score: routeScore(path, operation, mode),
-        };
-      }
-
-      async function loadIgxRouteCatalog() {
-        if (igxRouteCatalogTried) return igxRouteCatalog;
-        igxRouteCatalogTried = true;
-
-        try {
-          const spec = await loadIgxOpenApiSpec();
-          const bulk = [];
-          const model = [];
-
-          for (const [path, item] of Object.entries(spec?.paths || {})) {
-            const operation = item?.get;
-            if (!operation || typeof path !== "string") continue;
-
-            const bulkRoute = makeRoute(path, operation, "bulk");
-            if (bulkRoute && bulkRoute.score > 0) bulk.push(bulkRoute);
-
-            const modelRoute = makeRoute(path, operation, "model");
-            if (modelRoute && modelRoute.score > 0) model.push(modelRoute);
-          }
-
-          bulk.sort((a, b) => b.score - a.score);
-          model.sort((a, b) => b.score - a.score);
-
-          igxRouteCatalog = { bulk, model };
-        } catch (_) {
-          igxRouteCatalog = { bulk: [], model: [] };
-        }
-
-        return igxRouteCatalog;
-      }
-
-      function routeUrl(route, slug = "") {
-        let path = route.path;
-
-        if (slug && route.modelParam) {
-          if (route.modelParamInPath) {
-            path = path.replace(`{${route.modelParam}}`, encodeURIComponent(slug));
-          } else {
-            const joiner = path.includes("?") ? "&" : "?";
-            path += `${joiner}${encodeURIComponent(route.modelParam)}=${encodeURIComponent(slug)}`;
-          }
-        }
-
-        return `${IGX_BASE_URL}${path}`;
-      }
-
-      async function fetchRouteJson(route, slug = "", timeoutMs = 18000) {
-        return gmGetJson(routeUrl(route, slug), timeoutMs);
-      }
-
-      async function tryBulkRoute(route) {
-        const payload = await fetchRouteJson(route);
-        const rawEntries = collectIgxMetricEntries(payload);
-        const entries = new Map(
-          [...rawEntries].filter(([slug]) => looksLikeModelSlug(slug))
-        );
-
-        const hasLiveMetrics = [...entries.values()].some(record =>
-          record?.score !== null && record?.score !== undefined ||
-          record?.latency !== null && record?.latency !== undefined ||
-          record?.tps !== null && record?.tps !== undefined
-        );
-
-        // bulk/current 계열에서 한 개짜리 가짜 메타 레코드가 잡혀
-        // 전체 모델 목록을 덮어쓰는 사고를 막는다.
-        if (entries.size < 2 || !hasLiveMetrics || ![...entries.values()].some(record => record.score !== null)) {
-          throw new Error("bulk route returned insufficient real model metrics");
-        }
-        return entries;
-      }
-
-      async function fetchDashboardHtml() {
-        return gmGetText(
-          `${IGX_DASHBOARD_URL}?t=${Date.now()}`,
-          20000,
-          "text/html,application/xhtml+xml",
-        );
-      }
-
-      function dashboardEntriesFromHtml(html) {
-        const parsed = new DOMParser().parseFromString(String(html || ""), "text/html");
+        const score = firstFinite(source.score, source.experience_score?.value);
+        const latency = firstFinite(source.latency, source.latency_ms, source.ttft_ms);
+        const tps = firstFinite(source.tps);
+        const rawStatus = String(source.status || source.state || '');
+        if (score === null && latency === null && tps === null && !rawStatus) return null;
+        return { slug, status: normalizeStatus(rawStatus), score, latency, tps, failureCount: firstFinite(source.failureCount) ?? 0 };
+    }
+    // Last-resort metrics when the per-model API fails; parsing the 0.8MB dashboard is costly on phones.
+    function dashboardEntriesFromHtml(html) {
+        const parsed = new DOMParser().parseFromString(String(html || ''), 'text/html');
         const bySlug = new Map();
         const slugRe = /^[a-z0-9][a-z0-9._-]*$/i;
         const statusRe = /\b(Operational|Active|Degraded|Impacted|Down|Offline|Unknown)\b/i;
         const scoreRe = /(\d+(?:\.\d+)?)\s*\/\s*100\b/i;
         const latencyRe = /(\d+(?:\.\d+)?)\s*(?:초|s\b)/i;
         const tpsRe = /(\d+(?:\.\d+)?)\s*(?:tok\/s|tokens?\/s)\b/i;
-
-        const leaves = parsed.querySelectorAll("body *");
-        for (const node of leaves) {
-          if (node.children.length) continue;
-          const slug = String(node.textContent || "").trim();
-          if (!slugRe.test(slug) || !looksLikeModelSlug(slug)) continue;
-
-          let row = node.parentElement;
-          let parsedRecord = null;
-
-          for (let depth = 0; row && depth < 8; depth += 1, row = row.parentElement) {
-            const rowText = String(row.textContent || "").replace(/\s+/g, " ").trim();
-            const statusMatch = rowText.match(statusRe);
-            const scoreMatch = rowText.match(scoreRe);
-            const latencyMatch = rowText.match(latencyRe);
-            const tpsMatch = rowText.match(tpsRe);
-
-            if (!statusMatch || !scoreMatch) continue;
-
-            parsedRecord = {
-              slug,
-              status: normalizeStatus(statusMatch[1]),
-              score: Number(scoreMatch[1]),
-              latency: latencyMatch ? Number(latencyMatch[1]) * 1000 : null,
-              tps: tpsMatch ? Number(tpsMatch[1]) : null,
-              failureCount: 0,
-            };
-            break;
-          }
-
-          if (parsedRecord) bySlug.set(slug, parsedRecord);
-        }
-
-        return bySlug;
-      }
-
-      async function fetchDashboardSnapshot() {
-        const html = await fetchDashboardHtml();
-        const entries = dashboardEntriesFromHtml(html);
-        if (!entries.size) throw new Error("dashboard parse returned no model metrics");
-        return entries;
-      }
-
-      async function fetchLegacyStatisticsSnapshot() {
-        const payload = await gmGetJson(LEGACY_STATISTICS_URL, 22000);
-        const entries = collectIgxMetricEntries(payload);
-        if (!entries.size) throw new Error("legacy statistics returned no model metrics");
-        return entries;
-      }
-
-
-      function snapshotNeedsSupplement(entries) {
-        if (!(entries instanceof Map) || !entries.size) return false;
-        return [...entries.values()].some(record =>
-          record && (
-            record.latency === null || record.latency === undefined || record.latency === "" ||
-            record.tps === null || record.tps === undefined || record.tps === ""
-          )
-        );
-      }
-
-      function hasSupplementMetrics(entries) {
-        if (!(entries instanceof Map) || !entries.size) return false;
-        return [...entries.values()].some(record =>
-          record && (
-            record.latency !== null && record.latency !== undefined && record.latency !== "" ||
-            record.tps !== null && record.tps !== undefined && record.tps !== ""
-          )
-        );
-      }
-
-      function mergeSupplementMetrics(primary, supplement) {
-        if (!(primary instanceof Map) || !(supplement instanceof Map) || !supplement.size) return primary;
-
-        const merged = new Map();
-        for (const [slug, record] of primary) {
-          const extra = supplement.get(slug);
-          if (!extra) {
-            merged.set(slug, record);
-            continue;
-          }
-
-          merged.set(slug, {
-            ...record,
-            // 새 API의 점수/상태는 그대로 유지하고 비어 있는 측정값만 채운다.
-            latency:
-              record?.latency !== null && record?.latency !== undefined && record?.latency !== ""
-                ? record.latency
-                : extra.latency,
-            tps:
-              record?.tps !== null && record?.tps !== undefined && record?.tps !== ""
-                ? record.tps
-                : extra.tps,
-          });
-        }
-        return merged;
-      }
-
-      async function trySupplementRoute(route) {
-        const payload = await fetchRouteJson(route);
-        const entries = collectIgxMetricEntries(payload);
-        if (!hasSupplementMetrics(entries)) throw new Error("route has no supplement metrics");
-        return entries;
-      }
-
-      async function fetchIgxSupplementSnapshot({ force = false } = {}) {
-        const now = Date.now();
-        if (!force && igxSupplementCache?.size && now - igxSupplementCacheAt < IGX_SUPPLEMENT_CACHE_MS) {
-          return igxSupplementCache;
-        }
-
-        if (igxWorkingSupplementRoute) {
-          try {
-            const entries = await trySupplementRoute(igxWorkingSupplementRoute);
-            igxSupplementCache = entries;
-            igxSupplementCacheAt = Date.now();
-            return entries;
-          } catch (_) {
-            igxWorkingSupplementRoute = null;
-          }
-        }
-
-        // 새 문서의 통계/history/metrics 계열 GET 중 추가 측정값을 실제로 주는 경로를 찾는다.
-        try {
-          const catalog = await loadIgxRouteCatalog();
-          const candidates = catalog.bulk.filter(route => {
-            const text = String(route?.path || "").toLowerCase();
-            return /stat|history|metric|measurement|sample|record/.test(text) &&
-              route !== igxWorkingBulkRoute;
-          });
-
-          for (const route of candidates.slice(0, 8)) {
-            try {
-              const entries = await trySupplementRoute(route);
-              igxWorkingSupplementRoute = route;
-              igxSupplementCache = entries;
-              igxSupplementCacheAt = Date.now();
-              return entries;
-            } catch (_) {}
-          }
-        } catch (_) {}
-
-        // 예전 statistics가 아직 호환되는 경우 가장 저렴한 보충 소스로 사용.
-        try {
-          const entries = await fetchLegacyStatisticsSnapshot();
-          if (hasSupplementMetrics(entries)) {
-            igxSupplementCache = entries;
-            igxSupplementCacheAt = Date.now();
-            return entries;
-          }
-        } catch (_) {}
-
-        // 공식 대시보드 HTML에 응답시간이 노출되는 배포라면 마지막으로 여기서 보충.
-        try {
-          const entries = await fetchDashboardSnapshot();
-          if (hasSupplementMetrics(entries)) {
-            igxSupplementCache = entries;
-            igxSupplementCacheAt = Date.now();
-            return entries;
-          }
-        } catch (_) {}
-
-        return new Map();
-      }
-
-      async function finalizeIgxSnapshot(entries) {
-        if (!(entries instanceof Map) || !entries.size) return entries;
-        if (settings.radiosondeLatency === false || !snapshotNeedsSupplement(entries)) return entries;
-
-        try {
-          const supplement = await fetchIgxSupplementSnapshot();
-          return mergeSupplementMetrics(entries, supplement);
-        } catch (_) {
-          return entries;
-        }
-      }
-
-      // Official IGX v2 contract, with cancellable userscript transport.
-  var igxV2Models = null;
-  let igxModelListPromise = null;
-  const igxMetricCache = new Map();
-  const igxMetricInflight = new Map();
-  const igxMetricFailures = new Map();
-  const igxPendingRequests = [];
-  const igxActiveAborts = new Set();
-  let igxRunningRequests = 0;
-
-  function igxAbortError() {
-    const error = new Error('IGX request cancelled');
-    error.name = 'AbortError';
-    return error;
-  }
-  function igxCanRequest() {
-    return !document.hidden && shouldRun() && settings.radiosonde && isChatRoomPath();
-  }
-  function cancelIgxRequests() {
-    for (const abort of [...igxActiveAborts]) abort();
-    for (const job of igxPendingRequests.splice(0)) job.reject(igxAbortError());
-  }
-  function pumpIgxRequests() {
-    if (!igxCanRequest()) {
-      cancelIgxRequests();
-      return;
-    }
-    while (igxRunningRequests < 4 && igxPendingRequests.length) {
-      const job = igxPendingRequests.shift();
-      igxRunningRequests++;
-      Promise.resolve().then(() => {
-        if (!igxCanRequest()) throw igxAbortError();
-        return job.run();
-      }).then(job.resolve, job.reject).finally(() => {
-        igxRunningRequests--;
-        pumpIgxRequests();
-      });
-    }
-  }
-  function igxRequestJson(endpoint, { rawText = false, withHeaders = false, url = '', envelope = true } = {}) {
-    const target = url || (rawText ? IGX_BASE_URL + '/' : IGX_BASE_URL + '/api/v2/' + endpoint);
-    // Catalog headers need extension access. Statistics use the SDK's browser-fetch path first.
-    const nativeFirst = !rawText && !withHeaders;
-    return new Promise((resolve, reject) => {
-      igxPendingRequests.push({ resolve, reject, run: () => new Promise((done, fail) => {
-        let settled = false, stage = 0, phaseTimer, hardTimer, request, controller;
-        const closeStage = () => {
-          stage++;
-          clearTimeout(phaseTimer);
-          try { controller?.abort(); } catch (_) {}
-          try { request?.abort?.(); } catch (_) {}
-          controller = request = null;
-        };
-        const finish = (error, value) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(hardTimer);
-          igxActiveAborts.delete(abort);
-          closeStage();
-          if (error) fail(error); else done(value);
-        };
-        const abort = () => finish(igxAbortError());
-        const parse = response => {
-          const status = Number(response.status) || 0;
-          if (status && (status < 200 || status >= 300)) throw new Error('HTTP ' + status);
-          if (rawText) {
-            if (!response.responseText) throw new Error('Empty response');
-            return response.responseText;
-          }
-          const payload = JSON.parse(response.responseText);
-          if (envelope && payload?.success !== true) throw new Error(payload?.message || 'IGX request failed');
-          const data = envelope ? payload.data : payload;
-          return withHeaders ? { data, headers: response.responseHeaders || '' } : data;
-        };
-        const start = (useFetch, canFallback) => {
-          if (settled) return;
-          if (!igxCanRequest()) { abort(); return; }
-          closeStage();
-          const token = stage;
-          const current = () => !settled && token === stage;
-          const failure = error => {
-            if (!current()) return;
-            if (!igxCanRequest()) { abort(); return; }
-            if (canFallback) start(!useFetch, false);
-            else finish(error instanceof Error ? error : new Error('Network request failed'));
-          };
-          const loaded = response => {
-            if (!current()) return;
-            try { finish(null, parse(response)); } catch (error) { failure(error); }
-          };
-          if (canFallback) phaseTimer = setTimeout(() => failure(new Error('Request transport timeout')), 8000);
-          try {
-            if (useFetch) {
-              if (typeof fetch !== 'function' || typeof AbortController !== 'function') throw new Error('Browser fetch unavailable');
-              controller = new AbortController();
-              fetch(target, { method: 'GET', credentials: 'omit', cache: 'no-store', signal: controller.signal,
-                headers: { Accept: rawText ? 'text/html' : 'application/json' } }).then(async response => {
-                const responseText = await response.text();
-                let responseHeaders = '';
-                response.headers.forEach((value, name) => { responseHeaders += name + ': ' + value + '\r\n'; });
-                loaded({ status: response.status, responseText, responseHeaders });
-              }).catch(failure);
-            } else {
-              if (typeof GM_xmlhttpRequest !== 'function') throw new Error('Extension request unavailable');
-              request = GM_xmlhttpRequest({ method: 'GET', url: target, timeout: 18000,
-                headers: { Accept: rawText ? 'text/html' : 'application/json' }, onload: loaded,
-                onerror: () => failure(new Error('Extension network error')),
-                ontimeout: () => failure(new Error('Extension request timeout')),
-                onabort: () => failure(new Error('Extension request aborted')),
-              });
-              // Support managers that additionally return a Promise; duplicate callbacks are ignored.
-              if (request && typeof request.then === 'function') request.then(response => {
-                if (response && typeof response.responseText === 'string') loaded(response);
-              }, failure);
+        for (const node of parsed.querySelectorAll('body *')) {
+            if (node.children.length) continue;
+            const slug = String(node.textContent || '').trim();
+            if (!slugRe.test(slug) || !looksLikeModelSlug(slug)) continue;
+            let row = node.parentElement;
+            for (let depth = 0; row && depth < 8; depth += 1, row = row.parentElement) {
+                const rowText = String(row.textContent || '').replace(/\s+/g, ' ').trim();
+                const statusMatch = rowText.match(statusRe);
+                const scoreMatch = rowText.match(scoreRe);
+                if (!statusMatch || !scoreMatch) continue;
+                const latencyMatch = rowText.match(latencyRe);
+                const tpsMatch = rowText.match(tpsRe);
+                bySlug.set(slug, {
+                    slug,
+                    status: normalizeStatus(statusMatch[1]),
+                    score: Number(scoreMatch[1]),
+                    latency: latencyMatch ? Number(latencyMatch[1]) * 1000 : null,
+                    tps: tpsMatch ? Number(tpsMatch[1]) : null,
+                    failureCount: 0,
+                });
+                break;
             }
-          } catch (error) { failure(error); }
-        };
-        igxActiveAborts.add(abort);
-        hardTimer = setTimeout(() => finish(new Error('Request timeout')), 18000);
-        start(nativeFirst, true);
-      }) });
-      pumpIgxRequests();
-    });
-  }
-  let igxDashboardMetrics = null;
-  let igxDashboardMetricsAt = 0;
-  let igxDashboardMetricsPromise = null;
-  let igxDashboardRetryAt = 0;
-  function rememberIgxDashboardMetrics(html) {
-    const entries = dashboardEntriesFromHtml(html);
-    if (!entries.size) throw new Error('No dashboard statistics');
-    igxDashboardMetrics = entries;
-    igxDashboardMetricsAt = Date.now();
-    return entries;
-  }
-  function recentIgxDashboardMetrics() {
-    return igxDashboardMetrics && Date.now() - igxDashboardMetricsAt < 5 * 60 * 1000
-      ? igxDashboardMetrics : new Map();
-  }
-  function recoverIgxDashboardMetrics() {
-    const recent = recentIgxDashboardMetrics();
-    if (recent.size) return Promise.resolve(recent);
-    if (igxDashboardMetricsPromise) return igxDashboardMetricsPromise;
-    if (Date.now() < igxDashboardRetryAt || !igxCanRequest()) return Promise.resolve(new Map());
-    igxDashboardRetryAt = Date.now() + 5 * 60 * 1000;
-    igxDashboardMetricsPromise = igxRequestJson(null, { rawText: true })
-      .then(rememberIgxDashboardMetrics).catch(() => new Map())
-      .finally(() => { igxDashboardMetricsPromise = null; });
-    return igxDashboardMetricsPromise;
-  }
-  function igxModelSlugs(data) {
-    if (!Array.isArray(data)) throw new Error('Invalid IGX model list');
-    const slugs = [...new Set(data.filter(value => typeof value === 'string' &&
-      /^[a-z0-9][a-z0-9._-]*$/i.test(value) && !EXCLUDED_MODELS.has(value.toLowerCase())))];
-    if (!slugs.length) throw new Error('Empty IGX model list');
-    return slugs;
-  }
-  function igxCatalogIsStale(headers) {
-    // The CDN can serve an old catalog despite max-age=15 and no-cache requests.
-    const stamp = /^cdn-cachedat:\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})\s*$/im.exec(headers);
-    if (stamp) {
-      const [, month, day, year, hour, minute, second] = stamp.map(Number);
-      return Date.now() - Date.UTC(year, month - 1, day, hour, minute, second) > 5 * 60 * 1000;
+        }
+        return bySlug;
     }
-    const age = /^age:\s*(\d+)\s*$/im.exec(headers);
-    return !!age && Number(age[1]) > 300;
-  }
-  function igxDashboardModelSlugs(html) {
-    // Read only the serialized model IDs; never evaluate dashboard JavaScript.
-    const match = /\bmodels["']?\s*:\s*(\[[a-z0-9._",\s-]{1,32768}\])/i.exec(html);
-    if (!match) throw new Error('Missing IGX dashboard model list');
-    return igxModelSlugs(JSON.parse(match[1]));
-  }
-  async function getIgxOfficialModels() {
-    if (igxV2Models) return igxV2Models;
-    // One discovery per page, including its stale-CDN fallback. No polling of catalogs.
-    if (!igxModelListPromise) igxModelListPromise = (async () => {
-      let slugs;
-      let needsDashboard = false;
-      try {
-        const response = await igxRequestJson('models', { withHeaders: true });
-        slugs = igxModelSlugs(response.data);
-        needsDashboard = igxCatalogIsStale(response.headers);
-      } catch (error) {
-        if (error.name === 'AbortError') throw error;
-        needsDashboard = true;
-      }
-      if (needsDashboard) {
+
+    // rs.igx.kr/api/v2/* answers 307 to this CDN without CORS headers, so browser fetch must call the CDN directly.
+    // The CDN sends `Access-Control-Allow-Origin: *`; the igx host stays as an extension-only fallback.
+    const IGX_API_BASES = ['https://igx-radiosonde-api-striker.b-cdn.net/v2/', `${IGX_BASE_URL}/api/v2/`];
+    // The CDN pins /v2/models (query strings are ignored); only the dashboard lists newly added models.
+    const IGX_MODEL_CACHE_KEY = 'cmu_rs_models_v1';
+    const IGX_MODEL_CACHE_MS = 6 * 60 * 60 * 1000;
+    var igxV2Models = null;
+    let igxModelListPromise = null;
+    let igxApiBaseIndex = 0;
+    const igxMetricCache = new Map();
+    const igxMetricInflight = new Map();
+    const igxMetricFailures = new Map();
+    const igxPendingRequests = [];
+    const igxActiveAborts = new Set();
+    let igxRunningRequests = 0;
+
+    function igxAbortError() {
+        const error = new Error('IGX request cancelled');
+        error.name = 'AbortError';
+        return error;
+    }
+    function igxCanRequest() {
+        return !document.hidden && shouldRun() && settings.radiosonde && isChatRoomPath();
+    }
+    function cancelIgxRequests() {
+        for (const abort of [...igxActiveAborts]) abort();
+        for (const job of igxPendingRequests.splice(0)) job.reject(igxAbortError());
+    }
+    function pumpIgxRequests() {
+        if (!igxCanRequest()) {
+            cancelIgxRequests();
+            return;
+        }
+        while (igxRunningRequests < 4 && igxPendingRequests.length) {
+            const job = igxPendingRequests.shift();
+            igxRunningRequests++;
+            Promise.resolve().then(() => {
+                if (!igxCanRequest()) throw igxAbortError();
+                return job.run();
+            }).then(job.resolve, job.reject).finally(() => {
+                igxRunningRequests--;
+                pumpIgxRequests();
+            });
+        }
+    }
+    function igxRequestAttempts(endpoint, rawText, url) {
+        if (url) return [{ target: url, useFetch: true }, { target: url, useFetch: false }];
+        // The dashboard has no CORS headers; only the extension transport can read it.
+        if (rawText) return [{ target: IGX_BASE_URL + '/', useFetch: false }];
+        const order = [igxApiBaseIndex, ...IGX_API_BASES.keys()].filter((value, index, list) => list.indexOf(value) === index);
+        return order.flatMap(base => [
+            { target: IGX_API_BASES[base] + endpoint, useFetch: true, base },
+            { target: IGX_API_BASES[base] + endpoint, useFetch: false, base },
+        ]);
+    }
+    function igxRequestJson(endpoint, { rawText = false, url = '', envelope = true } = {}) {
+        const attempts = igxRequestAttempts(endpoint, rawText, url)
+            .filter(attempt => attempt.useFetch ? typeof fetch === 'function' && typeof AbortController === 'function' : cmuGmXhrAvailable());
+        return new Promise((resolve, reject) => {
+            igxPendingRequests.push({ resolve, reject, run: () => new Promise((done, fail) => {
+                let settled = false, stage = -1, phaseTimer, hardTimer, request, controller, lastError = null;
+                const closeStage = () => {
+                    clearTimeout(phaseTimer);
+                    try { controller?.abort(); } catch (_) {}
+                    try { request?.abort?.(); } catch (_) {}
+                    controller = request = null;
+                };
+                const finish = (error, value) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(hardTimer);
+                    igxActiveAborts.delete(abort);
+                    closeStage();
+                    if (error) fail(error); else done(value);
+                };
+                const abort = () => finish(igxAbortError());
+                const parse = response => {
+                    const status = Number(response.status) || 0;
+                    if (status && (status < 200 || status >= 300)) throw new Error('HTTP ' + status);
+                    if (rawText) {
+                        if (!response.responseText) throw new Error('Empty response');
+                        return response.responseText;
+                    }
+                    const payload = JSON.parse(response.responseText);
+                    if (envelope && payload?.success !== true) throw new Error(payload?.message || 'IGX request failed');
+                    return envelope ? payload.data : payload;
+                };
+                const next = () => {
+                    if (settled) return;
+                    if (!igxCanRequest()) { abort(); return; }
+                    closeStage();
+                    stage++;
+                    const attempt = attempts[stage];
+                    if (!attempt) { finish(lastError || new Error('Network request failed')); return; }
+                    const token = stage;
+                    const current = () => !settled && token === stage;
+                    const failure = error => {
+                        if (!current()) return;
+                        lastError = error instanceof Error ? error : new Error('Network request failed');
+                        next();
+                    };
+                    const loaded = response => {
+                        if (!current()) return;
+                        try {
+                            const value = parse(response);
+                            if (attempt.base !== undefined) igxApiBaseIndex = attempt.base;
+                            finish(null, value);
+                        } catch (error) { failure(error); }
+                    };
+                    phaseTimer = setTimeout(() => failure(new Error('Request transport timeout')), 8000);
+                    try {
+                        if (attempt.useFetch) {
+                            controller = new AbortController();
+                            fetch(attempt.target, { method: 'GET', credentials: 'omit', cache: 'no-store', signal: controller.signal,
+                                headers: { Accept: rawText ? 'text/html' : 'application/json' } }).then(async response => {
+                                loaded({ status: response.status, responseText: await response.text() });
+                            }).catch(failure);
+                        } else {
+                            request = cmuGmXhr({ method: 'GET', url: attempt.target, timeout: 18000,
+                                headers: { Accept: rawText ? 'text/html' : 'application/json' }, onload: loaded,
+                                onerror: () => failure(new Error('Extension network error')),
+                                ontimeout: () => failure(new Error('Extension request timeout')),
+                                onabort: () => failure(new Error('Extension request aborted')),
+                            });
+                        }
+                    } catch (error) { failure(error); }
+                };
+                igxActiveAborts.add(abort);
+                hardTimer = setTimeout(() => finish(new Error('Request timeout')), 20000);
+                next();
+            }) });
+            pumpIgxRequests();
+        });
+    }
+    let igxDashboardMetrics = null;
+    let igxDashboardMetricsAt = 0;
+    let igxDashboardMetricsPromise = null;
+    let igxDashboardRetryAt = 0;
+    function recentIgxDashboardMetrics() {
+        return igxDashboardMetrics && Date.now() - igxDashboardMetricsAt < 5 * 60 * 1000
+            ? igxDashboardMetrics : new Map();
+    }
+    function recoverIgxDashboardMetrics() {
+        const recent = recentIgxDashboardMetrics();
+        if (recent.size) return Promise.resolve(recent);
+        if (igxDashboardMetricsPromise) return igxDashboardMetricsPromise;
+        if (Date.now() < igxDashboardRetryAt || !igxCanRequest() || !cmuGmXhrAvailable()) return Promise.resolve(new Map());
+        igxDashboardRetryAt = Date.now() + 5 * 60 * 1000;
+        igxDashboardMetricsPromise = igxRequestJson(null, { rawText: true })
+            .then(html => {
+                const entries = dashboardEntriesFromHtml(html);
+                if (!entries.size) throw new Error('No dashboard statistics');
+                igxDashboardMetrics = entries;
+                igxDashboardMetricsAt = Date.now();
+                return entries;
+            }).catch(() => new Map())
+            .finally(() => { igxDashboardMetricsPromise = null; });
+        return igxDashboardMetricsPromise;
+    }
+    function igxModelSlugs(data) {
+        if (!Array.isArray(data)) throw new Error('Invalid IGX model list');
+        const slugs = [...new Set(data.filter(value => typeof value === 'string' &&
+            /^[a-z0-9][a-z0-9._-]*$/i.test(value) && !EXCLUDED_MODELS.has(value.toLowerCase())))];
+        if (!slugs.length) throw new Error('Empty IGX model list');
+        return slugs;
+    }
+    function igxDashboardModelSlugs(html) {
+        // Read only the serialized model IDs; never evaluate dashboard JavaScript.
+        const match = /\bmodels["']?\s*:\s*(\[[a-z0-9._",\s-]{1,32768}\])/i.exec(html);
+        if (!match) throw new Error('Missing IGX dashboard model list');
+        return igxModelSlugs(JSON.parse(match[1]));
+    }
+    function igxLoadCachedModels() {
         try {
-          const html = await igxRequestJson(null, { rawText: true });
-          slugs = igxDashboardModelSlugs(html);
-          try { rememberIgxDashboardMetrics(html); } catch (_) { /* Catalog remains usable. */ }
-        } catch (error) {
-          if (error.name === 'AbortError' || !slugs) throw error;
-          // Keep a usable API catalog if the optional dashboard request fails.
-        }
-      }
-      igxV2Models = slugs;
-      return slugs;
-    })();
-    return igxModelListPromise;
-  }
-  function fetchIgxOfficialModel(slug, { force = false } = {}) {
-    if (igxMetricInflight.has(slug)) return igxMetricInflight.get(slug);
-    const cached = igxMetricCache.get(slug);
-    if (!force && cached && Date.now() - cached.at < 15000) return Promise.resolve(cached.record);
-    const failure = igxMetricFailures.get(slug);
-    if (failure && Date.now() < failure.retryAt) return Promise.reject(new Error('IGX retry cooldown'));
-    const task = igxRequestJson('simple/' + encodeURIComponent(slug)).then(data => {
-      const record = metricRecordFromObject(data, slug);
-      if (!record) throw new Error('Invalid IGX simple statistics');
-      igxMetricCache.set(slug, { at: Date.now(), record });
-      igxMetricFailures.delete(slug);
-      return record;
-    }).catch(error => {
-      if (error.name !== 'AbortError') {
-        const count = Math.min(4, (failure?.count || 0) + 1);
-        igxMetricFailures.set(slug, { count, retryAt: Date.now() + Math.min(300000, 30000 * 2 ** (count - 1)) });
-      }
-      throw error;
-    }).finally(() => igxMetricInflight.delete(slug));
-    igxMetricInflight.set(slug, task);
-    return task;
-  }
-  async function fetchIgxSnapshot({ force = false, slugs = [], onRecord } = {}) {
-    const requested = [...new Set(slugs)];
-    // Reuse statistics already downloaded for catalog recovery without another request.
-    if (igxCanRequest() && onRecord) {
-      const dashboard = recentIgxDashboardMetrics();
-      for (const slug of requested) {
-        const record = dashboard.get(slug);
-        if (record && !igxMetricCache.has(slug)) onRecord(slug, record);
-      }
+            const cached = JSON.parse(localStorage.getItem(IGX_MODEL_CACHE_KEY) || 'null');
+            if (cached && Array.isArray(cached.slugs) && cached.slugs.length) return cached;
+        } catch (_) {}
+        return null;
     }
-    const results = await Promise.allSettled(requested.map(async slug => {
-      const record = await fetchIgxOfficialModel(slug, { force });
-      if (igxCanRequest() && onRecord) onRecord(slug, record);
-      return record;
-    }));
-    const entries = new Map();
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled') entries.set(requested[index], result.value);
-    });
-    // A shared, bounded dashboard fallback also covers extension-specific API failures.
-    if (entries.size < requested.length && igxCanRequest()) {
-      const dashboard = await recoverIgxDashboardMetrics();
-      for (const slug of requested) {
-        if (entries.has(slug)) continue;
-        const record = dashboard.get(slug);
-        const latest = igxMetricCache.get(slug);
-        if (record && (!latest || igxDashboardMetricsAt >= latest.at)) {
-          entries.set(slug, record);
-          if (igxCanRequest() && onRecord) onRecord(slug, record);
-        }
-      }
+    async function getIgxOfficialModels() {
+        if (igxV2Models) return igxV2Models;
+        // One discovery per page at most, and the merged list is reused across pages for six hours.
+        if (!igxModelListPromise) igxModelListPromise = (async () => {
+            const cached = igxLoadCachedModels();
+            if (cached && Date.now() - Number(cached.at || 0) < IGX_MODEL_CACHE_MS) return (igxV2Models = cached.slugs);
+            let catalog = [];
+            let dashboard = [];
+            try { catalog = igxModelSlugs(await igxRequestJson('models')); }
+            catch (error) { if (error.name === 'AbortError') throw error; }
+            if (cmuGmXhrAvailable()) {
+                try { dashboard = igxDashboardModelSlugs(await igxRequestJson(null, { rawText: true })); }
+                catch (error) { if (error.name === 'AbortError') throw error; }
+            }
+            // The dashboard lists the newest models; the catalog only adds ones the dashboard missed.
+            const slugs = [...new Set([...dashboard, ...catalog])];
+            if (dashboard.length) {
+                try { localStorage.setItem(IGX_MODEL_CACHE_KEY, JSON.stringify({ at: Date.now(), slugs })); } catch (_) {}
+                return (igxV2Models = slugs);
+            }
+            // Without the dashboard, keep models learned earlier and retry discovery on the next page.
+            const merged = [...new Set([...(cached?.slugs || []), ...FALLBACK_MODELS.map(model => model.slug), ...slugs])];
+            return (igxV2Models = merged);
+        })().catch(error => {
+            igxModelListPromise = null;
+            throw error;
+        });
+        return igxModelListPromise;
     }
-    // Never rebuild the catalog or probe legacy routes during a statistics refresh.
-    return entries;
-  }
+    function fetchIgxOfficialModel(slug, { force = false } = {}) {
+        if (igxMetricInflight.has(slug)) return igxMetricInflight.get(slug);
+        const cached = igxMetricCache.get(slug);
+        if (!force && cached && Date.now() - cached.at < 15000) return Promise.resolve(cached.record);
+        const failure = igxMetricFailures.get(slug);
+        if (failure && Date.now() < failure.retryAt) return Promise.reject(new Error('IGX retry cooldown'));
+        const task = igxRequestJson('simple/' + encodeURIComponent(slug)).then(data => {
+            const record = metricRecordFromObject(data, slug);
+            if (!record) throw new Error('Invalid IGX simple statistics');
+            igxMetricCache.set(slug, { at: Date.now(), record });
+            igxMetricFailures.delete(slug);
+            return record;
+        }).catch(error => {
+            if (error.name !== 'AbortError') {
+                const count = Math.min(4, (failure?.count || 0) + 1);
+                igxMetricFailures.set(slug, { count, retryAt: Date.now() + Math.min(300000, 30000 * 2 ** (count - 1)) });
+            }
+            throw error;
+        }).finally(() => igxMetricInflight.delete(slug));
+        igxMetricInflight.set(slug, task);
+        return task;
+    }
+    async function fetchIgxSnapshot({ force = false, slugs = [], onRecord } = {}) {
+        const requested = [...new Set(slugs)];
+        const results = await Promise.allSettled(requested.map(async slug => {
+            const record = await fetchIgxOfficialModel(slug, { force });
+            if (igxCanRequest() && onRecord) onRecord(slug, record);
+            return record;
+        }));
+        const entries = new Map();
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') entries.set(requested[index], result.value);
+        });
+        // A shared, bounded dashboard fallback covers API outages.
+        if (entries.size < requested.length && igxCanRequest()) {
+            const dashboard = await recoverIgxDashboardMetrics();
+            for (const slug of requested) {
+                if (entries.has(slug)) continue;
+                const record = dashboard.get(slug);
+                const latest = igxMetricCache.get(slug);
+                if (record && (!latest || igxDashboardMetricsAt >= latest.at)) {
+                    entries.set(slug, record);
+                    if (igxCanRequest() && onRecord) onRecord(slug, record);
+                }
+            }
+        }
+        return entries;
+    }
 
     cmuListen(document, 'visibilitychange', () => { if (document.hidden) cancelIgxRequests(); });
     cmuListen(window, 'pagehide', cancelIgxRequests);
     CMU_RESOURCES.cleanups.push(cancelIgxRequests);
 
-function modelsFromSnapshot(entries) {
-        if (!(entries instanceof Map) || !entries.size) return [];
-        return ensureUniqueShorts(
-          [...new Set([...(igxV2Models || []), ...entries.keys()])]
-            .filter(slug => looksLikeModelSlug(slug))
-            .map(makeModelMeta)
-        );
-      }
-      async function fetchIgxModelFromDiscoveredRoute(slug) {
-        if (igxWorkingModelRoute) {
-          try {
-            const payload = await fetchRouteJson(igxWorkingModelRoute, slug);
-            const entries = collectIgxMetricEntries(payload, slug);
-            const record = entries.get(slug) || [...entries.values()][0];
-            if (record) return record;
-          } catch (_) {
-            igxWorkingModelRoute = null;
-          }
-        }
-
-        const catalog = await loadIgxRouteCatalog();
-        for (const route of catalog.model.slice(0, 8)) {
-          try {
-            const payload = await fetchRouteJson(route, slug);
-            const entries = collectIgxMetricEntries(payload, slug);
-            const record = entries.get(slug) || [...entries.values()][0];
-            if (record) {
-              igxWorkingModelRoute = route;
-              return record;
-            }
-          } catch (_) {}
-        }
-
-        throw new Error("no working model route");
-      }
-
-      // bulk snapshot이 실패했을 때만 쓰는 모델별 최후 폴백.
-      async function fetchIgxModelWithRetry(slug) {
-    return fetchIgxOfficialModel(slug);
-  }
-
-  async function discoverRsModels(force = false) {
+    async function discoverRsModels() {
         if (RS.discoveryPromise) return RS.discoveryPromise;
         RS.discoveryPromise = (async () => {
             const previous = JSON.stringify(RS.models);
             try {
                 const slugs = await getIgxOfficialModels();
-                const discovered = ensureUniqueShorts(slugs.map(makeModelMeta));
+                const discovered = ensureUniqueShorts(slugs.filter(looksLikeModelSlug).map(makeModelMeta));
                 if (discovered.length < 1) throw new Error('insufficient model list');
                 RS.models = [...YAME_MODELS, ...discovered];
             }
@@ -16092,9 +15625,16 @@ function modelsFromSnapshot(entries) {
         finally { RS.discoveryPromise = null; }
     }
 
-  async function fetchYameStatus() {
-    return igxRequestJson(null, { url: RS.yameStatus + '?t=' + Date.now(), envelope: false });
-  }
+    // The status server takes seconds to answer and measures every 5 minutes; room changes reuse a recent answer.
+    const YAME_CACHE = { at: 0, value: null, promise: null };
+    async function fetchYameStatus({ force = false } = {}) {
+        if (!force && YAME_CACHE.value && Date.now() - YAME_CACHE.at < 30000) return YAME_CACHE.value;
+        if (YAME_CACHE.promise) return YAME_CACHE.promise;
+        YAME_CACHE.promise = igxRequestJson(null, { url: RS.yameStatus + '?t=' + Date.now(), envelope: false })
+            .then(value => { YAME_CACHE.value = value; YAME_CACHE.at = Date.now(); return value; })
+            .finally(() => { YAME_CACHE.promise = null; });
+        return YAME_CACHE.promise;
+    }
     function normalizeYamePayload(payload) {
         const normalized = new Map();
         if (!payload || !Array.isArray(payload.models)) return normalized;
@@ -16167,7 +15707,7 @@ function modelsFromSnapshot(entries) {
             const igxModels = models.filter(model => model.source !== 'yame');
 
             const yameTask = yameModels.length
-                ? fetchYameStatus().then(value => {
+                ? fetchYameStatus({ force: manual }).then(value => {
                     if (igxCanRequest()) {
                       const records = normalizeYamePayload(value);
                       for (const model of yameModels) {
@@ -16355,7 +15895,9 @@ function modelsFromSnapshot(entries) {
         if (BADGE.apiPromise) return BADGE.apiPromise;
         const task = Promise.resolve().then(async () => {
             // The same first page serves statistics, badges, draft confirmation and copy.
-            if (force || !room.first || Date.now() - room.firstAt > 1600)
+            // Pages the site loads (scrolling up) are already remembered through the response hook, so a cache reset
+            // alone must not re-download the head page; unknown new messages take the forced refresh path instead.
+            if (force || !room.first || Date.now() - room.firstAt > 60000)
                 await cmuSharedMessagePage(chatId, '', force);
             const messages = [...room.messages.values()].sort((a, b) => messageIdOf(b).localeCompare(messageIdOf(a)));
             const idMap = new Map(messages.map((msg, index) => [messageIdOf(msg), { msg, index }]));
@@ -18115,6 +17657,10 @@ function modelsFromSnapshot(entries) {
         const gdToken = apiToken ? null : cmiGdTokenFor(resolved?.messageId || '');
         const token = apiToken || gdToken || null;
         if (!token) {
+            // A DOM-only pass runs before every API refresh; keep the resolved icon instead of flashing it.
+            const old = group.querySelector('.cmi-model-badge');
+            if (resolved?.source === 'dom' && old && old.dataset.messageId === String(resolved.messageId || ''))
+                return;
             cmiClearModelIcon(group);
             return;
         }
@@ -18213,21 +17759,7 @@ function modelsFromSnapshot(entries) {
         const map = cmiGdLoadMap();
         return map[messageId] || null;
     }
-    const CMI_DELETE_API_RE = /\/crack-gen\/v\d+\/chats\/([^/?#]+)\/messages\/([^/?#]+)/i;
     const CMI_DELETE_META = Symbol('cmuModelDeleteMeta');
-    function cmiParseDeleteRequest(method, url) {
-        if (String(method || '').toUpperCase() !== 'DELETE')
-            return null;
-        const match = String(url || '').match(CMI_DELETE_API_RE);
-        if (!match)
-            return null;
-        try {
-            return { chatId: decodeURIComponent(match[1]), messageId: decodeURIComponent(match[2]) };
-        }
-        catch (_) {
-            return { chatId: match[1], messageId: match[2] };
-        }
-    }
     function cmiRecordSuccessfulDeletion(chatId, messageId) {
         chatId = String(chatId || '').trim();
         messageId = String(messageId || '').trim();
@@ -19313,7 +18845,7 @@ function modelsFromSnapshot(entries) {
             document.getElementById('chud-info-menu')?.remove();
             document.getElementById('igx-live-popup')?.remove();
         }
-        if (settings.dashboardSidebar)
+        if (settings.dashboardSidebar && isChatRoomPath())
             refreshSideAvailability(late);
         ensureInlineBlocks();
         if (!late)
@@ -19400,7 +18932,8 @@ function modelsFromSnapshot(entries) {
         return node instanceof Element && !!(node.matches?.('#sgb-bg-root, #sgb-bg-style') || node.querySelector?.('#sgb-bg-root, #sgb-bg-style'));
     }
     function cmuNodeMayAffectSideAvailability(node) {
-        if (!settings.dashboardSidebar || !(node instanceof Element) || node.closest?.('[data-message-group-id], ' + CMU_ROUTER_POPUP_SELECTOR))
+        // Older messages loading into the chat scroller never add extension launchers.
+        if (!settings.dashboardSidebar || !(node instanceof Element) || !isChatRoomPath() || node.closest?.('.stick-to-bottom, [data-message-group-id], ' + CMU_ROUTER_POPUP_SELECTOR))
             return false;
         if (observedScope?.contains?.(node) || cmuCachedChatInput?.contains?.(node))
             return false;
@@ -19473,7 +19006,7 @@ function modelsFromSnapshot(entries) {
         const popupDirty = CMU_DOM_ROUTER.popupDirty;
         const themeDirty = CMU_DOM_ROUTER.themeDirty;
         const nativeModelDirty = CMU_DOM_ROUTER.nativeModelDirty;
-        const sideDirty = CMU_DOM_ROUTER.sideDirty && settings.dashboardSidebar;
+        const sideDirty = CMU_DOM_ROUTER.sideDirty && settings.dashboardSidebar && isChatRoomPath();
         const statDirty = CMU_DOM_ROUTER.statDirty;
         const groups = Array.from(CMU_DOM_ROUTER.messageGroups);
         const markdowns = Array.from(CMU_DOM_ROUTER.markdownNodes);
@@ -19756,6 +19289,7 @@ function modelsFromSnapshot(entries) {
             for (const node of roots) {
                 if (cmuNodeTouchesExternalThemeMarker(node)) {
                     cmuExternalThemeProvider = '';
+                    cmuExternalThemeCheckedAt = 0;
                     CMU_DOM_ROUTER.themeDirty = true;
                     dirty = true;
                 }
@@ -19869,11 +19403,16 @@ function modelsFromSnapshot(entries) {
         if (CMU_THEME_STATE.quoteWraps instanceof Map)
             CMU_THEME_STATE.quoteWraps.clear();
     }
+    // True until the first sweep, then only after CMU decorates again; non-chat pages skip the 30-attribute scan.
+    let cmuThemeDecorationsDirty = true;
     function clearThemeDecorations() {
         if (isCmuExternalThemeActive() || cmuThemeExternalHoldActive()) {
             clearCmuOwnedThemeDecorations();
             return;
         }
+        if (!cmuThemeDecorationsDirty)
+            return;
+        cmuThemeDecorationsDirty = false;
         if (document.querySelector('[data-cmu-theme-input-box], [data-sgb-input-box], [data-cmu-theme-input-host], [data-sgb-input-host]'))
             cmuFreezeThemeTransition();
         const names = [
@@ -20103,11 +19642,12 @@ function modelsFromSnapshot(entries) {
         }
         catch (_) { }
     }
-    function cmuPruneStaleQuoteWraps() {
+    // Records hold the original text nodes, which keep a left room's message DOM alive; prune on route changes too.
+    function cmuPruneStaleQuoteWraps(force = false) {
         const wraps = CMU_THEME_STATE.quoteWraps;
-        if (!(wraps instanceof Map) || wraps.size < 400) return;
+        if (!(wraps instanceof Map) || (!force && wraps.size < 60)) return;
         const now = Date.now();
-        if (now - (CMU_THEME_STATE.lastQuotePruneAt || 0) < 2000) return;
+        if (!force && now - (CMU_THEME_STATE.lastQuotePruneAt || 0) < 2000) return;
         CMU_THEME_STATE.lastQuotePruneAt = now;
         for (const [groupId, record] of wraps) {
             const nodes = Array.isArray(record?.insertedNodes) ? record.insertedNodes : [];
@@ -20244,15 +19784,13 @@ function modelsFromSnapshot(entries) {
             });
         });
     }
-    function decorateThemeCodeblocks() {
-        document.querySelectorAll('main .wrtn-codeblock, main pre').forEach(decorateThemeCodeblock);
-    }
     function decorateThemeSkin() {
         applyState();
         if (!themeSkinEnabled()) {
             clearThemeDecorations();
             return;
         }
+        cmuThemeDecorationsDirty = true;
         decorateThemeBubbles();
         decorateThemeInputAndRadiosondeBorderless();
         decorateThemeQuotes();
@@ -20260,6 +19798,7 @@ function modelsFromSnapshot(entries) {
     function decorateThemeSubset(groups) {
         if (!themeSkinEnabled())
             return;
+        cmuThemeDecorationsDirty = true;
         for (const group of groups || []) {
             if (!(group instanceof HTMLElement) || !group.isConnected)
                 continue;
@@ -20306,6 +19845,7 @@ function modelsFromSnapshot(entries) {
     function decorateThemeQuotesSubset(markdowns) {
         if (!themeSkinEnabled() || Date.now() < Number(CMU_THEME_STATE.quoteHealUntil || 0))
             return;
+        cmuThemeDecorationsDirty = true;
         cmuPruneStaleQuoteWraps();
         for (const md of markdowns || []) {
             if (!(md instanceof HTMLElement) || !md.isConnected || md.closest('.not-wrtn-markdown, #igx-live-popup, #chud-sidebar, #chud-infobar'))
@@ -20417,10 +19957,39 @@ function modelsFromSnapshot(entries) {
         return null;
     }
     let rsInlineHost = null;
+    const RS_LINE_GAP = 6;
+    function findRsShellAnchor() {
+        const composer = findRsComposerElement();
+        const shell = composer && findComposerShell(composer);
+        if (!(shell instanceof HTMLElement) || shell === composer || !shell.isConnected)
+            return null;
+        const css = getComputedStyle(shell);
+        return css.overflowX === 'visible' && css.overflowY === 'visible' ? shell : null;
+    }
     function clearRsInlineHost() {
         if (rsInlineHost?.isConnected)
-            rsInlineHost.classList.remove('igx-inline-overlay-host');
+            rsInlineHost.classList.remove('igx-inline-overlay-host', 'igx-inline-overlay-pad');
         rsInlineHost = null;
+    }
+    // Keep the line a fixed gap above the composer box. The site's padding above the composer varies (story 14-16px,
+    // character chat none), so add room when needed and place the line from the composer's actual top.
+    function syncRsHostSpacing(host, popup) {
+        const composer = findRsComposerElement();
+        const wrapper = composer && (findComposerShell(composer) || composer.parentElement);
+        if (!(wrapper instanceof HTMLElement) || host === wrapper) {
+            host.classList.remove('igx-inline-overlay-pad');
+            popup?.style.removeProperty('top');
+            return;
+        }
+        const lineHeight = popup?.getBoundingClientRect().height || 20;
+        let offset = wrapper.getBoundingClientRect().top - host.getBoundingClientRect().top;
+        if (offset < lineHeight + RS_LINE_GAP && !host.classList.contains('igx-inline-overlay-pad')) {
+            host.classList.add('igx-inline-overlay-pad');
+            offset = wrapper.getBoundingClientRect().top - host.getBoundingClientRect().top;
+        }
+        const top = `${Math.max(0, Math.round(offset - lineHeight - RS_LINE_GAP))}px`;
+        if (popup && popup.style.getPropertyValue('top') !== top)
+            popup.style.setProperty('top', top, 'important');
     }
     function applyRadiosondeTheme() {
         const popup = document.getElementById('igx-live-popup');
@@ -20447,7 +20016,10 @@ function modelsFromSnapshot(entries) {
             restartRsAutoTimer();
             return;
         }
-        const host = findRsInlineHost();
+        // Prefer the composer box itself: a line pinned 6px above it stays put when the site's scroll-to-bottom row
+        // above the box appears or collapses. Fall back to the outer area when the box clips its overflow.
+        const shellAnchor = findRsShellAnchor();
+        const host = shellAnchor || findRsInlineHost();
         if (!host)
             return;
         if (rsInlineHost !== host) {
@@ -20470,6 +20042,9 @@ function modelsFromSnapshot(entries) {
             <button class="igx-btn btn-refresh" type="button" title="갱신" aria-label="라디오존데 갱신">↻</button>
           </div>
         </div>`;
+            // The line lives inside the composer box; keep its taps from reaching the box (and focusing the input).
+            for (const type of ['pointerdown', 'mousedown', 'click'])
+                popup.addEventListener(type, event => event.stopPropagation());
         }
         popup.classList.add('inline');
         bindRadiosondeRefreshButton(popup);
@@ -20477,6 +20052,14 @@ function modelsFromSnapshot(entries) {
         if (popup.parentNode !== host) {
             host.appendChild(popup);
             renderRsLine();
+        }
+        popup.classList.toggle('igx-anchor-shell', host === shellAnchor);
+        if (host === shellAnchor) {
+            popup.style.removeProperty('top');
+            host.classList.remove('igx-inline-overlay-pad');
+        }
+        else {
+            syncRsHostSpacing(host, popup);
         }
         if (!RS.discovered) {
             RS.discovered = true;
@@ -20517,7 +20100,10 @@ function modelsFromSnapshot(entries) {
         if (previous?.key === key && previous.first === line.firstChild && line.childElementCount === models.length)
             return;
         const frag = document.createDocumentFragment();
-        const scrollLeft = line.scrollLeft;
+        // Reading scrollLeft here forces a layout on every render; remember the user's own scrolling instead.
+        if (!line.onscroll)
+            line.onscroll = () => { RS.lineScrollLeft = line.scrollLeft; };
+        const scrollLeft = RS.lineScrollLeft || 0;
         for (const model of models) {
             const data = RS.last.get(model.slug) || { status: 'unknown', score: '—', lat: '—' };
             const item = document.createElement('span');
@@ -20532,7 +20118,8 @@ function modelsFromSnapshot(entries) {
         }
         line.replaceChildren(frag);
         CMU_RS_LINE_RENDER.set(line, { key, first: line.firstChild });
-        line.scrollLeft = scrollLeft;
+        if (scrollLeft)
+            line.scrollLeft = scrollLeft;
     }
     function handleSameChatSelfClick(event) {
         if (!event || event.defaultPrevented)
@@ -20643,6 +20230,8 @@ function modelsFromSnapshot(entries) {
         DASH_SIDE.available = null;
         DASH_SIDE.availableAt = 0;
         resetAnimatedThumbRouteState();
+        // The previous room's DOM is detached once React swaps the chat area.
+        setTimeout(() => cmuPruneStaleQuoteWraps(true), 1500);
         scheduleInject('route');
         scheduleIntegratedSideButtonsRouteRefreshLite();
         scheduleMobileChatListPopoverLayoutSettle();
@@ -20656,6 +20245,7 @@ function modelsFromSnapshot(entries) {
     }
     let cmuViewportFrame = 0;
     cmuListen(window, 'resize', () => {
+        cmuViewportWidthCache = 0;
         if (cmuViewportFrame) return;
         cmuViewportFrame = requestAnimationFrame(() => {
         cmuViewportFrame = 0;
@@ -20750,6 +20340,7 @@ function modelsFromSnapshot(entries) {
     cmiInstallDeleteHooks();
     applyState();
     installCmuUserNoteStateWatch();
+    installCmuDialogTextTouchRelease();
     cmuResumeGlobalGestures('initial');
     bindEmptySendGuard();
     ensureSettingsPanelSilent();
