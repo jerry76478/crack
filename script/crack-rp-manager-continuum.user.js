@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🪽 Wish RP Manager Core · CONTINUUM
 // @namespace    local.rp.context.manager
-// @version      1.5.2-continuum.19
+// @version      1.5.2-continuum.20
 // @description  Crack RP용 컨텍스트 주입·인지·자동 장기기억·자료집·전체 재구축을 하나로 관리합니다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-rp-manager-continuum.user.js
@@ -65,7 +65,7 @@
   // Storage IDs, ELR contract, strict AI commit validation and rollback formats are preserved.
  let WUI=null;
 
-  const SCRIPT_VERSION = '1.5.2-continuum.19';
+  const SCRIPT_VERSION = '1.5.2-continuum.20';
   const EDITION = 'core';
   const RUNTIME_HOST = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   const RUNTIME_ATTR = 'data-wish-rp-runtime';
@@ -4381,9 +4381,54 @@ const ContinuumWork=(()=>{
   const c18UndoPreview=undoPreview;
   undoPreview=async function(r,id){const record=await getRuntimeRecord(id);for(const childId of record?.childIds||[]){const child=await getRuntimeRecord(childId);if(child&&child.status!=='date-confirmation')throw Error('후속 날짜 승인을 먼저 되돌린 뒤 전체 재구축을 되돌리세요.');}return c18UndoPreview(r,id);};
 
+
+// Our work center: reject a broken envelope before asking for RP history.
+const c20WorkPreview=preview;
+preview=async function(r,j,values={},allow=false){
+  if(j.origin==='master')parseMaster(values.result,j,r);
+  else if(j.origin!=='coreReview'){
+    const c=await bridge().snapshotRaw(apiChatIdOf(r)),local=diffs(r,c,j,values);
+    if(local.areas&&Object.values(local.areas).length&&Object.values(local.areas).every(a=>a.status==='FAIL')){
+      const raw=copy(values),inputHash=await digest(raw);j.preview={inputHash,rows:copy(local.rows),warnings:local.warnings};await putRuntimeRecord(j);return {...local,raw,inputHash,jobId:j.id,allowAppended:allow};
+    }
+  }
+  if(j.origin!=='coreReview'&&j.history?.length)await ContinuumSource20.cheap(r,{anchor:String(j.history.at(-1)[0])},allow);
+  return c20WorkPreview(r,j,values,allow);
+};
+
 return {C18_ORIGINS,C18_AREAS,masterReady,createMaster,parseMaster,masterDiffs,compositeApply,coreDraft,corePending,setReview,checkRows,aiMemory,masterStamp,queueAutomaticDate,parseTimeline,parseLore,loreEvidence,taskRefs,timelineText,dateValue,timelineGuide,evidenceOptions,dateInbox,confirmDate,copyTaskMeta,packsOf,taskHash,TASKS,cache,resourceCache,busy,fnv,digest,normalize,work,privateGuide,resource,guide,saveGuide,contract,personRecords,existing,domain,source,stamp,assertSource,current,historyBlock,packet,create,load,resume,cancel,unwrap,parseState,parseItems,parseLogs,parsePerson,diffs,preview,materialize,apply,undoPreview,undo,copyTo,publicView,zip};
 })();
 
+
+
+const ContinuumSource20=(()=>{
+  const sessions=new Map(),contexts=new Map();let stageContext=null;
+  const now=()=>performance.now(),rid=r=>String(apiChatIdOf(r));
+  const meta=data=>{const source=data?.source;if(!source||typeof source.last_message_id!=='string'||!source.last_message_id||!/^[a-f0-9]{64}$/i.test(source.sha256||''))throw Error('외부 JSON의 원문 anchor·SHA256이 필요합니다.');return {anchor:source.last_message_id,hash:source.sha256.toLowerCase(),format:data.format};};
+  const snapshot=s=>s.messages.map(m=>[String(m.id),m.role,String(m.text),m.timeHints||[]]);
+  const key=(r,m)=>[rid(r),m.format,WishHistory.stamp(rid(r)),m.anchor,m.hash].join('|');
+  function cached(r,m){const k=key(r,m),entry=sessions.get(k);if(!entry||now()-entry.at>=45000){sessions.delete(k);return null;}return entry.source;}
+  function remember(r,m,source){const k=key(r,m);sessions.delete(k);sessions.set(k,{at:now(),source});while(sessions.size>2)sessions.delete(sessions.keys().next().value);}
+  async function prefix(s,m,allow=false,expected=null){
+    const index=s.messages.findIndex(row=>String(row.id)===m.anchor&&row.role==='assistant');if(index<0)throw Error('외부 JSON의 원문 기준 메시지가 수정·삭제·리롤되었습니다.');
+    const messages=s.messages.slice(0,index+1),ids=new Set(messages.map(row=>String(row.id))),parts=buildBulkTurns(messages);
+    const result={...s,messages,...parts,rows:s.rows.filter(row=>ids.has(String(row.assistantId))),anchorMessageId:m.anchor};
+    // The existing export manifest algorithm; serialize metadata, never RP text.
+    result.hash=await sha256Hex(new TextEncoder().encode(JSON.stringify(bulkSourceManifest(messages))));
+    if(result.hash!==m.hash)throw Error('외부 JSON의 원문 SHA256이 다릅니다. 수정·삭제·리롤·분기·순서 변경은 적용할 수 없습니다.');
+    result.snapshot=snapshot(result);
+    if(expected){if(result.snapshot.length!==expected.length||result.snapshot.some((r,i)=>r[0]!==expected[i][0]||r[1]!==expected[i][1]||r[2]!==expected[i][2]||JSON.stringify(r[3])!==JSON.stringify(expected[i][3])))throw Error('가져온 뒤 기존 RP가 바뀌었습니다.');}
+    result.c20Appended=s.messages.length-messages.length;
+    if(result.c20Appended&&!allow)throw Object.assign(Error('RP가 추가됐습니다. ‘추가된 RP는 다음 갱신으로 남기고 적용’을 선택하세요.'),{code:'RPCM_RP_APPENDED',appended:result.c20Appended});
+    return result;
+  }
+  async function cheap(r,m,allow){const recent=await fetchRecentMessages(rid(r),50),anchor=findLatestCompletedRpAssistantId(stableFrame(recent).stable);if(anchor!==m.anchor&&!allow)throw Object.assign(Error('RP 끝이 달라졌습니다. 추가 RP 허용 여부를 확인해 주세요.'),{code:'RPCM_RP_APPENDED'});}
+  function preflight(data,c){const linked=WishImportPeople.canonicalize(data,(c.actors||[]).filter(a=>!a.automatic),c.actors),people=[...(linked.data.people||[]),...(c.actors||[]).filter(a=>!a.archived)];for(const ref of WishImportPeople.references(linked.data)){const k=personNameKey(ref.value);if(!k)continue;const hits=people.filter(p=>[p.name,...(p.aliases||[])].some(n=>personNameKey(n)===k)),names=new Set(hits.map(p=>personNameKey(p.name)));if(names.size!==1)throw WishImportPeople.error(ref.value,names.size>1);}return linked;}
+  function dialog(r,data,only,partial=false){return WUI.openSheet('c20ExternalSource',{room:r,raw:data,only,partial,busy:false,error:'',draft:{allowAppend:false}});}
+  async function context(r,value,fn){const k=rid(r),previous=contexts.get(k);contexts.set(k,value);try{return await fn();}finally{if(previous)contexts.set(k,previous);else contexts.delete(k);}}
+  function stage(s,fn){const previous=stageContext;stageContext=s;try{return fn();}finally{stageContext=previous;}}
+  return {meta,snapshot,key,cached,remember,prefix,cheap,preflight,dialog,context,contexts,sessions,stage,get stageContext(){return stageContext;}};
+})();
 
 const U3 = (() => {
   const VERSION = 1;
@@ -5675,7 +5720,40 @@ const p=plan(list,{...u,settings:settings(room),continuumCursors:continuumRoomSt
     return {error:cfg.enabled!==false&&room.unified?.lastError&&!Number(room.unified?.retry?.at)?String(room.unified.lastError):'',enabled:cfg.enabled!==false&&cfg.memoryEnabled!==false,committed:Number(n.memory??room.autoMemory?.committedTurns??0),
       target:Number(cfg.memoryEvery||target),running:active.has(room.chatId),jobLabel:unifiedStage};
   }
-    const c13Request=request,c13Stage=stage,c13Commit=atomicCommitUnlocked;
+  
+// Leaf wrappers precede c13 -> c14 -> c15 -> c18 captures.
+const c20Request=request,c20Stage=stage,c20RetryDelay=retryDelay,c20Run=run;
+const c20SnapshotNext=new Set(),c20DeltaCredit=new Set();let c20RunningRoom=null;
+if(Object.isFrozen(WishEconomy))throw Error('continuum.20: WishEconomy가 동결되어 있습니다.');
+request=function(r,c,ps,p,options={}){
+  const key=String(r.chatId),force=options.forceStateSnapshot===true||c20SnapshotNext.has(key),external=ContinuumSource20.stageContext;
+  const prior=WishEconomy.settings;
+  if(force){c20SnapshotNext.delete(key);WishEconomy.settings=room=>({...prior(room),delta:false});}
+  try{
+    const req=c20Request(r,c,ps,external?{...p,mem:[],obs:[]}:p,options);
+    if(external){req.referenceRows=external.rows;req.relationshipRange=WishRelationships.updateRange({...r,relationshipBaseline:null},external.rows);}
+    if(force)req.c20ForceSnapshot=true;
+    return req;
+  }finally{if(force)WishEconomy.settings=prior;}
+};
+stage=function(r,c,ps,p,req,data){
+  if(req.stateDelta){
+    const reject=e=>{c20SnapshotNext.add(String(r.chatId));return Object.assign(e,{code:'WISH_DELTA_REJECTED',c20RoomId:String(r.chatId)});};
+    try{validateShape(data,req.schema);}catch(e){if(e?.code==='WISH_SCHEMA'&&String(e.diagnostic?.path||'').startsWith('응답.memory.state'))throw reject(e);throw e;}
+    // Preserve the original settings/basis guards before classifying expand errors.
+    if(WishEconomy.settings(r).delta&&JSON.stringify(inventory(r,c,ps))===JSON.stringify(req.db)){
+      try{wishExpandStateDelta(req.db,data.memory.state,wishTurnText(p.mem),req.stateDeltaToken);}catch(e){throw reject(e);}
+    }
+  }
+  return c20Stage(r,c,ps,p,req,data);
+};
+retryDelay=function(e,n){const key=e?.c20RoomId||String(c20RunningRoom?.chatId||'');
+  if(e?.code==='WISH_DELTA_REJECTED'){if(n<1){c20DeltaCredit.add(key);return 10;}c20SnapshotNext.delete(key);return 0;}
+  return c20RetryDelay(e,Math.max(0,n-(c20DeltaCredit.has(key)?1:0)));
+};
+run=async function(r,...args){const prior=c20RunningRoom;c20RunningRoom=r;try{return await c20Run(r,...args);}finally{c20RunningRoom=prior;if(!r?.unified?.retry?.at){c20DeltaCredit.delete(String(r?.chatId||''));c20SnapshotNext.delete(String(r?.chatId||''));}}};
+
+  const c13Request=request,c13Stage=stage,c13Commit=atomicCommitUnlocked;
   request=function(r,...args){return ContinuumManager.request(c13Request(r,...args),r);};
   stage=function(r,c,packs,p,req,data){
     ContinuumManager.assertMemo(r,req.c13MemoHash);
@@ -5727,14 +5805,14 @@ const p=plan(list,{...u,settings:settings(room),continuumCursors:continuumRoomSt
         for(const [target,manifest]of [['기억 memory',room.unified.memoryManifest],['인물 observe',room.unified.observeManifest]])if(manifest?.length&&!sourceStillPresent(manifest,frame.messages))throw sourceError('기존 정리의 기준 메시지가 바뀌었습니다.',target,manifest,frame,frame.messages,history.wishRead);
         if(p.memory)await ensureAutoLorePack(room); // A2: only preparatory auto-pack storage is permitted.
         const packs=writableLorePacksForRoom(room),sourceAtStart=await ContinuumWork.source(room),signature=rawSignature(room,cog,packs),settingsAtStart=JSON.stringify(loadAiSettings());
-        const options={compactReadOnly:true,continuityReference:{memory:p.memory?continuityReference(rows,p.mem):undefined,observe:p.observe?continuityReference(rows,p.obs):undefined}},req=request(room,cog,packs,p,options),system=req.guide+'\n[응답 스키마]\n'+JSON.stringify(req.schema);WishMemorySafety.wire(system,req.prompt);
+        let options={compactReadOnly:true,continuityReference:{memory:p.memory?continuityReference(rows,p.mem):undefined,observe:p.observe?continuityReference(rows,p.obs):undefined}},req=request(room,cog,packs,p,options),system=req.guide+'\n[응답 스키마]\n'+JSON.stringify(req.schema);WishMemorySafety.wire(system,req.prompt);
         const cfg=loadAiSettings();if(!isAiProviderReady(cfg))throw Error('보조 AI 연결 설정이 필요합니다.');
         unifiedStage='검토용 기억·인물 정리 요청 중';renderModalIfIdle();
         const result=await callAiProvider(cfg,system,req.prompt,{taskKind:'extract',responseMimeType:'application/json',operationLabel:unifiedStage,timeoutMs:UNIFIED_TIMEOUT_MS});
         if(/MAX_TOKENS|LENGTH|TOKEN_LIMIT|INCOMPLETE/i.test(String(result.diagnostic?.finishReason||'')))throw Error('잘린 결과는 승인할 수 없습니다.');
         let data=WLOG.parseJson(result.text,'기억·인물 검토',result.diagnostic);const evidence=evidenceCheck(req,p,data);let evidenceResult=null;
         if(evidence.rejected.length){let retryData=null;try{const retry=await callAiProvider(cfg,system+CONTINUUM_EVIDENCE_RETRY_TEXT(evidence.rejected.map(x=>x.path)),req.prompt,{taskKind:'extract',responseMimeType:'application/json',operationLabel:'evidence 재요청 (1회)',timeoutMs:UNIFIED_TIMEOUT_MS});retryData=WLOG.parseJson(retry.text,'evidence 재요청',retry.diagnostic);}catch{}evidenceResult=evidence.merge(retryData);data=evidenceResult.data;req.correctionNotices=[...(req.correctionNotices||[]),...evidenceResult.notices];}
-        req.holdContext={bundle:'unified',jobCreatedAt:nowIso(),segmentIndex:null,segmentCount:null};const out=stage(room,cog,packs,p,req,data);if(evidenceResult)recordEvidenceRejects(out.room,evidence,evidenceResult);
+        req.holdContext={bundle:'unified',jobCreatedAt:nowIso(),segmentIndex:null,segmentCount:null};let out;try{out=stage(room,cog,packs,p,req,data);}catch(error){if(error.code!=='WISH_DELTA_REJECTED')throw error;options={...options,forceStateSnapshot:true};req=request(room,cog,packs,p,options);system=req.guide+'\n[응답 스키마]\n'+JSON.stringify(req.schema);WishMemorySafety.wire(system,req.prompt);const snapshotResult=await callAiProvider(cfg,system,req.prompt,{taskKind:'extract',responseMimeType:'application/json',operationLabel:'전체 상태 재요청 (1회)',timeoutMs:UNIFIED_TIMEOUT_MS});if(/MAX_TOKENS|LENGTH|TOKEN_LIMIT|INCOMPLETE/i.test(String(snapshotResult.diagnostic?.finishReason||'')))throw Error('잘린 결과는 승인할 수 없습니다.');data=WLOG.parseJson(snapshotResult.text,'전체 상태 재요청',snapshotResult.diagnostic);out=stage(room,cog,packs,p,req,data);}if(evidenceResult)recordEvidenceRejects(out.room,evidence,evidenceResult);
         const latestHistory=await fetchAllRoomMessages(apiChatIdOf(room)),latest=stableFrame([...latestHistory].reverse()),manifest=sourceManifestOf([...frame.stable].reverse()),liveCog=await bridge().snapshotRaw(apiChatIdOf(room));
         if(!sourceStillPresent(manifest,latest.stable)||state.currentRoom!==room||epoch!==localRestoreEpoch||ExternalReplay.changed(apiChatIdOf(room),replay)||settingsAtStart!==JSON.stringify(loadAiSettings())||rawSignature(room,liveCog,packs)!==signature)throw Error('요청 중 원문·설정·기억·인지 기준이 바뀌었습니다.');
         const upto=id=>{const sourceRows=[...frame.stable].reverse(),i=sourceRows.findIndex(m=>String(messageIdOf(m))===String(id));if(i<0)throw Error('적용 범위 끝을 찾지 못했습니다.');return sourceManifestOf(sourceRows.slice(0,i+1));};
@@ -6445,6 +6523,31 @@ JSON 파일을 생성하기 전 내부적으로 확인한다. 이것은 빠진 �
   apply=async function(r,...args){const j=get(r,...args);ContinuumManager.assertMemo(r,j?.draft?.c13MemoHash);return ContinuumManager.withDraft(r,j?.draft,()=>c13Apply(r,...args));};
   const c13Basis=basis;
   basis=function(r,...args){return c13Basis(r,...args)+(ContinuumManager.on()?'\n'+JSON.stringify(ContinuumManager.get(r)):'');};
+
+
+const c20Source=source,c20ExternalStage=externalStage,c20ValidateExternal=validateExternal,c20Commit=commit,c20CommitRelationships=commitRelationshipsOnly,c20Import=importData,c20OpenRelationshipReview=openRelationshipReview,c20EditedReview=editedReviewJob;
+source=async function(r){const ctx=ContinuumSource20.contexts.get(String(apiChatIdOf(r)));if(!ctx)return c20Source(r);const cached=ctx.preview&&ContinuumSource20.cached(r,ctx.meta);if(cached)return cached;const s=await c20Source(r),p=await ContinuumSource20.prefix(s,ctx.meta,ctx.allow,ctx.expected);if(ctx.preview)ContinuumSource20.remember(r,ctx.meta,p);return p;};
+validateExternal=function(data,s,only=false){const m=ContinuumSource20.meta(data);if(m.anchor!==s.anchorMessageId||m.hash!==s.hash)throw Error('외부 JSON의 원문 anchor·SHA256이 다릅니다.');return c20ValidateExternal(data,s,only);};
+externalStage=function(r,c,ps,s,data){return ContinuumSource20.stage(s,()=>c20ExternalStage(r,c,ps,s,data));};
+openRelationshipReview=function(r,j,options={}){const ctx=ContinuumSource20.contexts.get(String(apiChatIdOf(r)));if(ctx){j={...j,c20Meta:ctx.meta,c20Snapshot:ctx.source?.snapshot};}const d=c20OpenRelationshipReview(r,j,options);if(ctx){d.c20External=true;d.draft.allowAppend=!!ctx.allow;}return d;};
+editedReviewJob=function(d){const j=c20EditedReview(d);if(d.c20External)j.c20AllowAppend=d.draft.allowAppend===true;return j;};
+commit=async function(r,j,...args){if(!j.c20Meta)return c20Commit(r,j,...args);return ContinuumSource20.context(r,{meta:j.c20Meta,allow:j.c20AllowAppend===true,expected:j.c20Snapshot,preview:false},()=>c20Commit(r,j,...args));};
+commitRelationshipsOnly=async function(r,j,...args){if(!j.c20Meta)return c20CommitRelationships(r,j,...args);return ContinuumSource20.context(r,{meta:j.c20Meta,allow:j.c20AllowAppend===true,expected:j.c20Snapshot,preview:false},()=>c20CommitRelationships(r,j,...args));};
+importData=async function(r,data,only=false,options={}){
+  data=await c13PrepareExternal(r,data,only?'relationships':'all');
+  U3.validateShape(data,externalSchema(data));if(only&&data.version!==1||!only&&![1,2].includes(data.version)||data.format!==(only?'wish-relationship-rebuild':'wish-rp-rebuild-2.3'))throw Error('외부 JSON 형식·버전 오류');
+  const meta=ContinuumSource20.meta(data),allow=options.allowAppend===true;
+  try{await ContinuumSource20.cheap(r,meta,allow);}catch(e){if(e.code==='RPCM_RP_APPENDED')return ContinuumSource20.dialog(r,data,only);throw e;}
+  const c=await bridge().snapshotRaw(apiChatIdOf(r));try{ContinuumSource20.preflight(data,c);}catch(e){return WishImportPeople.open(r,data,c,e,only);}
+  const ctx={meta,allow,preview:true,source:null};
+  return ContinuumSource20.context(r,ctx,()=>WLOG.run('외부 재구축 JSON 가져오기',()=>guard(r,async check=>{
+    if(r.pending)throw Error('주입을 해제한 뒤 가져와 주세요.');
+    const s=await source(r);ctx.source=s;check();validateExternal(data,s,only);
+    if(!only){await ensureAutoLorePack(r);check();}const live=await bridge().snapshotRaw(apiChatIdOf(r)),ps=packs(r);check();
+    let draft;try{draft=only?onlyRelationshipStage(r,live,s,data):externalStage(r,live,ps,s,data);}catch(e){return WishImportPeople.open(r,data,live,e,only);}
+    return openRelationshipReview(r,{draft,sourceHash:s.hash,anchor:s.anchorMessageId,basis:basis(r,live,ps)},{only,legacy:!only&&data.version===1,cog:live,packs:ps});
+  })));
+};
 
 return {get,load,read,run,apply,clear,exportText,importData,importFile,externalGuideDefault,relationshipOnlyGuideDefault,externalGuide,externalStage,relationshipOnlyGuide,onlyRelationshipStage,alignRelationActors,retainRelationshipScope,reviewEditFields,editedReviewJob,applyRelationshipReview,exportRelationshipBackup,externalSchema,segments,units,text,seed,joinStage,commit,personContract,schema:SCHEMA,relationshipSchema:RELATION_SCHEMA,busy:()=>!!task,stop:()=>{if(control)control.cancelled=true;AiAbort.abort('작업을 중단했어요. 다시 누르면 성공한 구간 다음부터 이어서 분석해요.');},guide:WISH_EXTERNAL_REBUILD_GUIDE};
 })();
@@ -10402,6 +10505,7 @@ return {shorten,undoShorten,LABEL,LIMIT,mergedId,buildRequest,validate,merge,mer
   function isUnifiedSourceBlock(error) {
     return ['기존 정리에 사용한 원문이 바뀌었습니다. 분기와 시작점을 확인해 주세요.','관계 재구축에 사용한 원문이 수정·삭제되었습니다. 관계만 재구축에서 최신 분기를 확인해 주세요.','자동 정리 기준 대화가 현재 분기에 없습니다. 시작점 또는 백업을 확인해 주세요.','기존 정리의 기준 메시지가 삭제되거나 분기 순서가 바뀌었습니다. 시작점을 확인해 주세요.','관계 재구축의 기준 메시지가 현재 방에 없거나 순서가 바뀌었습니다.'].includes(String(error?.message||error||''));
   }
+  let c20HistorySnapshot;
   const WishHistory=(()=>{
     const records=new Map(),flights=new Map(),revisions=new Map();let sequence=0;
     const MAX_CHARS=12000000,RECHECK_MS=300000;
@@ -10472,6 +10576,7 @@ return {shorten,undoShorten,LABEL,LIMIT,mergedId,buildRequest,validate,merge,mer
       document.addEventListener('visibilitychange',()=>{if(!document.hidden){const rid=String(apiChatIdOf(state.currentRoom)||'');if(rid)changed(rid);}});
     }
     function hasMessage(room,id){const rid=String(apiChatIdOf(room)),record=records.get(rid);if(!record||record.scope!==scope(rid)||ExternalReplay.pending(rid))return null;return record.ids.has(String(id));}
+    c20HistorySnapshot=snapshot; // Reuse the bounded original deep snapshot.
     return {hasMessage,begin,seed,read,invalidate,changed,merge,install};
   })();
   // Legacy contents-api path also exists in the upstream PATCH candidates.
@@ -10487,6 +10592,130 @@ return {shorten,undoShorten,LABEL,LIMIT,mergedId,buildRequest,validate,merge,mer
     }
     return {mutation,install};
   })();
+
+// continuum.20: bounded physical reads, subscriber cancellation and history facade.
+const ContinuumHistory20=(()=>{
+  const records=new Map(),flights=new Map(),readFlights=new Map(),revisions=new Map(),frontiers=new Map(),watchers=new WeakMap();
+  let sequence=0,hardSequence=0,frontierSequence=0,installed=false;
+  const now=()=>performance.now(),NORMAL=12000000,HARD=36000000,AGE=300000;
+  const scope=rid=>[state.routeEpoch,localRestoreEpoch,ExternalReplay.revision(rid),revisions.get(String(rid))||0].join(':');
+  const stamp=rid=>scope(rid)+':'+(frontiers.get(String(rid))||0);
+  const error=(code,message)=>Object.assign(Error(message),{code});
+  const cancelled=c=>!!(c?.cancelled||c?.signal?.aborted);
+  const abortError=c=>error(c?.staleOnCancel?'WISH_HISTORY_STALE':'WISH_USER_ABORT',c?.staleOnCancel?'대화 조회 기준이 바뀌었습니다.':'사용자가 대화 조회를 중단했습니다.');
+  function subscribeControl(c,fn){
+    if(!c)return ()=>{};
+    if(c.signal){c.signal.addEventListener('abort',fn,{once:true});}
+    let w=watchers.get(c);
+    if(!w){const d=Object.getOwnPropertyDescriptor(c,'cancelled');w={listeners:new Set(),d,value:c.cancelled};
+      if((!d||'value' in d)&&d?.configurable!==false){Object.defineProperty(c,'cancelled',{configurable:true,enumerable:d?.enumerable??true,get:()=>w.value,set:v=>{w.value=v;if(v)for(const f of [...w.listeners])f();}});w.hooked=true;}
+      watchers.set(c,w);
+    }
+    w.listeners.add(fn);c.aborters?.add(fn);
+    return ()=>{c.signal?.removeEventListener('abort',fn);c.aborters?.delete(fn);w.listeners.delete(fn);if(!w.listeners.size){if(w.hooked)Object.defineProperty(c,'cancelled',{...(w.d||{configurable:true,enumerable:true,writable:true}),value:w.value});watchers.delete(c);}};
+  }
+  async function transport(url,control){
+    if(cancelled(control))throw abortError(control);
+    await waitForCrackToken();if(cancelled(control))throw abortError(control);
+    const access=getCookie('access_token');if(!access)throw crackAuthError('CRACK_AUTH_MISSING');
+    return new Promise((resolve,reject)=>{
+      let done=false,handle=null,aborted=false,unsubscribe=()=>{};
+      const finish=(fn,v)=>{if(done)return;done=true;unsubscribe();fn(v);};
+      const abort=()=>{if(done)return;aborted=true;finish(reject,abortError(control));handle?.abort?.();};
+      unsubscribe=subscribeControl(control,abort);
+      if(cancelled(control)){abort();return;}
+      try{handle=GM_xmlhttpRequest({method:'GET',url,headers:{Authorization:'Bearer '+access,'Content-Type':'application/json',Accept:'application/json, text/plain, */*',platform:'web','wrtn-locale':'ko-KR'},timeout:30000,
+        onload:res=>{if(done||aborted)return;if(cancelled(control)){abort();return;}let parsed=null;try{parsed=res.responseText?JSON.parse(res.responseText):null;}catch{}
+          if(res.status>=200&&res.status<300){crackAuthState.failures=0;crackAuthState.retryAt=0;finish(resolve,parsed??{ok:true});}
+          else if(res.status===401)finish(reject,crackAuthError('CRACK_AUTH_REJECTED'));
+          else finish(reject,Object.assign(Error('API 오류 '+res.status),{code:'CRACK_HTTP',diagnostic:{service:'크랙',method:'GET',httpStatus:res.status,responseChars:String(res.responseText||'').length}}));},
+        ontimeout:()=>finish(reject,Object.assign(Error('API 요청 시간 초과'),{code:'CRACK_TIMEOUT',diagnostic:{service:'크랙',method:'GET',timeoutMs:30000}})),
+        onerror:()=>finish(reject,Object.assign(Error('네트워크 오류'),{code:'CRACK_NETWORK',diagnostic:{service:'크랙',method:'GET'}})),onabort:abort});
+        if(aborted)handle?.abort?.();
+      }catch(e){finish(reject,e);}
+    });
+  }
+  const transient=e=>['CRACK_TIMEOUT','CRACK_NETWORK'].includes(e?.code)||e?.code==='CRACK_HTTP'&&(e.diagnostic?.httpStatus===429||e.diagnostic?.httpStatus>=500&&e.diagnostic?.httpStatus<600);
+  async function page(url,c){for(let attempt=0;attempt<3;attempt++){try{return await transport(url,c);}catch(e){if(!transient(e)||attempt===2)throw e;}}}
+  const cancelledCheck=(rid,s,c)=>{if(cancelled(c))throw abortError(c);if(stamp(rid)!==s||ExternalReplay.pending(rid))throw error('WISH_HISTORY_STALE','대화 조회 중 방·원문 기준이 바뀌었습니다.');};
+  async function physical(rid,s,c,progress){
+    const ticket=begin(rid),messages=[],ids=new Set(),cursors=new Set();let cursor='',mode=0,pages=0;
+    const routes=[['https://crack-api.wrtn.ai/crack-gen/v3/chats/',300,'crack-api'],['https://contents-api.wrtn.ai/character-chat/v3/chats/',50,'contents-api'],['https://crack-api.wrtn.ai/crack-gen/v3/chats/',50,'crack-api']];
+    while(true){cancelledCheck(rid,s,c);if(pages>=1000)throw error('WISH_HISTORY_LIMIT','전체 대화 조회가 1,000페이지를 넘었습니다.');
+      const [host,size]=routes[mode],url=host+encodeURIComponent(rid)+'/messages?limit='+size+(cursor?'&cursor='+encodeURIComponent(cursor):'');let payload;
+      try{payload=await page(url,c);}catch(e){cancelledCheck(rid,s,c);const status=Number(e?.diagnostic?.httpStatus)||0;
+        const incompatible=mode===0?[400,404,405,413,422].includes(status):[404,405].includes(status);
+        if(!cursor&&!pages&&mode<2&&(incompatible||transient(e))){mode++;cursors.clear();continue;}throw e;}
+      cancelledCheck(rid,s,c);const data=payload?.data||payload||{},rows=data.messages;
+      if(!Array.isArray(rows)||rows.length>size)throw error('WISH_HISTORY_FORMAT','전체 대화 목록 응답 형식을 확인할 수 없습니다.');
+      pages++;
+      for(const row of rows){const id=String(messageIdOf(row)||'');if(!id||!['user','assistant','system'].includes(messageRoleOf(row)))throw error('WISH_HISTORY_FORMAT','전체 대화 메시지 ID·역할 오류');if(ids.has(id))throw error('WISH_HISTORY_FORMAT','전체 대화 메시지 ID 중복');ids.add(id);messages.push(row);if(messages.length>100000)throw error('WISH_HISTORY_LIMIT','전체 대화가 100,000개 메시지를 넘었습니다.');}
+      progress('전체 로그 읽는 중 · '+formatCount(messages.length)+'개 메시지');
+      if(rows.length&&typeof data.hasNext!=='boolean'&&!Object.hasOwn(data,'nextCursor'))throw error('WISH_HISTORY_FORMAT','전체 대화의 페이지 정보가 없습니다.');
+      if(data.nextCursor!=null&&typeof data.nextCursor!=='string')throw error('WISH_HISTORY_FORMAT','전체 대화 cursor 형식 오류');
+      const next=data.nextCursor||'';if(!next){if(data.hasNext===true)throw error('WISH_HISTORY_FORMAT','다음 cursor가 없습니다.');break;}
+      if(data.hasNext===false||!rows.length)throw error('WISH_HISTORY_FORMAT','전체 대화 페이지 정보가 모순됩니다.');
+      if(messages.length===100000)throw error('WISH_HISTORY_LIMIT','100,000개 메시지 뒤에 대화가 더 있습니다.');
+      if(cursors.has(next)||cursor===next)throw error('WISH_HISTORY_FORMAT','전체 대화 cursor 반복');cursors.add(next);cursor=next;
+    }
+    cancelledCheck(rid,s,c);messages.reverse();Object.defineProperties(messages,{wishReadHost:{value:routes[mode][2]},wishReadSeq:{value:ticket.seq}});seed(rid,messages,ticket);return messages;
+  }
+  function detach(key,f){f.aborted=true;if(flights.get(key)===f)flights.delete(key);f.control.cancelled=true;}
+  function full(rid,progress=null,control=null){
+    rid=String(rid||'');if(!rid)return Promise.reject(Error('현재 크랙방 ID를 찾지 못했습니다.'));if(cancelled(control))return Promise.reject(abortError(control));
+    const s=stamp(rid),key=rid+'|'+s;let f=flights.get(key);if(f?.aborted)f=null;
+    if(!f){f={rid,s,key,control:{cancelled:false,aborters:new Set()},subscribers:new Set(),aborted:false};flights.set(key,f);
+      f.promise=Promise.resolve().then(()=>physical(rid,s,f.control,message=>{for(const sub of [...f.subscribers]){if(sub.check())sub.progress?.(message);}}));
+      f.promise.then(()=>{if(flights.get(key)===f)flights.delete(key);},()=>{if(flights.get(key)===f)flights.delete(key);});
+    }
+    return new Promise((resolve,reject)=>{let settled=false,off=()=>{};const sub={progress,
+      check(){if(settled)return false;if(cancelled(control)){finish(reject,abortError(control));return false;}if(stamp(rid)!==s||ExternalReplay.pending(rid)){finish(reject,error('WISH_HISTORY_STALE','대화 조회 기준이 바뀌었습니다.'));return false;}return true;}};
+      const finish=(fn,x)=>{if(settled)return;settled=true;off();f.subscribers.delete(sub);if(!f.subscribers.size&&!f.done)detach(key,f);fn(x);};
+      f.subscribers.add(sub);off=subscribeControl(control,()=>sub.check());
+      f.promise.then(rows=>{f.done=true;if(sub.check()){const result=rows.slice();Object.defineProperties(result,{wishReadHost:{value:rows.wishReadHost},wishReadSeq:{value:rows.wishReadSeq}});finish(resolve,result);}},e=>{f.done=true;finish(reject,e);});
+    });
+  }
+  function dirty(rid,hard=true){rid=String(rid||'');if(!rid)return;if(hard){revisions.set(rid,++hardSequence);records.delete(rid);}else frontiers.set(rid,++frontierSequence);
+    for(const f of [...flights.values()])if(f.rid===rid){for(const sub of [...f.subscribers])sub.check();}
+  }
+  const begin=rid=>({scope:scope(String(rid)),stamp:stamp(String(rid)),seq:++sequence});
+  const shallow=rows=>Object.freeze(rows.map(r=>Object.freeze({...r})));
+  const snapshot=(rows,large)=>large?shallow(rows):Object.freeze(c20HistorySnapshot(rows));
+  function seed(rid,oldest,ticket){rid=String(rid);if(ticket.scope!==scope(rid)||ticket.stamp!==stamp(rid)||generationPending(rid)||ExternalReplay.pending(rid)||(records.get(rid)?.seq||0)>ticket.seq)return;
+    const chars=oldest.reduce((n,m)=>n+messageTextOf(m).length,0);if(chars>HARD){records.delete(rid);return;}
+    const large=chars>NORMAL,newest=[...oldest].reverse();records.delete(rid);records.set(rid,{messages:snapshot(newest,large),ids:new Set(newest.map(m=>String(messageIdOf(m)))),chars,large,scope:ticket.scope,stamp:ticket.stamp,seq:ticket.seq,verifiedAt:now(),host:oldest.wishReadHost||''});
+    const cap=large?1:2;while(records.size>cap)records.delete(records.keys().next().value);
+  }
+  function merge(record,head){if(!head.length)return record.messages.length?null:{messages:[],chars:0,addedIds:[]};const old=record.messages,first=head.findIndex(m=>record.ids.has(String(messageIdOf(m))));if(first<0||String(messageIdOf(head[first]))!==String(messageIdOf(old[0])))return null;
+    const overlap=head.slice(first),prior=old.slice(0,overlap.length);if(prior.length!==overlap.length)return null;
+    const a=sourceManifestOf(overlap),b=sourceManifestOf(prior);if(a.some((r,i)=>r.id!==b[i].id||r.role!==b[i].role||r.hash!==b[i].hash)||head.length<50&&overlap.length<old.length)return null;
+    const ids=head.map(m=>String(messageIdOf(m)));if(ids.some(id=>!id)||new Set(ids).size!==ids.length)return null;
+    const chars=record.chars+head.reduce((n,m)=>n+messageTextOf(m).length,0)-prior.reduce((n,m)=>n+messageTextOf(m).length,0);if(chars>HARD)return null;
+    return {messages:Object.freeze([...snapshot(head,chars>NORMAL),...old.slice(overlap.length)]),chars,addedIds:ids.slice(0,first)};
+  }
+  async function read(room,knownHead=null){const rid=String(apiChatIdOf(room)||''),s=stamp(rid),head=knownHead||await fetchRecentMessages(rid,50);cancelledCheck(rid,s,null);const record=records.get(rid);
+    if(record&&record.scope===scope(rid)&&now()-record.verifiedAt<AGE&&!generationPending(rid)){const joined=merge(record,head);if(joined){Object.assign(record,joined,{seq:++sequence,stamp:s,large:joined.chars>NORMAL});for(const id of joined.addedIds)record.ids.add(id);return tag([...record.messages].reverse(),{path:'병합',host:record.host,ageMs:now()-record.verifiedAt});}}
+    const key=rid+'|'+s;let p=readFlights.get(key);const shared=!!p;
+    if(!p){const c={staleOnCancel:true,get cancelled(){return stamp(rid)!==s;}};p=full(rid,null,c);readFlights.set(key,p);p.then(()=>{if(readFlights.get(key)===p)readFlights.delete(key);},()=>{if(readFlights.get(key)===p)readFlights.delete(key);});}
+    const all=await p;cancelledCheck(rid,s,null);const cached=records.get(rid),chars=all.reduce((n,m)=>n+messageTextOf(m).length,0);
+    return tag(cached?.stamp===s?[...cached.messages].reverse():[...snapshot(all,chars>NORMAL)],{path:shared?'공유 전체':'전체',host:all.wishReadHost||'',ageMs:0});
+  }
+  const tag=(rows,info)=>Object.defineProperty(rows,'wishRead',{value:info});
+  function hasMessage(room,id){const rid=String(apiChatIdOf(room)),r=records.get(rid);if(!r||r.scope!==scope(rid)||ExternalReplay.pending(rid))return null;if(r.ids.has(String(id)))return true;return r.stamp===stamp(rid)?false:null;}
+  function mutation(method,url){if(!/^(POST|PATCH|PUT|DELETE)$/i.test(method))return null;try{const u=new URL(String(url),location.href);if(!['crack-api.wrtn.ai','contents-api.wrtn.ai'].includes(u.hostname))return null;const m=u.pathname.match(/\/(?:chats|character-chats)\/([^/]+)\/messages(?:\/([^/]+))?\/?$/);if(!m)return null;return {rid:decodeURIComponent(m[1]),hard:method.toUpperCase()!=='POST'||!!m[2]||ExternalReplay.pending(decodeURIComponent(m[1]))};}catch{return null;}}
+  function install(){if(installed)return;installed=true;const W=typeof unsafeWindow!=='undefined'?unsafeWindow:window;
+    if(typeof W.fetch==='function'){const previous=W.fetch;W.fetch=function(input,init){const change=mutation(init?.method||input?.method||'GET',typeof input==='string'||input instanceof URL?input:input?.url);if(change)dirty(change.rid,change.hard);const result=previous.apply(this,arguments);if(change)Promise.resolve(result).then(()=>dirty(change.rid,change.hard),()=>dirty(change.rid,change.hard));return result;};}
+    if(W.XMLHttpRequest?.prototype){const p=W.XMLHttpRequest.prototype,open=p.open,send=p.send,requests=new WeakMap();p.open=function(method,url){requests.set(this,mutation(method,url));return open.apply(this,arguments);};p.send=function(){const m=requests.get(this);if(m){dirty(m.rid,m.hard);this.addEventListener('loadend',()=>dirty(m.rid,m.hard),{once:true});}return send.apply(this,arguments);};}
+  }
+  return {full,transport,read,begin,seed,merge,hasMessage,invalidate:rid=>dirty(rid,true),changed:rid=>dirty(rid,true),install,scope,stamp,mutation,records,flights,readFlights};
+})();
+const c20HistoryOriginalInstall=WishHistory.install,c20HistoryOriginalChanged=WishHistory.changed;
+let c20HistoryInstalled=false;
+Object.assign(WishHistory,{begin:ContinuumHistory20.begin,seed:ContinuumHistory20.seed,merge:ContinuumHistory20.merge,read:ContinuumHistory20.read,hasMessage:ContinuumHistory20.hasMessage,invalidate:ContinuumHistory20.invalidate,
+  changed(rid){ContinuumHistory20.changed(rid);c20HistoryOriginalChanged(rid);},scope:ContinuumHistory20.scope,stamp:ContinuumHistory20.stamp,
+  install(){if(c20HistoryInstalled)return;c20HistoryInstalled=true;c20HistoryOriginalInstall();ContinuumHistory20.install();}});
+fetchAllRoomMessages=ContinuumHistory20.full;
+
   async function observeFullRoomHistory(room,head=null){return WishHistory.read(room,head);}
 
   async function fetchAllRoomMessages(chatId, onProgress = null, control = null) {
@@ -12683,6 +12912,27 @@ function formatLocalRecordTime(value){
   basis=function(r,...args){return c13ExternalBasis(r,...args)+(ContinuumManager.on()?'\n'+JSON.stringify(ContinuumManager.get(r)):'');};
   apply=async function(id){const d=WUI.ui.dlg(id);if(!ContinuumManager.on()||!d||d.busy||!d.draft?.reviewed||d.externalScope!=='people')return c13ExternalApply(id);const next=R31.editedReviewJob(d).draft;return ContinuumManager.withDraft(d.room,next,()=>c13ExternalApply(id));};
 
+
+const c20EBSource=source,c20EBStage=stage,c20EBImport=importData,c20EBVerify=verify,c20EBOpen=openReview;
+source=async function(r){const ctx=ContinuumSource20.contexts.get(String(apiChatIdOf(r)));if(!ctx)return c20EBSource(r);const cached=ctx.preview&&ContinuumSource20.cached(r,ctx.meta);if(cached)return cached;const s=await c20EBSource(r),p=await ContinuumSource20.prefix(s,ctx.meta,ctx.allow,ctx.expected);if(ctx.preview)ContinuumSource20.remember(r,ctx.meta,p);return p;};
+stage=function(r,c,ps,s,data){return ContinuumSource20.stage(s,()=>c20EBStage(r,c,ps,s,data));};
+openReview=function(r,scope,data,draft,s,c,ps){const d=c20EBOpen(r,scope,data,draft,s,c,ps),ctx=ContinuumSource20.contexts.get(String(apiChatIdOf(r)));if(ctx){d.c20External=true;d.j.c20Meta=ctx.meta;d.j.c20Snapshot=s.snapshot;d.draft.allowAppend=!!ctx.allow;}return d;};
+verify=async function(d){if(!d.j.c20Meta||d.externalScope==='lore')return c20EBVerify(d);return ContinuumSource20.context(d.room,{meta:d.j.c20Meta,allow:d.draft.allowAppend===true,expected:d.j.c20Snapshot,preview:false},()=>c20EBVerify(d));};
+importData=async function(r,data,options={}){
+  if(data?.format!=='wish-partial-rebuild')return c20EBImport(r,data);
+  data=await c13PrepareExternal(r,data,data.scope);
+  U3.validateShape(data,schema(data.scope));if(data.version!==1)throw Error('부분 JSON 버전 오류');
+  const meta=ContinuumSource20.meta(data),allow=options.allowAppend===true;
+  try{await ContinuumSource20.cheap(r,meta,allow);}catch(e){if(e.code==='RPCM_RP_APPENDED')return ContinuumSource20.dialog(r,data,false,true);throw e;}
+  const before=await snapshot(r);try{ContinuumSource20.preflight(data,before.c);}catch(e){return WishImportPeople.open(r,data,before.c,e);}
+  return ContinuumSource20.context(r,{meta,allow,preview:true},()=>locked(r,async check=>{
+    if(r.pending)throw Error('주입을 해제한 뒤 가져와 주세요.');
+    const s=await source(r),{c,ps}=await snapshot(r);check();let draft;
+    try{draft=stage(r,c,ps,s,data);}catch(e){return WishImportPeople.open(r,data,c,e);}
+    return openReview(r,data.scope,data,draft,s,c,ps);
+  }));
+};
+
 return {exportFiles,importFile,importData,apply,schema,contract,stage,reviewFields,labels,guideIds,busy:()=>active};
   })();
 
@@ -14215,6 +14465,23 @@ async function convertTextToLoreEntries(sourceText, options = {}) {return await 
     await reconcileStableCarrier(room,'start',frame);
     scheduleRecovery(APP.activePollMs);
   }
+armInjectionUnlocked=async function(room) {
+    if(room.pending)throw new Error('이미 주입 유지가 활성화되어 있습니다.');
+    if(generationPending(apiChatIdOf(room)))throw new Error('AI 생성이 끝난 뒤 주입을 시작해 주세요.');
+    const all=await fetchAllRoomMessages(apiChatIdOf(room)),frame=stableFrame([...all].reverse());
+    await validateMemoryBranch(room,frame);
+    room.autoRecallContextText=frame.messages.slice(0,APP.autoScanMessageLimit).map(m=>stripAutomationNoise(messageTextOf(m),true)).reverse().join('\n\n').slice(-12000);
+    const items=safeMemoryItems(room,snapshotSelectedItems(room,room.autoRecallContextText));
+    if(!items.length)throw new Error('아직 주입할 기억이 없습니다. 몇 턴 진행하거나 보조 AI를 연결해 기억을 만든 뒤 시작해 주세요.');
+    if(!filterItemsByInjectionCadence(room,items,0).length)throw new Error('현재 주입 설정에서 켜진 항목이 없습니다. 주입 설정 또는 선택 항목을 확인해 주세요.');
+    room.pending={messageId:'',originalText:'',contextBlock:'',items,policy:'stable-user-v1',baselineAssistantId:String(messageIdOf(frame.latest)||''),
+      sessionStartedAt:Date.now(),armedAt:Date.now(),turnStartUserId:frame.latestUserId,cadenceStartUserId:frame.latestUserId,cadenceTurn:0,nextCadenceTurn:0,verified:false,carrierRole:'assistant',cognitionOverrides:{include:[],exclude:[],changedAt:0,usedAt:0}};
+    for(const item of items){item.turnStartUserId=frame.latestUserId;item.usedTurns=0;}
+    await saveRoom(room);
+    await reconcileStableCarrier(room,'start',frame);
+    scheduleRecovery(APP.activePollMs);
+  };
+
 
   function restorePending(room, reason = 'manual') {
     const execute=()=>withCarrierOperation(room,async()=>{
@@ -15651,7 +15918,7 @@ async function convertTextToLoreEntries(sourceText, options = {}) {return await 
   if (W.__WISH_COGNITION_ENGINE__) return;
   Object.defineProperty(W, '__WISH_COGNITION_ENGINE__', { value: VERSION, configurable: true });
   WishHistory.install();
-  ContinuumHistoryMutation.install();
+  // continuum.20: unified install above includes both API families.
   const pageFetch = W.fetch.bind(W);
   const CFG_KEY = 'WISH_RP_cognition_settings_v1';
   let config = {
@@ -16212,6 +16479,15 @@ async function convertTextToLoreEntries(sourceText, options = {}) {return await 
       return auto.enabled!==false&&(auto.memoryEnabled!==false||auto.observeEnabled!==false)&&isAiAutomationReady(loadAiSettings());
     }catch(e){console.warn('[Wish] 전송 준비 필요 여부 확인 실패 · 기존 절차 사용',e);return true;}
   }
+
+const ContinuumSend20=(()=>{
+  const pending=new WeakMap();let synchronous=null;
+  function list(socket){let a=pending.get(socket);if(!a){a=[];pending.set(socket,a);}return a;}
+  const original=W.WebSocket.prototype.send;
+  W.WebSocket.prototype.send=function(data){const entry=synchronous||(pending.get(this)||[]).find(e=>e.data===data&&!e.settled);if(entry)entry.nativeCalled=true;try{const result=original.call(this,data);if(entry)entry.sent=true;return result;}catch(e){if(entry)entry.error=e;throw e;}};
+  return {list,get synchronous(){return synchronous;},set synchronous(v){synchronous=v;},remove(socket,entry){entry.settled=true;const a=pending.get(socket);if(a){const i=a.indexOf(entry);if(i>=0)a.splice(i,1);if(!a.length)pending.delete(socket);}},size(socket){return pending.get(socket)?.length||0;}};
+})();
+
   const previousSend = W.WebSocket.prototype.send;
   const sendPreparationQueues=new Map();
   W.WebSocket.prototype.send = function (data) {
@@ -16304,6 +16580,19 @@ async function convertTextToLoreEntries(sourceText, options = {}) {return await 
     sendPreparationQueues.set(rid,task);void task.finally(()=>{if(sendPreparationQueues.get(rid)===task)sendPreparationQueues.delete(rid);});
     return undefined;
   };
+
+
+const c20PreparedSend=W.WebSocket.prototype.send;
+W.WebSocket.prototype.send=function(data){
+  const parsed=parseFrame(data),rid=String(parsed?.payload?.chatId||''),room=state.currentRoom,ov=room?.pending?.cognitionOverrides;
+  const entry={data,sent:false,nativeCalled:false,settled:false,ov,usedAt:Number(ov?.usedAt||0)},before=sendPreparationQueues.get(rid),socket=this;
+  ContinuumSend20.list(socket).push(entry);const prior=ContinuumSend20.synchronous;ContinuumSend20.synchronous=entry;
+  let result;try{result=c20PreparedSend.call(socket,data);}catch(e){ContinuumSend20.remove(socket,entry);throw e;}finally{ContinuumSend20.synchronous=prior;}
+  const after=sendPreparationQueues.get(rid);
+  if(entry.nativeCalled||!after||after===before){ContinuumSend20.remove(socket,entry);return result;}
+  const settle=async()=>{try{if(!entry.sent){try{if(entry.ov&&room?.pending?.cognitionOverrides===entry.ov&&Number(entry.ov.usedAt||0)!==entry.usedAt){entry.ov.usedAt=entry.usedAt;await saveRoom(room);}}finally{WLOG.fail('메시지 전송 확인',entry.error||Error('메시지가 실제로 전송되지 않았습니다.'),{outcome:'send-not-sent'});}}}finally{ContinuumSend20.remove(socket,entry);}};
+  void after.then(settle,settle).catch(()=>{});return result;
+};
 
   async function refreshRoom() {
     const rid=currentChat();
@@ -20473,7 +20762,28 @@ function c19SafeApprovedDiff(ui,d){
 
  const c19Style=document.createElement("style");c19Style.textContent="#wish-rp-root .wp-sheet-md .m3-status>span,#wish-rp-root .m3-secondary-audit~.m3-status>span,#wish-rp-root .m3-dialog-body>.m3-status>span{font-size:14px!important;line-height:23px!important;font-weight:400!important;color:var(--m3-fg)!important}\n#wish-rp-root .wp-know .m3-krow>b,#wish-rp-root .wp-lr-t>b,#wish-rp-root .wp-ip-t>b,#wish-rp-root .m3-secondary-audit-name>b,#wish-rp-root .m3-secondary-audit-counts b,#wish-rp-root .m3-secondary-audit-available>b,#wish-rp-root .m3-secondary-audit-length b{font-size:14px!important;line-height:20px!important;font-weight:600!important;color:var(--m3-fg)!important}\n#wish-rp-root .wp-err-head>b,#wish-rp-root .m3-secondary-audit-head>b{font-size:15px!important;line-height:22px!important;font-weight:600!important;color:var(--m3-fg)!important}\n#wish-rp-root .wp-ip-label{font-size:13px!important;line-height:18px!important;font-weight:600!important;color:var(--m3-fg2)!important}\n#wish-rp-root .wp-err-meta>span,#wish-rp-root .m3-secondary-audit-length>span,#wish-rp-root .m3-secondary-audit-length i,#wish-rp-root .wp-ip-arrow,#wish-rp-root .m3-secondary-audit-columns>span{font-size:12px!important;line-height:18px!important;font-weight:400!important;color:var(--m3-fg2)!important}\n#wish-rp-root .wp-err-fix>summary>.wp-err-sum,#wish-rp-root .wp-sheet-md .m3-fold2>summary>b{font-size:14px!important;line-height:20px!important;font-weight:500!important;color:var(--m3-fg)!important}\n#wish-rp-root .wp-err-fix>summary>.wp-err-cat{font-size:12px!important;line-height:16px!important;font-weight:500!important;color:var(--m3-fg2)!important}\n/* 1.5.2 native classes: standards apply with either frame setting. */\n#wish-rp-root .m3-dialog-body>.m3-status>span b{font:inherit;color:inherit}\n#wish-rp-root .wp-ip-arrow{color:var(--m3-fg2)!important;font-style:normal}\n#wish-rp-root .m3-secondary-audit-length i{color:var(--m3-fg2)!important;font-style:normal}\n#wish-rp-root .wp-err-meta>span{color:var(--m3-fg2)!important}\n#wish-rp-root .m3-held-queue-item{padding-left:16px!important;grid-template-columns:44px minmax(0,1fr);column-gap:8px}\n#wish-rp-root .m3-held-queue-item>.m3-cbx{display:flex;align-items:center;justify-content:center;min-height:44px!important;min-width:44px;width:44px;height:44px;box-sizing:border-box;margin:0!important}\n#wish-rp-root .m3-held-queue-item>.m3-cbx>.m3-box{flex:0 0 18px;width:18px}\n#wish-rp-root :is(.wp-lr-t,.wp-ip-t,.wp-err-sum,.wp-know .m3-krow>b){min-width:0;overflow:hidden;text-overflow:ellipsis}\n#wish-rp-root :is(.wp-foot-l,.m3-native-footer-actions){min-width:0;flex-wrap:wrap}\n#wish-rp-root .wp-foot-l>.m3-btn:not(.m3-help),#wish-rp-root .m3-native-footer-actions>.m3-btn:not(.m3-help){min-height:44px}\n";document.head.append(c19Style);
 
-  return { sendButton:findSendAction, mountMonitor, boot, open, close, toggle: () => (S.open ? close() : open()), paint, toast, job, openSheet, closeSheet, confirm: ask, isOpen: () => S.open, ui };
+  
+const c20Wire=wire,c20Wired=new WeakSet();
+wire=function(host){
+  if(!c20Wired.has(host)){c20Wired.add(host);let gesture=null,ready=null;const pointers=new Set();
+    const backdrop=t=>t?.classList?.contains('m3-dialog')?t:null;
+    const selected=()=>String(window.getSelection?.()?.toString()||'').length>0;
+    host.addEventListener('pointerdown',e=>{pointers.add(e.pointerId);ready=null;const bg=backdrop(e.target);if(pointers.size!==1){if(gesture)gesture.blocked=true;return;}gesture=bg?{id:e.pointerId,bg,dialog:bg.dataset.dlg,x:e.clientX,y:e.clientY,blocked:selected()||e.isPrimary===false}:null;},true);
+    host.addEventListener('pointermove',e=>{if(gesture&&e.pointerId===gesture.id&&(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>6||selected()))gesture.blocked=true;},true);
+    host.addEventListener('scroll',()=>{if(gesture)gesture.blocked=true;ready=null;},true);
+    host.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);if(gesture)gesture.blocked=true;ready=null;},true);
+    host.addEventListener('pointerup',e=>{const bg=backdrop(e.target);ready=gesture&&pointers.size===1&&gesture.id===e.pointerId&&gesture.bg===bg&&gesture.dialog===bg?.dataset.dlg&&!gesture.blocked&&!selected()&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)<=6?{id:e.pointerId,bg}:null;pointers.delete(e.pointerId);gesture=null;},true);
+    host.addEventListener('click',e=>{const bg=backdrop(e.target);if(!bg)return;const ok=ready?.bg===bg&&(e.pointerId===undefined||e.pointerId<0||ready.id===e.pointerId)&&!selected();ready=null;if(!ok)e.stopImmediatePropagation();},true);
+    host.addEventListener('click',async e=>{const action=e.target.closest('[data-act="c20-external-import"]');if(!action)return;e.stopImmediatePropagation();const d=findDlg(action.dataset.dlg);if(!d||d.busy)return;d.busy=true;try{if(!d.draft.allowAppend)throw Error('추가된 RP를 남기고 적용하려면 체크를 선택하세요.');if(d.partial)await ExternalBundles.importData(d.room,d.raw,{allowAppend:true});else await R31.importData(d.room,d.raw,d.only,{allowAppend:true});d.busy=false;closeSheet(d);}catch(error){d.error=WLOG.inline('외부 JSON 원문 확인',error);}finally{d.busy=false;paint();}},true);
+  }
+  return c20Wire(host);
+};
+DLG.c20ExternalSource=function(d){return sheet(d,{title:'외부 JSON 원문 확인',body:`<div class="m3-note">JSON을 만든 뒤 RP가 진행됐습니다. 기존 원문이 같은지 확인한 뒤, 추가된 RP는 다음 갱신에 남길 수 있습니다.</div><label class="m3-check c20-append"><input type="checkbox" data-bind="${D(d,'allowAppend')}" ${d.draft.allowAppend?'checked':''}><span>추가된 RP는 다음 갱신으로 남기고 적용</span></label>${d.error?`<div class="m3-note">${esc(d.error)}</div>`:''}`,foot:`${closeBtn(d,'취소')}<button class="m3-btn" data-act="c20-external-import" data-dlg="${esc(d.id)}">원문 확인</button>`});};
+const c20ReviewView=DLG.relationshipReview;
+DLG.relationshipReview=function(d){const html=c20ReviewView(d);if(!d.c20External)return html;const t=document.createElement('template');t.innerHTML=html;const body=t.content.querySelector('.m3-dialog-body');if(body){const box=document.createElement('div');box.className='c20-source-choice';box.innerHTML=`<label class="m3-check c20-append"><input type="checkbox" data-bind="${D(d,'allowAppend')}" ${d.draft.allowAppend?'checked':''}><span>추가된 RP는 다음 갱신으로 남기고 적용</span></label>`;body.prepend(box);}return t.innerHTML;};
+const c20Style=document.createElement('style');c20Style.textContent='#wish-rp-root .c20-append{display:flex;gap:8px;align-items:center;min-height:44px;color:var(--m3-fg2);font-size:14px;line-height:23px}#wish-rp-root .c20-append input{min-width:44px;min-height:44px}#wish-rp-root .c20-source-choice{margin-bottom:12px}';document.head.append(c20Style);
+
+return { sendButton:findSendAction, mountMonitor, boot, open, close, toggle: () => (S.open ? close() : open()), paint, toast, job, openSheet, closeSheet, confirm: ask, isOpen: () => S.open, ui };
 }
   const WishHeldUI=(()=>{
     const cache=new Map(),pending=new Map(),limits=new Map();
