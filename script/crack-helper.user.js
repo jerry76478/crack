@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🧰 크랙 도우미
 // @namespace    https://crack.wrtn.ai/
-// @version      1.1.14
+// @version      1.1.15
 // @description  크랙 장기기억 편집·AI 요약, ChatGPT 도우미(질문·조언·유저노트·로어), RP 로그 내보내기, WRMC OOC 만들기를 한 창에서
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-helper.user.js
@@ -48,7 +48,7 @@
  * 따로 가지고 있던 인증·채팅 ID·크랙 API·WRMC 블록 제거·저장소를 한곳에 둔다.
  * ===================================================================== */
 const CH = (() => {
-    const VERSION = '1.1.14';
+    const VERSION = '1.1.15';
     const NAME = '크랙 도우미';
     const isCrack = location.hostname === 'crack.wrtn.ai';
     const isChatGPT = location.hostname === 'chatgpt.com';
@@ -11275,6 +11275,7 @@ const CGC = (function (CH) {
 
     const PROMPT_REVISION = 20;
     const BRIDGE_REVISION = 42; // Completion-beacon monitoring and routing/reset safety require the same bridge on both pages.
+    const BOOTSTRAP_GRACE_MS = 180000;
     const MAX_INLINE_COMPOSER_CHARS = 18256; // Safety cap for the short file instruction and job marker, never a TXT routing threshold.
     // v1.2.7: 이보다 큰 GPT 입력창은 innerText(전체 레이아웃 강제)로 읽지 않고, 대용량 잔존 내용으로 판단한다.
     const CGC_COMPOSER_HEAVY_CHARS = 60000;
@@ -11738,6 +11739,15 @@ const CGC = (function (CH) {
         return failed;
     }
 
+    async function cgcEntryAck() {
+        if(!isChatGPT)return;
+        let jobId=CGC_EARLY_JOB_MARKER;
+        try{for(const key of [CHATGPT_SESSION_JOB_KEY,CHATGPT_IOS_MANUAL_JOB_KEY])if(!jobId)jobId=cleanText(sessionStorage.getItem(key)||'');}catch{}
+        if(!jobId)return;
+        writeValue(KEY.progress,{nonce:uid('early-boot'),jobId,phase:'script-start',message:'GPT 작업 확인 · 초기화 중',at:Date.now()});
+        await flushStorageWrites();
+    }
+
     async function bootstrapStorage() {
         // A receipt here means only that this document found the job, never that it submitted it.
         // Publish it before settings, tab registration, or large payload reads can delay startup.
@@ -11759,7 +11769,10 @@ const CGC = (function (CH) {
         if(!CGC_ASYNC_GM_STORAGE)return;
         // Only small/essential records are allowed to delay UI boot. Large lore/TXT chunks warm later.
         const failed=await hydrateAsyncStorageKeys(Object.values(KEY),1400);
-        const criticalFailed=failed.filter(key=>key===KEY.settings||key===KEY.state);
+        let criticalFailed=failed.filter(key=>key===KEY.settings||key===KEY.state);
+        // Slow Safari GM reads must finish before defaults or recovery consume the mirror.
+        // Reuse the reference's five-second background warm window for these existing keys only.
+        if(criticalFailed.length)criticalFailed=await hydrateAsyncStorageKeys(criticalFailed,5000);
         const immediate=new Set();
         if(CGC_EARLY_JOB_MARKER)immediate.add(CGC_EARLY_JOB_MARKER);
         try{for(const key of [CHATGPT_SESSION_JOB_KEY,CHATGPT_IOS_MANUAL_JOB_KEY]){const id=cleanText(sessionStorage.getItem(key)||'');if(id)immediate.add(id);}}catch{}
@@ -18076,7 +18089,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const progress=readValue(KEY.progress,null); if(progress?.jobId===jobId)return;
                 this.setInlineStatus('GPT 시작 대기',true);
                 this.updatePanelStatus('ChatGPT 로딩이 지연되고 있어요. 작업은 유지됩니다. 열린 GPT 창을 확인해 주세요. 새 요청을 중복 전송하지 않습니다.',true);
-            },20000);
+            },BOOTSTRAP_GRACE_MS);
 
             // progress까지 받은 뒤 ChatGPT 탭이 닫히거나 UI가 멈춘 경우도 영구 pending으로 남기지 않는다.
             // TXT fallback의 최악 경로보다 넉넉한 5분을 두고, ACK/error가 없으면 자동 미전송 복구한다.
@@ -21178,6 +21191,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             // background while its toolbar observer waits for a genuine composer mount point.
             if(isChatGPT){
                 CgcStartup.mark('entry',{hasJob:Boolean(CGC_EARLY_JOB_MARKER),documentState:document.readyState});
+                await cgcEntryAck();
                 if(!await CgcStartup.waitUntilHostReady())return;
                 CgcStartup.active=true;
                 CgcStartup.mark('storage-start');
