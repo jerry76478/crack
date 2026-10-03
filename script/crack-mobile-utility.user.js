@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.6.0.1
+// @version      4.6.0.2
 // @description  4.6.0: 입력창 아래 버튼 개별 숨기기, 9/30 크랙 개편 대응(분기 방 배지·전송 감지·초안 정리·캐릭터 채팅·유저노트 길게 눌러 선택), 긴 방·홈·방 이동 반복 작업과 메모리 누수 최적화, 라디오존데 복구(CDN 직접 조회·신규 모델 자동 추가·GM.xmlHttpRequest 호환)와 줄 간격 고정, 미니사이드바 문체 변경, 정보바 숫자 애니메이션, 전체화면·입력창 펼치기 SVG 아이콘. 허브 SVG 복원, 모델 맨 왼쪽 배치 및 전환 버튼 간격 수정. 미니사이드바 다크/라이트·소설/채팅 전환. 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
@@ -32,7 +32,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.6.0.1';
+    const VERSION = '4.6.0.2';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -2106,6 +2106,15 @@
       color-scheme: dark;
     }
 
+
+    /* 4.6.0.2 우리 색: 크랙 주황 + 미색(밝음) / 먹색(어두움) — WRMC 새 화면과 같은 색표.
+       원본 토큰 블록은 그대로 두고, 같은 선택자를 뒤에 다시 써서 색 값만 덮는다. */
+    #cmu-settings-panel, #cmu-settings-scrim { --bg:#F6F3EF;--card:#FFFEFC;--cardh:#F1EEE9;--tx:#242424;--sub:#606060;--bd:#E1DCD5;--icobg:#F1EEE9;--ac:#FF4431;--acf:#BF3322;--acbg:#FFF0E9;--pbg:rgba(246,243,239,.97);--indbg:#FFFEFC; }
+    @media (prefers-color-scheme: dark) { #cmu-settings-panel, #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; } }
+    html[data-theme="dark"] #cmu-settings-panel, html[data-theme="dark"] #cmu-settings-scrim, body[data-theme="dark"] #cmu-settings-panel, body[data-theme="dark"] #cmu-settings-scrim, html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; }
+    html[data-theme="light"] #cmu-settings-panel, html[data-theme="light"] #cmu-settings-scrim, body[data-theme="light"] #cmu-settings-panel, body[data-theme="light"] #cmu-settings-scrim, html[data-cmu-theme="light"] #cmu-settings-panel, html[data-cmu-theme="light"] #cmu-settings-scrim { --bg:#F6F3EF;--card:#FFFEFC;--cardh:#F1EEE9;--tx:#242424;--sub:#606060;--bd:#E1DCD5;--icobg:#F1EEE9;--ac:#FF4431;--acf:#BF3322;--acbg:#FFF0E9;--pbg:rgba(246,243,239,.97);--indbg:#FFFEFC; }
+    html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; }
+
     /* 뒤 배경 어둡게 — 클릭은 통과(pointer-events:none)라서 바깥 터치로 닫기 동작은 기존과 같다 */
     #cmu-settings-scrim {
       position: fixed;
@@ -2947,10 +2956,10 @@
       overflow-y: auto;
       box-sizing: border-box;
       padding: 5px;
-      border: 1px solid rgba(255,255,255,.18);
+      border: 1px solid #48413A;
       border-radius: 11px;
-      background: rgba(28,28,30,.97);
-      color: rgba(255,255,255,.9);
+      background: rgba(36,33,30,.97);
+      color: #ECECEC;
       box-shadow: 0 12px 34px rgba(0,0,0,.48);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -2979,8 +2988,8 @@
       transform: none;
     }
     #cmu-compact-model-menu button.is-selected {
-      background: rgba(255,255,255,.14);
-      color: #fff;
+      background: #3D2922;
+      color: #ECECEC;
     }
     #cmu-compact-model-menu .cmu-compact-model-icon {
       display: inline-flex;
@@ -3010,23 +3019,25 @@
     #cmu-compact-model-menu .cmu-compact-model-check {
       flex: 0 0 12px;
       width: 12px;
-      color: #8fd69c;
+      color: #FF9B88;
       font-size: 13px;
       font-weight: 900;
       text-align: center;
     }
     body[data-theme="light"] #cmu-compact-model-menu,
     html[data-theme="light"] #cmu-compact-model-menu {
-      border-color: rgba(0,0,0,.16);
-      background: rgba(255,255,255,.98);
-      color: rgba(0,0,0,.76);
+      border-color: #E1DCD5;
+      background: rgba(255,254,252,.98);
+      color: #242424;
       box-shadow: 0 12px 34px rgba(0,0,0,.22);
     }
     body[data-theme="light"] #cmu-compact-model-menu button.is-selected,
     html[data-theme="light"] #cmu-compact-model-menu button.is-selected {
-      background: rgba(0,0,0,.09);
-      color: rgba(0,0,0,.9);
+      background: #FFF0E9;
+      color: #242424;
     }
+    body[data-theme="light"] #cmu-compact-model-menu .cmu-compact-model-check,
+    html[data-theme="light"] #cmu-compact-model-menu .cmu-compact-model-check { color: #BF3322; }
 
 
     /* 4.3.0.8: 원본 행 직접 선택은 유지하고, 모델 팝업만 더 작고 단일 박스로 정리. */
