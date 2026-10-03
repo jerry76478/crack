@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🧰 크랙 도우미
 // @namespace    https://crack.wrtn.ai/
-// @version      1.1.15
+// @version      1.1.16
 // @description  크랙 장기기억 편집·AI 요약, ChatGPT 도우미(질문·조언·유저노트·로어), RP 로그 내보내기, WRMC OOC 만들기를 한 창에서
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-helper.user.js
@@ -48,7 +48,7 @@
  * 따로 가지고 있던 인증·채팅 ID·크랙 API·WRMC 블록 제거·저장소를 한곳에 둔다.
  * ===================================================================== */
 const CH = (() => {
-    const VERSION = '1.1.15';
+    const VERSION = '1.1.16';
     const NAME = '크랙 도우미';
     const isCrack = location.hostname === 'crack.wrtn.ai';
     const isChatGPT = location.hostname === 'chatgpt.com';
@@ -880,6 +880,54 @@ CH.frame=(()=>{
  const all=outer.querySelector('[data-a-act="correct-all"]'),result=items[0]?.closest('.ch-card');if(result){const first=result.querySelector('h3');first.textContent='방금 답변';const counts=make('<div class="ch-frame-counts"></div>');for(const [grade,n]of Object.entries(totals))counts.append(make('<span class="ch-chip" data-grade="'+grade+'">'+grade+' '+n+'</span>'));first.after(counts);outer.prepend(result);}const body=make('<div class="ch-frame-body"></div>');body.append(...outer.childNodes);outer.append(body);if(all){all.classList.add('key');all.textContent='전체 문제로 OOC 초안';const foot=make('<footer class="ch-sticky ch-frame-actions"><div class="ch-acts"></div></footer>');foot.firstChild.append(all,make('<button class="ch-btn" data-a-act="A">다시 검수</button>'));outer.append(foot);}return t.innerHTML;}
  sync();
  return {enabled,sync,icon,labels,chrome,apply,fit,save,fold,render,ooc,auditView};
+})();
+
+/* Companion 1.5.3 frame: transform HTML before painting; native renderer bodies stay intact. */
+CH.companionFrame=(()=>{
+ const css="/* Uses the helper palette. No native hologram, compass, resize surface or animation. */\n#ch-root .cgc-embedded{position:relative;inset:auto;display:flex!important;flex:1;min-height:0;width:100%;height:100%;padding:0;background:transparent;backdrop-filter:none}\n#ch-root .ch-cgc153.cgc-panel{position:relative!important;inset:auto!important;display:flex;flex-direction:column;flex:1;width:100%!important;height:100%!important;max-width:none;max-height:none;min-height:0;padding:0;border:0;border-radius:0;background:var(--ch-bg);color:var(--ch-tx);box-shadow:none;font:14px/23px system-ui,sans-serif}\n#ch-root .ch-cgc153 *,#ch-root .ch-cgc153 *::before,#ch-root .ch-cgc153 *::after{box-sizing:border-box;animation:none!important;transition:none!important}\n#ch-root .ch-cgc153 [hidden]{display:none!important}\n#ch-root .ch-cgc153 .col{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0}\n#ch-root .ch-cgc153 .sc{flex:1;min-height:0;overflow:auto;padding:16px;overscroll-behavior:contain}\n#ch-root .ch-cgc153 :is(.hd,.tabs,.foot){flex:none;background:var(--ch-sheet)}\n#ch-root .ch-cgc153 .hd{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--ch-line)}\n#ch-root .ch-cgc153 .hd .t{display:flex;flex:1;min-width:0;flex-direction:column}\n#ch-root .ch-cgc153 b{font-weight:inherit}\n#ch-root .ch-cgc153 .hd .t>b{font-size:18px;line-height:26px;font-weight:600}\n#ch-root .ch-cgc153 #cgc-ui-room{color:var(--ch-sub);font-size:12px;line-height:18px;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}\n/* New native controls use multiple class families; this scoped fallback preserves the help exception. */\n#ch-root .ch-cgc153 button:not(.ch-help),#ch-root .ch-cgc153 .st-open{min-height:44px;min-width:44px;max-width:100%;font:500 14px/20px system-ui,sans-serif;border:1px solid var(--ch-line);border-radius:10px;color:var(--ch-tx);background:var(--ch-card);padding:8px 12px;white-space:normal;overflow-wrap:anywhere;cursor:pointer}\n#ch-root .ch-cgc153 button:disabled{opacity:.55;cursor:default}\n#ch-root .ch-cgc153 :is(.btn.key,.on,.tag.on,.ck.on){background:var(--ch-brs);color:var(--ch-br);border-color:var(--ch-br)}\n#ch-root .ch-cgc153 :is(.danger,.warn){color:var(--ch-danger)}\n#ch-root .ch-cgc153 svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7}\n#ch-root .ch-cgc153 :is(.lead,.help,.hint,.hint-text,.desc,.stx>span,.tag,.empty>span){font-size:12px;line-height:18px;color:var(--ch-sub);font-weight:400;overflow-wrap:anywhere}\n#ch-root .ch-cgc153 :is(h2,h3){font-size:15px;line-height:22px;font-weight:600;margin:0 0 12px}\n#ch-root .ch-cgc153 h2{font-size:20px;line-height:28px}\n#ch-root .ch-cgc153 h4{font-size:13px;line-height:18px;font-weight:600;margin:0 0 12px}\n#ch-root .ch-cgc153 .chip{font-size:12px;line-height:16px;font-weight:500;color:var(--ch-sub)}\n#ch-root .ch-cgc153 :is(.job,.sbox,.sgroup,.ch-cgc-summary,.ch-cgc-note,.empty){background:var(--ch-card);border:1px solid var(--ch-line);border-radius:14px;padding:16px;margin-bottom:12px;min-width:0}\n#ch-root .ch-cgc153 :is(.row-hd,.btns,.ac,.srow,.st-tools,.st-foot,.ch-cgc-links,.ch-cgc-note){display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}\n#ch-root .ch-cgc153 .row-hd{flex-wrap:nowrap}\n#ch-root .ch-cgc153 .job-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;padding:0;border:0;background:transparent}\n#ch-root .ch-cgc153 .job-main .a{flex:1;min-width:0;font-size:15px;line-height:22px;font-weight:600}\n#ch-root .ch-cgc153 .job-main .chip{max-width:90px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}\n#ch-root .ch-cgc153 .job-main .caret{width:16px;height:16px}\n#ch-root .ch-cgc153 .row-bd{padding-top:12px;border-top:1px solid var(--ch-hair);margin-top:12px}\n#ch-root .ch-cgc153 :is(.btns,.ac,.ch-cgc-links){margin-top:12px;align-items:stretch}\n#ch-root .ch-cgc153 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}\n#ch-root .ch-cgc153 :is(input:not([type=hidden]):not([type=checkbox]):not([type=file]),select,textarea){width:100%;min-width:0;min-height:44px;max-width:100%;border:1px solid var(--ch-line);border-radius:10px;padding:10px;background:var(--ch-card2);color:var(--ch-tx);font:400 14px/20px system-ui,sans-serif}\n#ch-root .ch-cgc153 textarea{resize:vertical;min-height:90px}\n#ch-root .ch-cgc153 :is(.fld,.urlfield){display:flex;flex-direction:column;gap:8px;margin-bottom:12px;min-width:0}\n#ch-root .ch-cgc153 .fld>span,#ch-root .ch-cgc153 .urlfield>span{font-size:12px;line-height:18px;color:var(--ch-sub)}\n#ch-root .ch-cgc153 .seg{display:flex;flex-wrap:wrap;gap:8px;min-width:0}\n#ch-root .ch-cgc153 .seg-ind,#ch-root .ch-cgc153 .nseg-ind{display:none}\n#ch-root .ch-cgc153 .seg>button{flex:1;min-width:44px}\n#ch-root .ch-cgc153 .srow{justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--ch-hair)}\n#ch-root .ch-cgc153 .srow:last-child{border-bottom:0}\n#ch-root .ch-cgc153 .stx{display:flex;flex:1;min-width:0;flex-direction:column;text-align:left}\n#ch-root .ch-cgc153 .step{display:flex;gap:4px;align-items:center}\n#ch-root .ch-cgc153 .step>input{width:78px!important;text-align:center;font-variant-numeric:tabular-nums}\n#ch-root .ch-cgc153 .step>button{padding:8px;flex:none}\n#ch-root .ch-cgc153 .tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--ch-line);padding:0;min-height:56px;gap:0}\n#ch-root .ch-cgc153 .tabs>button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;line-height:16px;border:0;border-bottom:2px solid transparent;border-radius:0;padding:4px 1px;background:transparent;overflow:hidden}\n#ch-root .ch-cgc153 .tabs>button.on{color:var(--ch-br);border-bottom-color:var(--ch-br)}\n#ch-root .ch-cgc153 .tabs>button span{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}\n#ch-root .ch-cgc153 .foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--ch-line)}\n#ch-root .ch-cgc153 .foot>button{flex:1}\n#ch-root .ch-cgc153 .st-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}\n#ch-root .ch-cgc153 .st-sum>div{display:flex;flex-direction:column;min-width:0;background:var(--ch-card2);padding:12px;border-radius:10px}\n#ch-root .ch-cgc153 .st-sum b{font-size:14px;line-height:23px;font-weight:400;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}\n#ch-root .ch-cgc153 :is(.st-sum span,.st-sum small,.st-legend,.st-t>span,.st-cur){font-size:12px;line-height:18px;color:var(--ch-sub)}\n#ch-root .ch-cgc153 .st-bar{display:flex;height:8px;background:var(--ch-line);border-radius:4px;overflow:hidden}\n#ch-root .ch-cgc153 .b-room{background:var(--ch-br)}\n#ch-root .ch-cgc153 .b-prompt{background:var(--ch-ok)}\n#ch-root .ch-cgc153 .b-set{background:var(--ch-sub)}\n#ch-root .ch-cgc153 .st-legend{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}\n#ch-root .ch-cgc153 .st-row{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;padding:12px 0;border-bottom:1px solid var(--ch-line);align-items:center}\n#ch-root .ch-cgc153 .st-row :is(.st-t,.st-size){grid-column:2;min-width:0}\n#ch-root .ch-cgc153 .st-row .st-t{grid-row:1;text-align:left;border:0;background:transparent;padding:0;display:flex;flex-direction:column}\n#ch-root .ch-cgc153 .st-t b{display:flex;flex-wrap:wrap;gap:8px;min-width:0;width:100%}\n#ch-root .ch-cgc153 .st-t b>span{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;max-width:100%}\n#ch-root .ch-cgc153 .st-row .ck{grid-column:1;grid-row:1;padding:8px}\n#ch-root .ch-cgc153 .st-row .st-del{grid-column:3;grid-row:1;padding:8px}\n#ch-root .ch-cgc153 .st-open{grid-column:2;text-align:center;text-decoration:none;display:block}\n#ch-root .ch-cgc153 .st-foot>button{flex:1}\n#ch-root .ch-cgc153 :is(.faq summary,.switch-control){min-height:44px}\n#ch-root .ch-cgc153 .switch-control{display:flex;align-items:center;justify-content:center;min-width:44px;flex:none}\n#ch-root .ch-cgc153 .faq summary{padding:12px 0;font-size:14px;line-height:23px;cursor:pointer}\n#ch-root .ch-cgc153 .faq .faq-a{font-size:12px;line-height:18px;color:var(--ch-sub);padding-bottom:12px;overflow-wrap:anywhere}\n#ch-root .ch-cgc153 .x-over{position:absolute;inset:0;z-index:5;background:var(--ch-bg);display:flex;flex-direction:column}\n#ch-root .ch-cgc153 .x-over-hd{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--ch-sheet);flex:none}\n#ch-root .ch-cgc153 .x-over-bd{flex:1;min-height:0;overflow:auto;padding:16px}\n#ch-root .ch-cgc153 .x-over-bd>.lead{font-size:14px;line-height:23px}\n#ch-root .ch-cgc153 :is(pre,.source-preview){white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;font:400 14px/23px system-ui,sans-serif}\n#ch-root .ch-cgc153 .cgc-file-hidden{display:none}\n#ch-root .ch-cgc153 .ch-cgc-note>span{flex:1;min-width:0;font-size:12px;line-height:18px;color:var(--ch-sub)}\n#ch-root .ch-cgc153 .sgroup{padding:0;border:0;background:transparent}\n#ch-root .ch-cgc153 .ch-cgc-preset{display:flex;flex-direction:column;gap:8px;width:100%}\n#ch-root .ch-cgc153 :is(.fld>span,.urlfield>span){font-size:14px;line-height:23px;color:var(--ch-tx)}\n#ch-root .ch-cgc153 :is(.tarow small,.fld>small){font-size:12px;line-height:18px;color:var(--ch-sub)}\n#ch-root .ch-cgc153 .cgc-task-sources{display:flex;flex-direction:column;gap:8px;min-width:0}\n#ch-root .ch-cgc153 .cgc-task-source{display:flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:8px;border:1px solid var(--ch-line);border-radius:10px;font-size:14px;line-height:23px;overflow-wrap:anywhere}\n#ch-root .ch-cgc153 .cgc-task-source input{width:20px;height:20px;flex:none}\n",nativeDocument=window.document,stats={panels:0,missing:[],effects:0};let engine,building=false;
+ function style(){if(nativeDocument.getElementById('ch-companion153-style'))return;const parent=nativeDocument.head||nativeDocument.documentElement;if(!parent){nativeDocument.addEventListener('DOMContentLoaded',style,{once:true});return;}const s=nativeDocument.createElement('style');s.id='ch-companion153-style';s.textContent=css;parent.append(s);}
+ function html(value,element){if(typeof value!=='string'||!value.includes('<'))return value;
+  const initial=value.includes('class="cgc-panel cgp"'),settings=element?.id==='cgc-settings-content',data=element?.id==='cgc-data-preview',history=['cgc-result-history','cgc-transmission-history'].includes(element?.id);if(!initial&&!settings&&!data&&!history)return value;
+  const t=nativeDocument.createElement('template');t.innerHTML=value;
+  if(initial){
+   const p=t.content.querySelector('.cgc-panel');if(!p)return value;p.classList.add('ch-cgc153');p.setAttribute('aria-modal','false');stats.panels++;
+   for(const sel of ['[data-work-row="qa"]','[data-work-row="usernote"]','[data-work-row="lore"]','#cgc-settings-content','.tabs'])if(!p.querySelector(sel))stats.missing.push(sel);
+   p.querySelectorAll('.dx-wash,.dx-grain,.dx-scan,.cgc-grip,.cgc-size,.p-micro,.p-gptag,.p-idx,.t-no,.x-ind,.hd [data-action="close"]').forEach(e=>e.remove());t.content.querySelector('.cgc-back')?.remove();
+   const hero=p.querySelector('#cgc-work-hero');if(hero){hero.className='ch-cgc-summary';hero.innerHTML='<b id="cgc-hero-k">GPT 작업</b><p id="cgc-hero-sub">보내기와 결과 상태를 아래 작업에서 확인해요.</p><div class="btns" id="cgc-hero-acts" hidden></div><div class="ch-cgc-links"><button class="btn" data-ui-action="settings-view" data-view="storage">저장된 데이터</button><button class="btn" data-ui-action="settings-view" data-view="troubleshooting">문제 해결</button></div>';}
+   const qa=p.querySelector('[data-work-row="qa"]');if(qa){const a=qa.cloneNode(true);a.dataset.workRow='advisor';a.querySelectorAll('[data-row]').forEach(e=>e.dataset.row='advisor');a.querySelectorAll('[data-work-quick]').forEach(e=>e.dataset.workQuick='advisor');a.querySelectorAll('[data-work-tag]').forEach(e=>e.dataset.workTag='advisor');a.querySelectorAll('[data-work-desc]').forEach(e=>{e.dataset.workDesc='advisor';e.textContent='다음 장면을 어떻게 이어갈지 GPT에게 조언 받기';});a.querySelectorAll('[data-work-actions]').forEach(e=>e.dataset.workActions='advisor');a.querySelectorAll('[data-work-run]').forEach(e=>{e.dataset.workRun='advisor';e.dataset.action='advisor';e.textContent='조언 받기';});a.querySelectorAll('[data-slot]').forEach(e=>e.dataset.slot='advisor');a.querySelector('.a').textContent='RP 조언';const field=a.querySelector('#cgc-question');if(field){field.id='cgc-advisor-question';field.placeholder='예: 다음 장면에서 화해하려면 어떻게 하면 좋을까?';}const label=a.querySelector('[for="cgc-question"]');if(label){label.htmlFor='cgc-advisor-question';label.textContent='조언받고 싶은 내용';}a.querySelector('#cgc-question-area')?.setAttribute('id','cgc-advisor-area');qa.after(a);}
+   p.querySelectorAll('[data-work-row="audit"],[data-work-row="memory1"],[data-work-row="memory2"]').forEach(e=>e.remove());
+   const work=p.querySelector('[data-view="work"]');if(work){const note=nativeDocument.createElement('div');note.className='ch-cgc-note';note.innerHTML='<span>장기기억 1차·2차는 장기기억 탭에서 실행해요.</span><button class="btn" data-ch-open-tab="memory">장기기억 탭</button>';work.insertBefore(note,work.querySelector('#cgc-work-list')||work.querySelector('.list'));}
+   const tab=p.querySelector('[data-tab="settings"] span');if(tab)tab.textContent='GPT 설정';
+  }
+  if(settings&&engine?.editingPromptKey==='advisorPrompt'&&!t.content.querySelector('[data-task-source-list]')){const s=nativeDocument.createElement('section');s.className='sgroup';s.innerHTML='<h4>사용할 참고자료</h4><div class="cgc-task-sources" data-task-source-list="advisor"></div>';t.content.append(s);}
+  if(settings){t.content.querySelectorAll('h4').forEach(e=>{e.classList.add('grp-title');if(e.textContent==='검사와 로어')e.textContent='로그 확인과 로어';});t.content.querySelectorAll('.help b').forEach(e=>{if(e.textContent==='검사·질문')e.textContent='질문·RP 조언';});t.content.querySelectorAll('.ver').forEach(e=>e.textContent='AI 컴패니언 '+e.textContent+' · 크랙 도우미 v'+CH.VERSION);t.content.querySelector('#cgc-island-notices')?.closest('.srow')?.remove();}
+  if(settings)t.content.querySelectorAll('.lead,.help,.stx>span,.tag,.st-sum span,.st-sum small,.st-legend,.st-t>span,.st-cur,.empty>span,.faq-a').forEach(e=>e.classList.add('ch-sub'));
+  if(history)t.content.querySelectorAll('.empty>span').forEach(e=>e.classList.add('ch-sub'));
+  if(initial||data){t.content.querySelectorAll('[data-ui-seg="cgc-preview-slot"][data-value="audit"]').forEach(e=>{e.dataset.value='advisor';e.textContent='조언';});t.content.querySelectorAll('input#cgc-preview-slot').forEach(e=>{if(e.value==='audit')e.value='advisor';});}
+  return t.innerHTML;
+ }
+ const decorated=new WeakSet();
+ function decorate(el){if(!(el instanceof window.HTMLElement)||el.tagName==='TEMPLATE'||decorated.has(el))return el;decorated.add(el);const descriptor=Object.getOwnPropertyDescriptor(window.Element.prototype,'innerHTML');Object.defineProperty(el,'innerHTML',{configurable:true,get(){return descriptor.get.call(this);},set(value){descriptor.set.call(this,html(value,this));for(const child of this.querySelectorAll('*'))decorate(child);}});if(el.id==='cgc-preview-slot'&&el instanceof window.HTMLInputElement){const v=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value');Object.defineProperty(el,'value',{configurable:true,get(){return v.get.call(this);},set(value){v.set.call(this,value==='audit'&&engine?.referenceStatusSlot==='advisor'?'advisor':value);}});}return el;}
+ function documentView(doc){return new Proxy(doc,{get(target,key){if(key==='createElement')return (...args)=>decorate(target.createElement(...args));if(key==='body'&&building&&target.body)return new Proxy(target.body,{get(body,prop){if(prop==='appendChild')return node=>{if(node?.classList?.contains('cgc-overlay')){CH.helperMount(node);return node;}return body.appendChild(node);};const v=Reflect.get(body,prop,body);return typeof v==='function'?v.bind(body):v;}});const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});}
+ function bind(N){const G=engine=N.CrackUI;G.WORK_ROWS=Object.freeze(['qa','advisor','usernote','lore']);G.WORK_LABEL=Object.freeze({...G.WORK_LABEL,advisor:['RP 조언','다음 장면을 어떻게 이어갈지 GPT에게 조언 받기']});G.WORK_ICON=Object.freeze({...G.WORK_ICON,advisor:'ask'});
+  G.placeLauncher=function(){const r=N.CrackAdapter.getRouteInfo();this.launcherSessionKey=r?.sessionKey||'';};G.installLauncherObserver=()=>{};G.refreshLauncherNativeStyle=()=>{};
+  G.injectStyles=style;G.ensurePanelStyles=style;G.installMobileViewportSupport=()=>{};G.installPanelMovement=()=>{};G.applyPanelGeometry=()=>{};G.desktopPanelEnabled=()=>false;G.startPanelClock=()=>{};G.stopPanelClock=()=>{};G.placeTabIndicator=()=>{};
+  G.setInlineStatus=function(text='',working=false){this.inlineText=working?String(text||''):'';this.inlineWorking=Boolean(working);if(working)this.reconcileIdleUntil=0;CH.shell.setBusy('gpt',working?(text||'GPT 작업 중'):'');};
+  G.toast=(message,error=false)=>CH.ui.toast(message,error?'error':'info',4300);
+  G.uiPresetControl=value=>'<div class="nseg ch-cgc-preset"><input type="hidden" id="cgc-policy-preset" value="'+CH.ui.esc(value||'recommended')+'">'+[['recommended','이어보내기'],['full','전체 · 같은 대화'],['fresh','전체 · 새 대화']].map(([v,label])=>'<button type="button" data-ui-nseg="'+v+'" aria-pressed="'+String(v===value)+'" class="'+(v===value?'on':'')+'">'+label+'</button>').join('')+'</div>';
+  for(const key of Object.keys(N.CgcEcho))if(typeof N.CgcEcho[key]==='function')N.CgcEcho[key]=()=>{};
+  for(const key of Object.keys(N.CgcIsland))if(typeof N.CgcIsland[key]==='function')N.CgcIsland[key]=()=>false;
+  N.CgcIsland.notify=event=>{if(!event||N.getSettings().islandNotices===false||nativeDocument.visibilityState==='hidden')return false;CH.ui.toast([event.title,event.sub].filter(Boolean).join(' · '),event.kind==='att'?'error':'info',6000);return true;};
+  const originalBuild=G.buildPanel;G.buildPanel=function(...args){let result;building=true;try{result=originalBuild.apply(this,args);}finally{building=false;}this.panel?.classList.add('cgc-embedded');this.panel?.addEventListener('click',e=>{if(e.target===this.panel)e.stopImmediatePropagation();},true);this.panel?.addEventListener('click',e=>{const button=e.target.closest('[data-action="advisor"]');if(button){const q=this.panel.querySelector('#cgc-advisor-question')?.value||'';if(q.trim())void this.startTool('advisor',q);else this.toast('조언받고 싶은 내용을 먼저 적어 주세요.',true);}});return result;};
+  const originalRefresh=G.refreshPanel;G.refreshPanel=function(...args){if(!CH.shell.isTabVisible('helper'))return;return originalRefresh.apply(this,args);};
+  const originalCounts=G.refreshHomeCounts;G.refreshHomeCounts=async function(...args){const result=await originalCounts.apply(this,args);this.dashUnsentCount=null;this.heroSubText='질문·조언·유저노트·로어 결과는 각 작업에서 확인해요.';this.lastPanelStamp='';this.refreshPanel();return result;};
+  const originalHero=G.renderHero;G.renderHero=function(...args){const result=originalHero.apply(this,args),hero=this.panel?.querySelector('#cgc-work-hero');if(hero&&!hero.classList.contains('att')&&!hero.classList.contains('run')){const title=hero.querySelector('#cgc-hero-k');if(title)title.textContent='GPT 작업';}return result;};
+  const originalQuick=G.setQuickAction;G.setQuickAction=function(button,id,status,pending){originalQuick.call(this,button,id,status,pending);if(id==='advisor'&&!pending&&status.kind!=='run'&&status.kind!=='att'){button.removeAttribute('data-action');button.dataset.uiAction='row';button.dataset.row='advisor';}};
+  const originalHide=G.hidePanel;G.hidePanel=function(...args){const result=originalHide.apply(this,args);CH.shell.close();return result;};
+  const originalClick=G.handleUiClick;G.handleUiClick=function(e){const preset=e.target.closest('.ch-cgc-preset [data-ui-nseg]');if(preset){const value=preset.dataset.uiNseg,group=preset.closest('.ch-cgc-preset');group.querySelector('#cgc-policy-preset').value=value;group.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b===preset);b.setAttribute('aria-pressed',String(b===preset));});this.settingsDirty=true;this.uiPresetDraft=value;return true;}const b=e.target.closest('[data-ui-action="advisor-toggle"]');if(b){this.toggleWorkRow('advisor');return true;}return originalClick.call(this,e);};
+  style();return N;
+ }
+ return {html,documentView,bind,style,stats:()=>({...stats,missing:[...stats.missing]})};
 })();
 
 /* 9/30 DOM adapter, read-only. Original exporter functions and patches keep
@@ -11223,15 +11271,16 @@ ${archiveHTML}
 })(CH);
 
 /* ===================================================================
- * 원본: AI 컴패니언 1.3.1 (ref/AICompanion-1.3.1.txt)
- * 아래 코드는 원본을 그대로 옮기고 crack_helper/patches/cgc.cjs 의 패치만 적용했다.
+ * 원본: AI 컴패니언 1.5.3 (ref/AICompanion-1.5.3.txt)
+ * 아래 코드는 원본을 그대로 옮기고 crack_helper/patches/cgc153.cjs 의 패치만 적용했다.
  * =================================================================== */
 const CGC = (function (CH) {
     'use strict';
-    // AI 컴패니언은 GM 저장소 키(CGC_*)를 그대로 쓴다. 컴패니언 스크립트를 이 코드로 덮어쓰면 기존 값이 이어진다.
+    // AI 컴패니언은 기존 CGC 키를 유지한다. 원본 렌더러는 사전 HTML 어댑터를 거친다.
+    const document = CH.companionFrame.documentView(window.document);
 
     /*
-     * Crack AI Companion v1.3.1
+     * Crack AI Companion v1.5.3
      * - Job-first transport with durable task conversations and verified submit/result handling.
      * - PC Chrome/iOS/Android delivery behavior is preserved from the proven pre-release build.
      * - Firefox TXT attachment runs inside a page-side runner on both desktop and Android to avoid userscript/page realm boundaries.
@@ -11243,11 +11292,32 @@ const CGC = (function (CH) {
 
     const APP = Object.freeze({
         id: 'cgc',
-        version: '1.3.1',
+        version: '1.5.3',
         protocol: 'crack-gpt-companion/v4.2.0-durable-web-delivery',
         name: 'Crack AI Companion',
     });
 
+    // v1.5.3: AI 컴패니언을 한 번도 쓰지 않은 방에서 새로고침할 때마다 콘솔에 찍히던 경고([cgc] link pending
+    //         TypeError … 'conversations') 수정. 동작에는 영향 없던 경고.
+    // v1.5.2: PC 패널 크기 조절(오른쪽 아래 모서리, 360x520~640x화면 높이, 브라우저별로 기억, 두 번 누르면 400x710, 방향키).
+    //         가볍게: 3초 결과 확인은 한 번만 읽고 할 일이 없으면 12초 간격, 3D는 각도별 계산·버퍼 재사용·안 보이면 멈춤,
+    //         확인 필요 바늘 흔들림은 합성 레이어에서. 동작 줄이기 때 입력창 버튼 링도 멈춤.
+    // v1.5.1: 기록·결과 등 시트 창이 패널을 덮지 못하고 탭 아래로 밀려 스크롤되지 않던 문제 수정. 패널 바깥 모서리 + 표시 제거.
+    // v1.5.0: 홀로그램 라인 UI (코발트 강조, 그리기 버튼). 나침반 입구 버튼은 크랙 입력창 버튼의 클래스를 그대로 입고
+    //         (테마·호버도 크랙을 따름) 패널을 바로 열며, 상태(확인 필요/보내는 중/결과 도착/새 결과)를 버튼 안에서 보여 줌.
+    //         PC 패널은 400x710 고정, 방 제목 줄 아래에서 열리고 머리줄로 옮길 수 있으며 뒤 채팅을 막지 않음.
+    //         위쪽 알림 팝업(폭은 CSS가 정함, 크랙 상단 줄 아래, 방이 바뀌면 그 방 알림만 남김),
+    //         저장된 데이터(방별 사용량·고른 방/오래된 방/모든 방 지우기, resetAt 묘비로 지운 방이 되살아나지 않음,
+    //         하루 넘게 멈춘 작업은 방 삭제를 막지 않음), 짧은 문제 해결 Q&A. 진단 정보 복사·미니 메뉴 제거,
+    //         패널 CSS는 처음 열 때만 주입.
+    // v1.4.1: iPhone Safari — the send button no longer locks after one send: every wait on the Userscripts app
+    //         (tab open, storage writes, the one-tap open panel) is bounded by visible time, the send latch expires,
+    //         the audit button is never disabled, a job the suspended ChatGPT tab never took can be cancelled and
+    //         resent from the same tap, and finished answers are announced on return / in the ChatGPT tab.
+    // v1.4.0: never store ChatGPT's client-only chat id (/c/local-chatgpt:...) as the conversation address; repair
+    //         addresses saved that way with job-marker proof; two-phase dispatch with Crack confirmation; a tab that
+    //         navigates for its own job keeps its claim; event-driven waits that also work in background windows;
+    //         finished-answer and header detection for the 2026-10 ChatGPT DOM.
     // v1.3.0: every task uses a TXT attachment, regardless of length; reject non-TXT delivery before editor access.
     // v1.2.7: never innerText a giant composer; show a heavy-composer badge; ignore editor mutations in completion watches.
     // v1.2.6: resume late host readiness; validate before side effects; never clear/rewrite a failed editor insertion.
@@ -11274,7 +11344,7 @@ const CGC = (function (CH) {
     };
 
     const PROMPT_REVISION = 20;
-    const BRIDGE_REVISION = 42; // Completion-beacon monitoring and routing/reset safety require the same bridge on both pages.
+    const BRIDGE_REVISION = 43; // Two-phase dispatch confirmation and durable-id routing require the same bridge on both pages.
     const BOOTSTRAP_GRACE_MS = 180000;
     const MAX_INLINE_COMPOSER_CHARS = 18256; // Safety cap for the short file instruction and job marker, never a TXT routing threshold.
     // v1.2.7: 이보다 큰 GPT 입력창은 innerText(전체 레이아웃 강제)로 읽지 않고, 대용량 잔존 내용으로 판단한다.
@@ -11316,6 +11386,9 @@ const CGC = (function (CH) {
         linkEvent: 'CGC_LINK_EVENT_V1',
         completion: 'CGC_COMPLETION_V1',
         roomCheckpoints: 'CGC_ROOM_CHECKPOINTS_V1',
+        dispatchConfirm: 'CGC_DISPATCH_CONFIRM_V1',
+        completionPoke: 'CGC_COMPLETION_POKE_V1',
+        conversationRepair: 'CGC_CONVERSATION_REPAIR_V1',
     });
 
     const STORAGE_PREFIX = Object.freeze({
@@ -11456,6 +11529,7 @@ const CGC = (function (CH) {
         scanSafeChars: 18000,
         loreTargetChars: LORE_DEFAULT_TARGET_CHARS,
         autoRenameChatTitles: true,
+        islandNotices: true,
         loreExtractPrompt: LORE_EXTRACT_DEFAULT,
         loreMergePrompt: LORE_MERGE_DEFAULT,
         promptRevision:PROMPT_REVISION,
@@ -11498,7 +11572,9 @@ const CGC = (function (CH) {
     const JOB_TTL_MS = 15 * 60 * 1000;
     const CLAIM_TTL_MS = 4 * 60 * 1000;
     const TAB_BUSY_TTL_MS = 4 * 60 * 1000;
-    const DISPATCH_ACK_TIMEOUT_MS = 1800;
+    const DISPATCH_RECEIVE_TIMEOUT_MS = 2500; // a live page answers "received" synchronously from its storage listener
+    const DISPATCH_DECISION_TIMEOUT_MS = 20000; // checks/claim in a throttled background page can take seconds
+    const DISPATCH_CONFIRM_WAIT_MS = 30000;
     const MAX_TRANSMISSIONS_PER_SESSION = 8;
     const MAX_SUBMITTED_ACKS = 40;
     const REFERENCE_CACHE_MS = 30000;
@@ -11514,6 +11590,8 @@ const CGC = (function (CH) {
     }
     const CGC_EARLY_JOB_MARKER=cgcJobMarkerFromUrl(location.href);
     const CGC_EARLY_SURFACE_MARKER=(()=>{try{const url=new URL(location.href);return new URLSearchParams(url.hash.slice(1)).get('cgc-surface')||url.searchParams.get('cgc_surface')||'';}catch{return '';}})();
+    // "Open the durable chat of this job": Crack sends it when it only knows a client-only chat address.
+    const CGC_EARLY_RESOLVE_MARKER=(()=>{try{const url=new URL(location.href);return cleanText(new URLSearchParams(url.hash.slice(1)).get('cgc-resolve')||url.searchParams.get('cgc_resolve')||'');}catch{return '';}})();
 
     // Capture handoff strings immediately on script entry, but leave the host's DOM and GM store alone.
     // A normal GPT visit must be able to finish mounting before any companion worker starts.
@@ -11595,23 +11673,27 @@ const CGC = (function (CH) {
     let cgcSettingsWatchInstalled = false;
 
     const CGC_STORAGE_FAILED = new Map();
-    function cgcQueueStorageOperation(key, value, removing = false) {
+    const CGC_STORAGE_OP_TIMEOUT_MS = 4000;
+    function cgcQueueStorageOperation(key, value, removing = false, size = 0) {
         const epoch=(CGC_STORAGE_EPOCH.get(key)||0)+1;
         CGC_STORAGE_EPOCH.set(key,epoch);CGC_STORAGE_WRITES.set(key,epoch);
         CGC_STORAGE_FAILED.delete(key);
         if(removing)CGC_ASYNC_CACHE.delete(key);else CGC_ASYNC_CACHE.set(key,value);
-        const operation={key,value,removing,epoch};
+        const operation={key,value,removing,epoch,size};
         cgcAsyncWriteBarrier=cgcAsyncWriteBarrier.then(()=>cgcRunStorageOperation(operation));
     }
     async function cgcRunStorageOperation(operation) {
-        const {key,value,removing,epoch}=operation;
+        const {key,value,removing,epoch,size=0}=operation;
         if(CGC_STORAGE_EPOCH.get(key)!==epoch)return;
         for(let attempt=0;attempt<3;attempt++){
             if(CGC_STORAGE_EPOCH.get(key)!==epoch)return;
             try{
                 const api=modernGM();
-                if(removing&&typeof api.deleteValue==='function')await api.deleteValue(key);
-                else await api.setValue(key,removing?null:value);
+                // v1.4.1: an iOS extension reply lost while Safari suspended the page must not hold the whole
+                // write queue (and every flush waiting on it) forever; a stalled write is retried like a failure.
+                // Large TXT chunks get more time so a slow but working store is never mistaken for a stalled one.
+                const done=await cgcSettleWhileVisible(()=>removing&&typeof api.deleteValue==='function'?api.deleteValue(key):api.setValue(key,removing?null:value),CGC_STORAGE_OP_TIMEOUT_MS+Math.min(30000,Math.round(size/20000)*1000));
+                if(!done.ok)throw done.error||new Error('저장소 응답 지연');
                 if(CGC_STORAGE_WRITES.get(key)===epoch){CGC_STORAGE_WRITES.delete(key);CGC_STORAGE_FAILED.delete(key);}
                 return;
             }catch(error){
@@ -11635,7 +11717,7 @@ const CGC = (function (CH) {
 
     function writeValue(key, value) {
         if(key===KEY.settings)cgcSettingsCache=null;
-        if(CGC_ASYNC_GM_STORAGE){cgcQueueStorageOperation(key,JSON.parse(JSON.stringify(value)));return;}
+        if(CGC_ASYNC_GM_STORAGE){const json=JSON.stringify(value);cgcQueueStorageOperation(key,JSON.parse(json),false,json?.length||0);return;}
         try{GM_setValue(key,value);}catch(error){console.error('[cgc] storage write failed',key,error);throw error;}
     }
 
@@ -11649,6 +11731,7 @@ const CGC = (function (CH) {
 
     async function flushStorageWrites() {
         if(!CGC_ASYNC_GM_STORAGE)return;
+        // Every queued write is bounded (cgcRunStorageOperation), so this drain always finishes.
         const drain=async()=>{let barrier;do{barrier=cgcAsyncWriteBarrier;await barrier;}while(barrier!==cgcAsyncWriteBarrier);};
         await drain();
         // Retry only the still-current failed values; superseded writes must never return.
@@ -11684,6 +11767,24 @@ const CGC = (function (CH) {
                 new Promise(resolve=>{timer=setTimeout(()=>resolve({ok:false,timeout:true}),timeoutMs);}),
             ]);
         }finally{if(timer)clearTimeout(timer);}
+    }
+
+    // iOS Safari suspends a hidden page and fires its overdue timers on return, so a plain timeout would
+    // report a Promise that was merely paused as stalled. Only a window the page spent visible counts.
+    let cgcPageShownAt=0;
+    try{
+        const markVisibility=()=>{cgcPageShownAt=document.visibilityState==='hidden'?Infinity:Date.now();};
+        document.addEventListener('visibilitychange',markVisibility,true);
+        window.addEventListener('pagehide',()=>{cgcPageShownAt=Infinity;},true);
+        window.addEventListener('pageshow',markVisibility,true);
+    }catch{}
+    async function cgcSettleWhileVisible(factory,timeoutMs) {
+        const work=Promise.resolve().then(factory).then(value=>({ok:true,value}),error=>({ok:false,error}));
+        for(;;){
+            const start=Date.now(),result=await settleWithTimeout(()=>work,timeoutMs);
+            if(!result.timeout)return result.value; // work never rejects; unwrap its own {ok,value|error}
+            if(document.visibilityState!=='hidden'&&cgcPageShownAt<=start)return result;
+        }
     }
 
     async function hydrateAsyncStorageKeys(keys,timeoutMs=1500) {
@@ -11988,8 +12089,9 @@ const CGC = (function (CH) {
                 if(typeof GM_saveTab!=='function'&&typeof api?.saveTab==='function')return void Promise.resolve(api.saveTab(tab)).then(()=>resolve(true)).catch(error=>{console.warn(`[${APP.id}] GM.saveTab failed`,error);resolve(false);});
                 if (typeof GM_saveTab !== 'function') return resolve(false);
                 GM_saveTab(tab, () => resolve(true));
-                // Some builds do not call the optional callback; resolve optimistically.
-                setTimeout(() => resolve(true), 40);
+                // Some builds do not call the optional callback; resolve optimistically without a timer,
+                // which a hidden page may hold for a minute.
+                queueMicrotask(() => resolve(true));
             } catch (error) {
                 console.warn(`[${APP.id}] GM_saveTab failed`, error);
                 resolve(false);
@@ -12016,7 +12118,12 @@ const CGC = (function (CH) {
         const poll=async()=>{
             if(watcher.stopped||document.visibilityState==='hidden')return;
             const oldValue=watcher.last;const value=await refreshAsyncStorageKey(key);
-            if(!valuesEqualForWatch(oldValue,value)){watcher.last=value;try{callback(key,oldValue,value,true);}catch(error){console.error(`[${APP.id}] storage listener callback failed`,error);}}
+            if(valuesEqualForWatch(oldValue,value))return;
+            watcher.last=value;
+            // v1.5.0: callbacks may save from the cache; never let them run on a room state older than this change
+            // (for example rooms wiped in another tab while this one slept).
+            if(key!==KEY.state&&key!==KEY.roomCheckpoints)await Promise.allSettled([KEY.state,KEY.roomCheckpoints].map(refreshAsyncStorageKey));
+            try{callback(key,oldValue,value,true);}catch(error){console.error(`[${APP.id}] storage listener callback failed`,error);}
         };
         watcher.poll=poll;watcher.timer=setInterval(()=>{void poll();},750);cgcPollingListeners.add(watcher);
         return watcher;
@@ -13470,7 +13577,7 @@ const CGC = (function (CH) {
         return score;
     }
 
-    async function selectRegisteredChatGptTab(targetUrl,roomKey='',slotId='',surfaceMode='',focusOnly=false) {
+    async function selectRegisteredChatGptTabs(targetUrl,roomKey='',slotId='',surfaceMode='',focusOnly=false) {
         const rows = await getRegisteredChatGptTabs();
         const wantedSurface=surfaceMode?normalizeOpenMode(surfaceMode,''):'';
         const available = rows
@@ -13478,7 +13585,13 @@ const CGC = (function (CH) {
             .filter(row => !focusOnly || registeredTabRouteCompatible(row,targetUrl))
             .filter(row => !wantedSurface || row.meta?.surfaceMode===wantedSurface)
             .filter(row => registeredTabRouteCompatible(row,targetUrl,roomKey,slotId));
-        return available.sort((a, b) => scoreRegisteredTab(b,targetUrl,roomKey,slotId) - scoreRegisteredTab(a,targetUrl,roomKey,slotId))[0] || null;
+        // Equal routes: the most recently active page first.
+        return available.sort((a, b) => scoreRegisteredTab(b,targetUrl,roomKey,slotId) - scoreRegisteredTab(a,targetUrl,roomKey,slotId)
+            || Number(b.meta?.updatedAt||0) - Number(a.meta?.updatedAt||0));
+    }
+
+    async function selectRegisteredChatGptTab(targetUrl,roomKey='',slotId='',surfaceMode='',focusOnly=false) {
+        return (await selectRegisteredChatGptTabs(targetUrl,roomKey,slotId,surfaceMode,focusOnly))[0] || null;
     }
 
     function makeJobUrl(url, jobId, forceReload=false) {
@@ -13545,13 +13658,14 @@ const CGC = (function (CH) {
             } catch { /* same-origin about:blank only */ }
         },
 
-        reserve(slot='audit',sessionKey='',surfaceKey='') {
+        // focus:false (job starts) leaves an already-open ChatGPT window where it is; opening a chat to look at it raises it.
+        reserve(slot='audit',sessionKey='',surfaceKey='',{focus=true}={}) {
             const safeSlot=(isRoutableConversationSlot(slot)||slot===LORE_TRANSIENT_SLOT)?slot:'audit';
             const safeSurface=cleanText(surfaceKey||safeSlot)||safeSlot;
             const key=this.key(sessionKey,safeSlot,safeSurface);
             const existing=this.handles.get(key);
             try {
-                if(existing&&!existing.closed){try{existing.focus();}catch{}return {mode:'popup',handle:existing,reused:true,safeToNavigate:false,slot:safeSlot,sessionKey,key};}
+                if(existing&&!existing.closed){if(focus)try{existing.focus();}catch{}return {mode:'popup',handle:existing,reused:true,safeToNavigate:false,slot:safeSlot,sessionKey,key};}
             } catch { this.handles.delete(key); }
             try {
                 // Empty URL re-acquires a named popup without navigating an already-open cross-origin ChatGPT page.
@@ -13562,7 +13676,7 @@ const CGC = (function (CH) {
                 let safeToNavigate=false;
                 try{safeToNavigate=opened.location?.href?.startsWith('about:blank')||opened.location?.href==='';}catch{safeToNavigate=false;}
                 if(safeToNavigate)this.paintWaiting(opened,safeSlot);
-                try{opened.focus();}catch{}
+                if(safeToNavigate||focus)try{opened.focus();}catch{}
                 return {mode:'popup',handle:opened,reused:!safeToNavigate,safeToNavigate,slot:safeSlot,sessionKey,key};
             }catch(error){
                 console.warn(`[${APP.id}] popup reserve failed`,error);
@@ -13608,6 +13722,11 @@ const CGC = (function (CH) {
         },
     };
 
+    const CGC_IOS_OPEN_TAB_TIMEOUT_MS = 4000;
+    const CGC_START_LATCH_STALE_MS = 90000;
+    const CGC_MOBILE_PENDING_GRACE_MS = 20000;
+    const CGC_MANUAL_OPEN_TIMEOUT_MS = 3*60*1000;
+    let cgcManualOpenSettle = null;
     async function openPrivilegedChatGptTab(url, preferredMode='popup') {
         let target = CHATGPT_HOME;
         target=cgcSafeChatGptUrl(url)||CHATGPT_HOME;
@@ -13615,10 +13734,22 @@ const CGC = (function (CH) {
         // iOS Userscripts provides only Promise-based GM.openInTab. Prefer it because an ordinary
         // window.open after Crack's network work has lost Safari's transient user activation.
         if(CGC_PLATFORM?.iOS){
-            try{
-                const api=modernGM();
-                if(typeof api?.openInTab==='function'){const tabTarget=withSurfaceMarker(target,'tab');const handle=await api.openInTab(tabTarget,false);return {mode:'tab-ios',surfaceMode:'tab',handle};}
-            }catch(error){console.warn(`[${APP.id}] GM.openInTab failed`,error);}
+            const api=modernGM();
+            if(typeof api?.openInTab==='function'){
+                // v1.4.1: the Userscripts app answers through an extension message that Safari can drop while
+                // this page is suspended behind the new tab. An unanswered call used to hold the send latch for
+                // good ("버튼이 안 눌림"). The page going hidden is proof the tab opened; a second openInTab or a
+                // late window.open could only duplicate it, so a silent failure goes to the one-tap fallback.
+                let wentHidden=document.visibilityState==='hidden';
+                const onHide=()=>{if(document.visibilityState==='hidden')wentHidden=true;};
+                document.addEventListener('visibilitychange',onHide,true);
+                try{
+                    const opened=await settleWithTimeout(()=>api.openInTab(withSurfaceMarker(target,'tab'),false),CGC_IOS_OPEN_TAB_TIMEOUT_MS);
+                    if(opened.ok||wentHidden)return {mode:'tab-ios',surfaceMode:'tab',handle:opened.ok?opened.value:null};
+                    console.warn(`[${APP.id}] GM.openInTab did not open a tab`,opened.error||'timeout');
+                }finally{document.removeEventListener('visibilitychange',onHide,true);}
+                return null;
+            }
         }
         if(mode==='tab'){
             try {
@@ -13629,7 +13760,7 @@ const CGC = (function (CH) {
             }catch(error){console.warn(`[${APP.id}] GM_openInTab failed`,error);}
             try{
                 const api=modernGM();
-                if(typeof api?.openInTab==='function'){const handle=await api.openInTab(withSurfaceMarker(target,'tab'),false);return {mode:'tab-modern',surfaceMode:'tab',handle};}
+                if(typeof api?.openInTab==='function'){const opened=await settleWithTimeout(()=>api.openInTab(withSurfaceMarker(target,'tab'),false),CGC_IOS_OPEN_TAB_TIMEOUT_MS);if(opened.ok)return {mode:'tab-modern',surfaceMode:'tab',handle:opened.value};}
             }catch(error){console.warn(`[${APP.id}] GM.openInTab failed`,error);}
             try {
                 const opened=window.open(target,'_blank');
@@ -13649,36 +13780,68 @@ const CGC = (function (CH) {
         }catch(error){console.warn(`[${APP.id}] GM_openInTab failed`,error);}
         try{
             const api=modernGM();
-            if(typeof api?.openInTab==='function'){const handle=await api.openInTab(withSurfaceMarker(target,'tab'),false);return {mode:'tab-modern-fallback',surfaceMode:'tab',handle};}
+            if(typeof api?.openInTab==='function'){const opened=await settleWithTimeout(()=>api.openInTab(withSurfaceMarker(target,'tab'),false),CGC_IOS_OPEN_TAB_TIMEOUT_MS);if(opened.ok)return {mode:'tab-modern-fallback',surfaceMode:'tab',handle:opened.value};}
         }catch(error){console.warn(`[${APP.id}] GM.openInTab failed`,error);}
         return null;
     }
 
     function waitForManualChatGptOpen(url,job=null) {
         return new Promise((resolve,reject)=>{
+            // v1.4.1: a replaced panel used to leave its caller waiting forever (and the send latch held).
+            // Every panel now settles exactly once: link tap, cancel, replacement, removal or deadline.
+            cgcManualOpenSettle?.(new Error('새 ChatGPT 열기 안내로 바뀌었어요. 이전 작업은 전송 안 됨 상태로 복구됩니다.'));
             document.querySelector('.cgc-crack-ios-handoff')?.remove();
             const panel=document.createElement('div');panel.className='cgc-crack-ios-handoff';
-            Object.assign(panel.style,{position:'fixed',zIndex:2147483647,background:'#1f1f1d',color:'#fff',border:'1px solid rgba(255,255,255,.17)',borderRadius:'16px',boxShadow:'0 16px 48px rgba(0,0,0,.44)',padding:'14px',font:'13px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',boxSizing:'border-box'});
+            let settled=false,deadline=0;
+            const settle=(error,value)=>{
+                if(settled)return;settled=true;clearTimeout(deadline);
+                if(cgcManualOpenSettle===settle)cgcManualOpenSettle=null;
+                cleanup();
+                if(error)reject(error);else resolve(value);
+            };
+            cgcManualOpenSettle=settle;
+            deadline=setTimeout(()=>settle(new Error('ChatGPT 열기 안내가 시간 초과로 닫혔어요. 작업은 전송 안 됨 상태로 복구됩니다.')),CGC_MANUAL_OPEN_TIMEOUT_MS);
+            Object.assign(panel.style,{position:'fixed',zIndex:2147483647,background:'#18181A',color:'#ECECEC',border:'0',borderRadius:'3px',boxShadow:'0 0 0 1px rgba(255,255,255,.3),0 16px 48px rgba(0,0,0,.5)',padding:'14px',font:'13px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',boxSizing:'border-box'});
             const title=document.createElement('div');title.textContent=job?'📱 ChatGPT에 작업 이어서기':'📱 ChatGPT 새 탭 열기';Object.assign(title.style,{fontWeight:'850',fontSize:'14px',marginBottom:'6px'});
             const text=document.createElement('div');text.textContent=job?`${jobDisplayLabel(job)} 작업은 안전하게 저장됐어요. Safari가 자동 탭 열기를 막아 아래 버튼을 한 번 눌러야 합니다.`:'Safari가 새 탭 자동 열기를 막았어요. 아래 버튼을 한 번 누르면 연결된 GPT 대화를 새 탭으로 엽니다.';Object.assign(text.style,{opacity:'.86',marginBottom:'11px'});
             const row=document.createElement('div');Object.assign(row.style,{display:'flex',gap:'8px'});
-            const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener';link.textContent='ChatGPT 열고 계속';Object.assign(link.style,{display:'grid',placeItems:'center',flex:'1',minHeight:'48px',borderRadius:'11px',background:'#6d5dfc',color:'#fff',fontWeight:'850',textDecoration:'none',touchAction:'manipulation'});
-            const cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';Object.assign(cancel.style,{minWidth:'72px',minHeight:'48px',border:'1px solid rgba(255,255,255,.18)',borderRadius:'11px',background:'transparent',color:'#fff',fontWeight:'750'});
+            const link=document.createElement('a');link.href=url;link.target='_blank';link.rel='noopener';link.textContent='ChatGPT 열고 계속';Object.assign(link.style,{display:'grid',placeItems:'center',flex:'1',minHeight:'48px',borderRadius:'2px',background:'#CDCDD0',color:'#161617',fontWeight:'800',textDecoration:'none',touchAction:'manipulation'});
+            const cancel=document.createElement('button');cancel.type='button';cancel.textContent='취소';Object.assign(cancel.style,{minWidth:'72px',minHeight:'48px',border:'1px solid rgba(255,255,255,.3)',borderRadius:'2px',background:'transparent',color:'#ECECEC',fontWeight:'700'});
             const position=()=>{const box=cgcViewportBox();panel.style.left=`${Math.round(box.left+10)}px`;panel.style.top=`${Math.round(box.top+Math.max(10,box.height*.08))}px`;panel.style.width=`${Math.max(240,Math.round(box.width-20))}px`;};
             const cleanup=()=>{try{window.visualViewport?.removeEventListener('resize',position);window.visualViewport?.removeEventListener('scroll',position);}catch{}panel.remove();};
-            link.addEventListener('click',()=>{setTimeout(()=>{cleanup();resolve({mode:'ios-manual-open'});},0);},{once:true});
-            cancel.addEventListener('click',()=>{cleanup();reject(new Error('ChatGPT 열기를 취소했어요. 작업은 전송 안 됨 상태로 복구됩니다.'));},{once:true});
+            // Resolve inside the tap: Safari suspends this page as the new tab opens, so a deferred resolve would wait for the return.
+            link.addEventListener('click',()=>{if(settled)return;settled=true;clearTimeout(deadline);if(cgcManualOpenSettle===settle)cgcManualOpenSettle=null;resolve({mode:'ios-manual-open'});setTimeout(cleanup,0);},{once:true});
+            cancel.addEventListener('click',()=>settle(new Error('ChatGPT 열기를 취소했어요. 작업은 전송 안 됨 상태로 복구됩니다.')),{once:true});
             row.append(link,cancel);panel.append(title,text,row);(document.body||document.documentElement).appendChild(panel);position();
-            try{window.visualViewport?.addEventListener('resize',position,{passive:true});window.visualViewport?.addEventListener('scroll',position,{passive:true});const observer=new MutationObserver(()=>{if(!panel.isConnected){window.visualViewport?.removeEventListener('resize',position);window.visualViewport?.removeEventListener('scroll',position);observer.disconnect();}});observer.observe(document.body,{childList:true});}catch{}
+            try{window.visualViewport?.addEventListener('resize',position,{passive:true});window.visualViewport?.addEventListener('scroll',position,{passive:true});const observer=new MutationObserver(()=>{if(!panel.isConnected){window.visualViewport?.removeEventListener('resize',position);window.visualViewport?.removeEventListener('scroll',position);observer.disconnect();settle(new Error('ChatGPT 열기 안내가 닫혔어요. 작업은 전송 안 됨 상태로 복구됩니다.'));}});observer.observe(document.body,{childList:true});}catch{}
         });
     }
 
+    // Two-phase handoff to an already-open ChatGPT page.
+    // 1) The page answers "received" synchronously from its storage listener, so a throttled background
+    //    window replies at once; silence means it is frozen, discarded or closed.
+    // 2) It then accepts or declines after its own checks. For jobs, Crack's confirmation is final: the page
+    //    starts only on {go:true}, and a late acceptance after Crack moved on is told to stand down.
     async function sendTargetedDispatch(targetTabId, dispatchBase) {
         const nonce=uid('dispatch'),targetInstanceId=cleanText(dispatchBase?.targetInstanceId||'');
         const event={...dispatchBase,nonce,targetTabId,targetInstanceId,protocol:APP.protocol,bridgeRevision:BRIDGE_REVISION,at:Date.now()};
-        const wait=waitForStorageEvent(KEY.dispatchAck,value=>value?.nonce===nonce&&value?.targetTabId===targetTabId&&(!targetInstanceId||value?.targetInstanceId===targetInstanceId),DISPATCH_ACK_TIMEOUT_MS);
+        const ours=value=>value?.nonce===nonce&&value?.targetTabId===targetTabId&&(!targetInstanceId||value?.targetInstanceId===targetInstanceId);
+        const decided=value=>ours(value)&&(value.accepted===true||value.phase==='declined');
+        const received=waitForStorageEvent(KEY.dispatchAck,ours,DISPATCH_RECEIVE_TIMEOUT_MS);
         writeValue(KEY.dispatch,event);
-        return await wait;
+        let reply=await received;
+        if(reply&&!decided(reply))reply=await waitForStorageEvent(KEY.dispatchAck,decided,DISPATCH_DECISION_TIMEOUT_MS);
+        const go=Boolean(reply?.accepted);
+        CGC_TRACE(event.jobId||'','dispatch-reply',{kind:event.kind,targetTabId,phase:reply?.phase||'',accepted:go,reason:reply?.reason||'',ms:Date.now()-event.at});
+        if(event.kind==='job'){
+            writeValue(KEY.dispatchConfirm,{nonce,jobId:event.jobId||'',targetTabId,go,at:Date.now()});
+            // Crack's {go:false} is final. A page that answered and then stalled (background timers held for
+            // minutes) may hold the job's claim; release it so the fallback surface can start at once. The
+            // stalled page stands down on the confirmation when it wakes, so nothing is sent twice.
+            if(!go&&event.jobId&&(!reply||reply.phase==='received'))deleteValue(claimStorageKey(event.jobId));
+            await flushStorageWrites();
+        }
+        return go?reply:null;
     }
 
     async function dispatchJobToChatGpt(job, settings = getSettings(), reservedPopup = null) {
@@ -13686,7 +13849,10 @@ const CGC = (function (CH) {
         await flushStorageWrites();
         const scope=jobScopeOf(job);
         const slot=conversationSlotOf(job);
-        const target = canonicalChatGptUrl(job.conversationUrl || job.targetUrl || job.gptBaseUrl) || CHATGPT_HOME;
+        let target = canonicalChatGptUrl(job.conversationUrl || job.targetUrl || job.gptBaseUrl) || CHATGPT_HOME;
+        // An unrepaired client-only address bounces to the home page (and drops the job marker), so open home;
+        // the ChatGPT page resolves the durable conversation from job.conversationUrl before it sends.
+        if(isTempConversationUrl(target))target=canonicalChatGptUrl(job.gptBaseUrl)||CHATGPT_HOME;
         const preferredOpenMode=normalizeOpenMode(job.openMode||getToolOpenMode(job.requestedToolId||job.toolId,settings),'popup');
         const actualOpenMode=CGC_PLATFORM.mobile?'tab':preferredOpenMode;
         const jobUrl=withSurfaceMarker(makeJobUrl(target,job.id,true),actualOpenMode);
@@ -13713,27 +13879,34 @@ const CGC = (function (CH) {
 
         const tryReuseSelectedSurface=async()=>{
             if(isLoreJob(job)||settings.backgroundRelay===false)return null;
-            const candidate=await selectRegisteredChatGptTab(target,job.sessionKey||'',slot,actualOpenMode);
-            if(!candidate?.meta?.tabId)return null;
-            CGC_TRACE(job.id,'dispatch-candidate',{
-                target,
-                actualOpenMode,
-                candidateTabId:candidate.meta.tabId,
-                candidateUrl:candidate.meta.url||'',
-                candidateSurfaceMode:candidate.meta.surfaceMode||'',
-                candidateScriptVersion:candidate.meta.scriptVersion||'',
-                candidateProtocol:candidate.meta.protocol||'',
-                candidateBridgeRevision:Number(candidate.meta.bridgeRevision||0),
-                candidateBusyJobId:candidate.meta.busyJobId||'',
-            });
-            const accepted=await sendTargetedDispatch(candidate.meta.tabId,{
-                kind:'job',jobId:job.id,targetUrl:target,scope,conversationSlot:slot,
-                roomKey:job.sessionKey||'',slotId:slot,surfaceMode:actualOpenMode,targetInstanceId:candidate.meta.instanceId||''
-            });
-            if(!accepted?.accepted)return null;
-            CGC_TRACE(job.id,'dispatch',{mode:`reused-${actualOpenMode}`,target,targetTabId:candidate.meta.tabId});
-            ChatGptPopup.closeIfWaiting(reservedPopup);
-            return {mode:'reused',surfaceMode:actualOpenMode,tabId:candidate.meta.tabId};
+            // A declining or silent page (draft, generating, stale build, frozen) passes the job to the next open page.
+            const candidates=(await selectRegisteredChatGptTabs(target,job.sessionKey||'',slot,actualOpenMode)).slice(0,3);
+            const started=Date.now();
+            for(const candidate of candidates){
+                if(!candidate?.meta?.tabId)continue;
+                // Keep the click's popup permission usable for the fallback window.
+                if(candidate!==candidates[0]&&Date.now()-started>4000)break;
+                CGC_TRACE(job.id,'dispatch-candidate',{
+                    target,
+                    actualOpenMode,
+                    candidateTabId:candidate.meta.tabId,
+                    candidateUrl:candidate.meta.url||'',
+                    candidateSurfaceMode:candidate.meta.surfaceMode||'',
+                    candidateScriptVersion:candidate.meta.scriptVersion||'',
+                    candidateProtocol:candidate.meta.protocol||'',
+                    candidateBridgeRevision:Number(candidate.meta.bridgeRevision||0),
+                    candidateBusyJobId:candidate.meta.busyJobId||'',
+                });
+                const accepted=await sendTargetedDispatch(candidate.meta.tabId,{
+                    kind:'job',jobId:job.id,targetUrl:target,scope,conversationSlot:slot,
+                    roomKey:job.sessionKey||'',slotId:slot,surfaceMode:actualOpenMode,targetInstanceId:candidate.meta.instanceId||''
+                });
+                if(!accepted?.accepted)continue;
+                CGC_TRACE(job.id,'dispatch',{mode:`reused-${actualOpenMode}`,target,targetTabId:candidate.meta.tabId});
+                ChatGptPopup.closeIfWaiting(reservedPopup);
+                return {mode:'reused',surfaceMode:actualOpenMode,tabId:candidate.meta.tabId};
+            }
+            return null;
         };
 
         // Reuse is allowed only inside the surface selected in settings.
@@ -13802,6 +13975,70 @@ const CGC = (function (CH) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // Sub-second settling pause that a hidden page still finishes on time. Background timers can be held
+    // for a minute or more (observed: a 100 ms sleep took ~115 s in a minimized ChatGPT popup), while
+    // MessageChannel turns are not timer-throttled. Only for short waits on the job's critical path.
+    function cgcPause(ms) {
+        if(document.visibilityState!=='hidden')return sleep(ms);
+        const end=Date.now()+ms;
+        return new Promise(resolve=>{
+            const channel=new MessageChannel();
+            channel.port1.onmessage=()=>{if(Date.now()>=end){channel.port1.close();resolve();}else channel.port2.postMessage(0);};
+            channel.port2.postMessage(0);
+        });
+    }
+
+    // Event-driven wait for GPT-page steps that must also run in a background window.
+    // Hidden pages clamp timers to ~1 s, Chrome allows chained timers only once a minute after 5 minutes
+    // hidden, and iOS Safari suspends background tabs; DOM mutations, URL changes and storage events still
+    // arrive promptly, so they drive the checks here. The condition is always checked before a deadline is
+    // honoured, and a deadline reached right after a suspension (no polling tick for a while) gets one grace
+    // period instead of failing on time the page never had.
+    // https://developer.chrome.com/blog/timer-throttling-in-chrome-88 · https://developer.chrome.com/docs/web-platform/page-lifecycle-api
+    function cgcWaitFor(check,{timeout=10000,root=null,attributes=true,interval=500,grace=8000,events=[],minGap=100}={}){
+        return new Promise(resolve=>{
+            let done=false,observer=null,poll=0,deadline=0,trailing=0,lastRun=0,lastTick=Date.now(),graceUsed=false;
+            const listeners=[];
+            const finish=value=>{
+                if(done)return;done=true;
+                clearTimeout(deadline);clearTimeout(trailing);clearInterval(poll);
+                try{observer?.disconnect();}catch{}
+                for(const [target,name,fn] of listeners)target.removeEventListener(name,fn,true);
+                resolve(value);
+            };
+            const test=()=>{
+                if(done)return true;
+                lastRun=Date.now();let value=null;
+                try{value=check();}catch{value=null;}
+                if(value){finish(value);return true;}
+                return false;
+            };
+            const kick=()=>{
+                if(done)return;
+                // A later mutation runs the check itself; a throttled trailing timer must never hold checks back.
+                const wait=minGap-(Date.now()-lastRun);
+                if(wait<=0){test();return;}
+                if(!trailing)trailing=setTimeout(()=>{trailing=0;test();},wait);
+            };
+            const arm=ms=>{clearTimeout(deadline);deadline=setTimeout(expire,ms);};
+            const expire=()=>{
+                if(test())return;
+                if(!graceUsed&&Date.now()-lastTick>Math.max(2500,interval*4)){graceUsed=true;lastTick=Date.now();arm(grace);return;}
+                finish(null);
+            };
+            const listen=(target,name,fn)=>{target.addEventListener(name,fn,true);listeners.push([target,name,fn]);};
+            try{
+                observer=new MutationObserver(kick);
+                observer.observe(root||document.documentElement,{childList:true,subtree:true,characterData:true,attributes});
+            }catch{}
+            for(const name of events)listen(window,name,kick);
+            listen(document,'visibilitychange',()=>{lastTick=0;kick();});
+            poll=setInterval(()=>{lastTick=Date.now();test();},interval);
+            arm(timeout);
+            test();
+        });
+    }
+
     function clamp(value, min, max) {
         return Math.min(max, Math.max(min, value));
     }
@@ -13865,6 +14102,19 @@ const CGC = (function (CH) {
 
     const CHATGPT_ORIGIN = 'https://chatgpt.com';
 
+    // A new chat first runs under a client-only id (/c/local-chatgpt:<uuid>, earlier /c/WEB:<uuid>) and the
+    // address is swapped in place once the server assigns the durable id. Reopening a client-only id lands on
+    // the home page, and the same client-only id is reused for later new chats in that window, so it never
+    // identifies a conversation. Records saved that way by older builds are repaired per job (CgcConversationRepair).
+    function cgcConversationIdOf(url){
+        try{const id=new URL(url,`${CHATGPT_ORIGIN}/`).pathname.split('/').filter(Boolean).pop()||'';try{return decodeURIComponent(id);}catch{return id;}}
+        catch{return '';}
+    }
+    function cgcIsTempConversationId(id){
+        const value=String(id||'');
+        return !value||/[:%\s]/.test(value)||/^(?:WEB|local)(?:[-_:]|$)/i.test(value);
+    }
+
     function cgcSafeChatGptUrl(url,{stripHash=false}={}){
         try{
             if(!url)return '';
@@ -13912,11 +14162,11 @@ const CGC = (function (CH) {
     function persistentConversationUrl(url) {
         const conv=conversationUrlFromCurrent(url);
         if(!conv)return '';
-        try{
-            const id=new URL(conv).pathname.split('/').filter(Boolean).pop()||'';
-            if(/^WEB:/i.test(id))return '';
-        }catch{return '';}
-        return conv;
+        return cgcIsTempConversationId(cgcConversationIdOf(conv))?'':conv;
+    }
+    function isTempConversationUrl(url) {
+        const conv=conversationUrlFromCurrent(url);
+        return Boolean(conv&&cgcIsTempConversationId(cgcConversationIdOf(conv)));
     }
 
     function shortConversationId(url) {
@@ -14277,7 +14527,7 @@ const CGC = (function (CH) {
         return true;
     }
 
-    async function pruneExpiredTransportKeys() {
+    async function pruneExpiredTransportKeys({limit=100,loreLimit=40}={}) {
         if(transportGcRunning||CgcTroubleshooting.snapshotting||!cgcStorageReady||document.visibilityState==='hidden')return 0;
         transportGcRunning=true;
         let removed=0;
@@ -14311,8 +14561,10 @@ const CGC = (function (CH) {
             const orderedRows=start>0?[...rows.slice(start),...rows.slice(0,start)]:rows;
             let inspected=0,lastInspected='';
             for(const [id,group] of orderedRows){
-                // Bound startup work; raw chunks are never loaded into the async cache.
-                if(++inspected>100||document.visibilityState==='hidden')break;
+                // Bound startup work; raw chunks are never loaded into the async cache. Yield now and then so a long manual
+                // sweep never freezes the page (Tampermonkey reads are synchronous).
+                if(inspected%50===49)await new Promise(resolve=>setTimeout(resolve,0));
+                if(++inspected>limit||document.visibilityState==='hidden')break;
                 lastInspected=id;
                 try{
                     const hasReceipt=group.includes(WebDelivery.key(id)),hasResult=group.includes(transformResultStorageKey(id)),hasCompletion=group.includes(completionStorageKey(id));
@@ -14322,6 +14574,7 @@ const CGC = (function (CH) {
                         const [job,payload,claim,event]=await Promise.all([jobStorageKey(id),payloadStorageKey(id),claimStorageKey(id),loreEventStorageKey(id)].map(readStorageForCleanup));
                         const timestamps=[job?.createdAt,payload?.createdAt,claim?.claimedAt,event?.at].map(Number).filter(n=>Number.isFinite(n)&&n>0);
                         if(!timestamps.length||Date.now()-Math.max(...timestamps)<JOB_TTL_MS*4)continue;
+                        if(cleanupJobProtected(await getCleanupState(),id,{phase:'cancelled',job:job||null},null))continue;
                         const state=await getCleanupState(true);
                         if(cleanupJobProtected(state,id,{phase:'cancelled',job:job||null},null))continue;
                         const newestJob=await readStorageForCleanup(jobStorageKey(id));
@@ -14336,6 +14589,7 @@ const CGC = (function (CH) {
                     const timestamps=[receipt?.updatedAt,receipt?.committedAt,receipt?.resultAppliedAt,receipt?.resultDiscardedAt,receipt?.at,receipt?.ack?.submittedAt,result?.at,completion?.completedAt].map(Number).filter(n=>Number.isFinite(n)&&n>0);
                     if(!timestamps.length||Date.now()-Math.max(...timestamps)<TRANSPORT_GC_AGE_MS)continue;
                     if(receipt?.job?.expectResult&&!['result','cancelled'].includes(receipt.phase))continue;
+                    if(cleanupJobProtected(await getCleanupState(),id,receipt,result))continue;
                     const state=await getCleanupState(true);
                     const newestReceipt=hasReceipt?await readStorageForCleanup(WebDelivery.key(id)):receipt;
                     const newestResult=hasResult?await readStorageForCleanup(transformResultStorageKey(id)):result;
@@ -14354,13 +14608,15 @@ const CGC = (function (CH) {
             const loreStart=loreRows.findIndex(([id])=>id>String(loreCursor||''));
             const orderedLoreRows=loreStart>0?[...loreRows.slice(loreStart),...loreRows.slice(0,loreStart)]:loreRows;
             for(const [groupId,group] of orderedLoreRows){
-                if(++loreInspected>40||document.visibilityState==='hidden')break;
+                if(loreInspected%50===49)await new Promise(resolve=>setTimeout(resolve,0));
+                if(++loreInspected>loreLimit||document.visibilityState==='hidden')break;
                 lastLoreInspected=groupId;
                 try{
                     const metaKey=`${STORAGE_PREFIX.loreSource}${groupId}`;
                     if(!group.includes(metaKey))continue; // Chunk-only debris has no trustworthy age marker.
                     const meta=await readStorageForCleanup(metaKey),createdAt=Number(meta?.createdAt||0);
                     if(!createdAt||Date.now()-createdAt<TRANSPORT_GC_AGE_MS)continue;
+                    if(loreSourceGroupProtected(await getCleanupState(),groupId))continue;
                     const latestState=await getCleanupState(true);
                     if(loreSourceGroupProtected(latestState,groupId))continue;
                     const latestMeta=await readStorageForCleanup(metaKey);
@@ -14380,31 +14636,37 @@ const CGC = (function (CH) {
 
     const CgcTroubleshooting={
         busy:false,snapshotting:false,
-        html(){return `<p class="pane-s">증상에 맞는 항목을 펼쳐 확인하세요. 이 화면을 열기만 해서는 데이터를 지우지 않습니다.</p>
-<details class="more" open><summary>Q. GPT가 로고에서 멈추거나, 다른 프로필에서만 잘 열려요.</summary>
-<p class="settings-help">A. 해당 프로필에 남은 ChatGPT 사이트 상태가 원인일 수 있어요. 다른 확장이나 네트워크 문제도 가능하므로, 데이터 용량만으로 원인을 단정하지 않습니다.</p>
-<ol class="settings-help"><li>도우미를 잠시 끄고, 해당 프로필의 GPT 탭과 팝업을 모두 닫으세요.</li><li>닫히지 않으면 PC Chrome에서 Shift + Esc를 누르고 해당 ChatGPT 작업만 종료하세요.</li><li>아래 설정 주소를 복사해 새 탭 주소창에 붙여 넣으세요.</li><li>설정의 사이트 검색에서 chatgpt.com을 찾고, 해당 항목의 데이터를 삭제하세요. 전체 사이트 데이터를 삭제할 필요는 없습니다.</li><li>GPT를 새 탭으로 열어 로그인하고, 정상 동작을 확인한 뒤 도우미를 켜세요.</li></ol>
-<p class="settings-help"><strong>주의: GPT에서 로그아웃될 수 있고, 보내지 않은 초안과 일부 사이트 설정이 사라질 수 있어요.</strong> 필요한 초안은 가능할 때 먼저 별도로 저장하세요. 계정에 저장된 대화를 삭제하는 절차는 아닙니다. 아래 도우미 백업에는 GPT 로그인·초안·사이트 데이터가 포함되지 않습니다.</p>
-<p class="hint-text">PC Chrome 기준 안내입니다. 다른 브라우저에서는 사이트별 저장 데이터 설정을 확인하세요.</p>
-<code>chrome://settings/content/all</code><div class="ac"><button class="mn key" data-ui-action="help-copy-settings">설정 주소 복사</button></div></details>
-<details class="more"><summary>Q. 도우미 데이터를 백업하고 싶어요.</summary>
-<p class="settings-help">A. 도우미의 설정·지침·방별 연결·작업 기록을 JSON 파일로 내려받습니다. 백업 중에는 새 작업을 실행하지 말고 다른 크랙·GPT 작업 창도 닫아 주세요. 여러 창의 동시 변경까지 하나의 시점으로 고정하는 백업은 아닙니다.</p>
-<p class="hint-text">백업에는 대화 내용과 사용자 지침 등 민감한 정보가 포함될 수 있어요. 안전한 곳에 보관하세요. 이 파일은 보관·수동 복구용이며 이 화면에는 가져오기 기능이 없습니다.</p>
-<button class="mn" data-ui-action="help-backup">도우미 전체 백업</button></details>
-<details class="more"><summary>Q. 오래된 작업 기록을 정리하면 GPT 멈춤도 해결되나요?</summary>
-<p class="settings-help">A. 도우미 저장소와 ChatGPT 사이트 데이터는 별개이므로 같은 해결 방법이 아닙니다. 이 기능은 먼저 백업을 내려받고, 저장 확인 후 기존 보존 규칙에 따라 오래된 완료·취소 작업과 만료된 전송 임시 자료를 정리합니다.</p>
-<p class="settings-help">설정·지침·방별 연결과 진행 중이거나 결과에 필요한 기록은 보존합니다. 최근 기록이나 상태가 불확실한 자료는 남기므로 정리 수가 0일 수도 있어요. 한 번에 점검하는 수에 제한이 있어 전체 정리를 보장하지 않습니다.</p>
-<p class="hint-text">다른 작업 창을 닫고 사용하세요. 삭제 후 이 화면에서 즉시 되돌릴 수는 없습니다. 백업 다운로드가 취소되거나 실패했다면 다음 확인 창에서 취소하세요.</p>
-<button class="mn" data-ui-action="help-cleanup">백업 후 오래된 기록 정리</button></details>
-<details class="more"><summary>Q. 왜 GPT 데이터 삭제 버튼은 없나요?</summary>
-<p class="settings-help">A. 멈춘 GPT 페이지에서는 도우미 버튼도 응답하지 않을 수 있고, 스크립트가 Chrome의 사이트 데이터 삭제와 같은 범위를 보장하기 어렵습니다. 그래서 크랙에서 복구 절차와 설정 주소를 제공하고, GPT 데이터는 사용자가 브라우저 설정에서 직접 삭제하도록 했어요.</p></details>`;},
+        // v1.5.0: short answers a non-technical user reads at a glance, written for the device in hand.
+        FAQ(){
+            const p=CGC_PLATFORM,desktopChromium=!p.mobile&&!p.firefox,pending=(()=>{try{const route=CrackAdapter.getRouteInfo();return route?getPendingJobId(readValue(KEY.state,null)?.sessions?.[route.sessionKey]||{}):'';}catch{return '';}})();
+            // 'pending' is resolved when tapped: the conversation of the job this room is waiting on.
+            const gpt='<button class="btn sm" data-action="open-slot" data-slot="pending">GPT 보기</button>';
+            return [
+                ['GPT 창이 안 열려요',p.iOS?'Safari가 탭을 자동으로 못 열 때가 있어요. 화면에 뜨는 「ChatGPT 열고 계속」을 한 번 눌러 주세요.':p.mobile?'휴대폰에서는 원래 새 탭으로 열려요. 팝업 차단 알림이 뜨면 허용해 주세요.':'브라우저가 팝업을 막았을 수 있어요. 주소창의 팝업 차단 표시를 눌러 crack.wrtn.ai를 항상 허용으로 바꿔 주세요.',''],
+                ['GPT는 열렸는데 아무것도 안 보내져요',p.iOS?'Userscripts 앱이 chatgpt.com에서도 허용돼 있어야 해요. GPT 로그인과 입력창이 비어 있는지도 확인해 주세요.':'chatgpt.com에서도 도우미가 켜져 있고 GPT에 로그인돼 있어야 해요. 입력창에 쓰던 글이나 파일이 있으면 지우고 다시 실행해 주세요.',''],
+                ['버튼을 눌러도 「잠시 뒤 다시」만 떠요','같은 방의 앞 작업을 아직 준비하는 중이에요. 1~2분 지나도 그대로면 크랙을 새로고침하세요. 기록은 그대로 남아요.',''],
+                ['「확인 필요」가 떠요','GPT에 정말 보내졌는지 확실하지 않을 때 떠요. GPT에 이번 요청이 보이면 그대로 두고, 없으면 「미전송 확정」을 눌러 주세요.',gpt+(pending?'<button class="btn sm key" data-action="release-unsent">미전송 확정</button>':'')],
+                ['결과가 크랙에 안 들어와요',p.mobile?'휴대폰은 GPT 탭이 뒤에 있으면 결과를 못 가져와요. GPT를 열어 답변이 끝난 걸 본 뒤 돌아오면 「기록」에 들어와요.':'결과는 「기록」 탭에 쌓여요. GPT 창을 닫았다면 한 번 열어 답변이 끝난 걸 확인해 주세요.',gpt],
+                ['엉뚱한 GPT 대화가 열려요','진행 중인 작업이면 맞는 GPT 대화에서 나침반 버튼 → 「현재 대화 연결 복구」를 눌러 주세요. 아니면 설정에서 그 작업 연결을 끊고 다시 실행하세요.','<button class="btn sm" data-ui-action="settings-view" data-view="">연결된 대화 보기</button>'],
+                ['「TXT 첨부 실패」가 떠요','GPT 파일 올리기 한도에 걸렸거나 입력창에 다른 파일이 남아 있을 때 생겨요. 입력창을 비우고 잠시 뒤 다시 실행해 주세요.',''],
+                ['GPT가 로고에서 멈춰요','GPT 창을 모두 닫고, 브라우저 설정에서 chatgpt.com 사이트 데이터만 지운 뒤 다시 로그인해 주세요. 대화 기록은 계정에 남아요.',desktopChromium?'<button class="btn sm" data-ui-action="help-copy-settings">설정 주소 복사</button>':''],
+                ['자료가 「읽기 실패」로 떠요','크랙 로그인이 풀렸거나 화면이 덜 불러와졌을 때 생겨요. 크랙을 새로고침하거나 자료 탭에서 「다시 읽기」를 눌러 주세요.','<button class="btn sm" data-ui-action="data-open">자료 탭 열기</button>'],
+                ['도우미 버튼이 두 개 보여요',`도우미가 두 번 설치된 거예요. ${p.iOS?'Userscripts':'Tampermonkey'}에서 예전 것을 끄거나 지운 뒤 새로고침하세요.`,''],
+                ['이 방 기록을 지우고 처음부터 하고 싶어요','「저장된 데이터」에서 방마다 골라 지울 수 있어요. 도우미 기록만 지워지고 크랙 대화와 GPT 대화는 그대로예요.','<button class="btn sm" data-ui-action="settings-view" data-view="storage">저장된 데이터 열기</button>'],
+            ];
+        },
+        html(){
+            return `<p class="lead">자주 막히는 상황과 해결 방법이에요.</p><div class="sbox faq">${this.FAQ().map(([q,a,acts])=>`<details name="cgc-faq"><summary><span>${q}</span>${CrackUI.uiIcon('chev','chev')}</summary><div class="faq-a">${a}${acts?`<div class="btns">${acts}</div>`:''}</div></details>`).join('')}</div>`;
+        },
         async backup(){
             if(transportGcRunning)throw new Error('자동 기록 정리 중입니다. 잠시 후 다시 시도해 주세요.');
             this.snapshotting=true;
             try{
                 await flushStorageWrites();
                 const api=modernGM();
-                const keys=typeof GM_listValues==='function'?await GM_listValues():await api.listValues();
+                // Bounded listing; transient transfer copies are skipped because they cannot be restored anyway.
+                const listed=typeof GM_listValues==='function'?{ok:true,value:GM_listValues()}:await settleWithTimeout(()=>api.listValues(),5000);
+                const keys=listed.ok&&Array.isArray(listed.value)?listed.value.filter(key=>!String(key).startsWith(STORAGE_PREFIX.chunk)&&!String(key).startsWith(STORAGE_PREFIX.payload)&&!String(key).startsWith(STORAGE_PREFIX.claim)&&!String(key).startsWith(STORAGE_PREFIX.loreSourceChunk)):null;
                 if(!Array.isArray(keys))throw new Error('저장 항목 목록을 읽지 못해 백업을 중단했습니다.');
                 keys.splice(0,keys.length,...keys.filter(key=>String(key).startsWith('CGC_')));
                 const values=Object.create(null);
@@ -14423,7 +14685,7 @@ const CGC = (function (CH) {
                     values[key]=safeValue(read.value);
                 }
                 const data={format:'cgc-storage-backup',schema:1,scriptVersion:APP.version,createdAt:new Date().toISOString(),values};
-                const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}));
+                const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json;charset=utf-8'}));
                 const a=document.createElement('a');a.href=url;a.download='CGC-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
                 try{document.body.appendChild(a);a.click();}finally{a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
                 return keys.length;
@@ -14439,7 +14701,7 @@ const CGC = (function (CH) {
                 if(!cgcStorageReady)throw new Error('저장소 준비가 끝난 뒤 다시 시도해 주세요.');
                 if(action==='help-cleanup'&&!confirm('다른 작업 창을 닫았나요? 먼저 백업 파일을 내려받습니다. 그다음 저장 확인을 해야 정리가 시작됩니다.'))return;
                 const count=await this.backup();
-                if(action==='help-backup'){CrackUI.toast('백업 다운로드를 요청했어요 ('+count+'개 항목). 파일이 저장됐는지 확인해 주세요.');return;}
+                if(action==='help-backup'){CrackUI.toast('백업 파일을 내려받았어요 ('+count+'개 항목). 저장됐는지 확인해 주세요.');return;}
                 if(!confirm('백업 JSON 파일이 실제로 저장됐나요? 취소하면 삭제하지 않습니다. 확인하면 오래된 불필요 기록만 정리하며 GPT 사이트 데이터는 바꾸지 않습니다.'))return;
                 if(transportGcRunning)throw new Error('다른 정리가 진행 중이에요. 잠시 후 다시 시도해 주세요.');
                 const removed=await pruneExpiredTransportKeys();
@@ -14623,7 +14885,9 @@ const CGC = (function (CH) {
             return CH.auth.token();
         },
 
-        getTitle() {
+        getTitle() { return this.getHeaderTitle() || '크랙 RP'; },
+        // The room's title as the page shows it, or '' (used where a generic fallback must not be stored).
+        getHeaderTitle() {
             const selectors = [
                 '.css-1xxjkkc',
                 '.css-mp89fs',
@@ -14635,7 +14899,8 @@ const CGC = (function (CH) {
                 const text = cleanText(document.querySelector(selector)?.textContent);
                 if (text) return text;
             }
-            return cleanText(document.title.split('|')[0]) || '크랙 RP';
+            const page=cleanText(document.title.split('|')[0]);
+            return page&&page!=='크랙'?page:'';
         },
 
         async fetchPreviewMessages(){
@@ -15519,10 +15784,11 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
     const CgcReturnDelivery = {
         queue:Promise.resolve(), pending:new Map(), announced:new Map(),
         ackKey(id){return 'CGC_RETURN_ACK_V1_'+id;},
-        settledFromCache(id){
-            const r=readValue(WebDelivery.key(id),null);if(!this.validReceipt(r))return false;
+        // state: one snapshot shared by a caller's loop; each read of the ~250 KB state costs ~6 ms.
+        settledFromCache(id,state=readValue(KEY.state,null)){
+            const r=readValue(WebDelivery.key(id),null);if(!this.validReceipt(r,state))return false;
             const ack=readValue(this.ackKey(id),null),result=r.job.expectResult?readValue(transformResultStorageKey(id),null):null;
-            return this.validAck(ack,r,result);
+            return this.validAck(ack,r,result,state);
         },
         validReceipt(r,state=readValue(KEY.state,null)){
             return Boolean(r?.job?.id&&r.job.sessionKey&&r.job.createdAt
@@ -15538,9 +15804,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 &&(!Object.prototype.hasOwnProperty.call(result,'slotResetAt')||Number(result.slotResetAt||0)===Number(j.slotResetAt||0))
                 &&(!result.actualConversationUrl||persistentConversationUrl(result.actualConversationUrl)===persistentConversationUrl(r.conversationUrl)));
         },
-        validAck(ack,r,result=null){
+        validAck(ack,r,result=null,state=undefined){
             const j=r?.job;
-            return this.validReceipt(r)&&ack?.schema===1&&ack.jobId===j.id&&ack.sessionKey===j.sessionKey
+            return (state===undefined?this.validReceipt(r):this.validReceipt(r,state))&&ack?.schema===1&&ack.jobId===j.id&&ack.sessionKey===j.sessionKey
                 &&ack.slotId===conversationSlotOf(j)&&Number(ack.jobCreatedAt)===Number(j.createdAt)
                 &&Number(ack.sessionResetAt||0)===Number(j.sessionResetAt||0)&&Number(ack.slotResetAt||0)===Number(j.slotResetAt||0)
                 &&ack.url===persistentConversationUrl(r.conversationUrl)&&ack.requestHash===(r.expected?.hash||'')
@@ -15574,20 +15840,31 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(r.ack?.jobId===id)writeValue(KEY.ack,{...r.ack,nonce:uid('return-ack-wake')});
             await flushStorageWrites();return false;
         },
-        receive(id){
+        // A tab's userscript storage cache can miss a write that landed while the tab was starting up
+        // (observed with Tampermonkey: the value stays stale until reload). Shared ack/result/completion
+        // events carry the full record, so the event value fills in what this tab's cache missed.
+        hints:new Map(),
+        hint(id,patch){if(id&&patch)this.hints.set(id,{...(this.hints.get(id)||{}),...patch});},
+        receive(id,hint=null){
             if(!id)return Promise.resolve(false);
+            this.hint(id,hint);
             if(this.pending.has(id))return this.pending.get(id);
             const work=this.queue.catch(()=>{}).then(()=>this.receiveOne(id));
             this.queue=work.catch(error=>console.warn('[cgc] return receive deferred',id,error));
             const done=work.finally(()=>this.pending.delete(id));this.pending.set(id,done);return done;
         },
         async receiveOne(id){
+            const hint=this.hints.get(id)||{};this.hints.delete(id);
             await Promise.all([KEY.state,KEY.roomCheckpoints].map(refreshAsyncStorageKey));
             let r=await refreshAsyncStorageKey(WebDelivery.key(id));
+            if(hint.ack?.jobId===id&&r?.job?.id===id&&['submitting','uncertain'].includes(r.phase))
+                r={...r,phase:'submitted',ack:hint.ack,conversationUrl:persistentConversationUrl(r.conversationUrl||'')||hint.ack.conversationUrl||''};
             if(!this.validReceipt(r))return false;
             const j=r.job,slotId=conversationSlotOf(j);
-            const [result,storedEvent]=await Promise.all([j.expectResult?refreshAsyncStorageKey(transformResultStorageKey(id)):null,
+            let [result,storedEvent]=await Promise.all([j.expectResult?refreshAsyncStorageKey(transformResultStorageKey(id)):null,
                 refreshAsyncStorageKey(completionStorageKey(id))]);
+            if(!this.validResult(result,r)&&this.validResult(hint.result,r))result=hint.result;
+            if(!storedEvent&&hint.event?.jobId===id)storedEvent=hint.event;
             // applyAck is idempotent and retains the original branch/reset/transport-revision guards.
             if(r.ack?.jobId===id){CrackUI.applyAck(r.ack,{allowLate:true,silent:true});await flushStorageWrites();}
             await refreshAsyncStorageKey(KEY.state);
@@ -15629,7 +15906,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 sessionResetAt:Number(j.sessionResetAt||0),slotResetAt:Number(j.slotResetAt||0),url:persistentConversationUrl(r.conversationUrl),
                 requestHash:r.expected?.hash||'',responseHash,accepted,status,completedAt,at:Date.now()};
             await refreshAsyncStorageKey(KEY.state);
-            r=await refreshAsyncStorageKey(WebDelivery.key(id));
+            const latest=await refreshAsyncStorageKey(WebDelivery.key(id));
+            if(latest?.phase==='cancelled'||latest?.job?.id!==id)return false;
+            if(this.validReceipt(latest))r=latest; // otherwise keep the event-confirmed view built above
             if(!this.validReceipt(r)||r.job.sessionKey!==j.sessionKey||conversationSlotOf(r.job)!==slotId)return false;
             const old=await refreshAsyncStorageKey(this.ackKey(id));
             if(!this.validAck(old,r,result)||old.status!==status||old.accepted!==accepted||old.completedAt!==completedAt){
@@ -15726,7 +16005,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(channel&&channel!=='final')return empty;
             const streaming=turn.matches('[data-is-streaming="true"],[aria-busy="true"],[data-message-status="in_progress"]')
                 ||Boolean(turn.querySelector('[data-is-streaming="true"],[aria-busy="true"],[data-message-status="in_progress"]'));
-            const actions=[...turn.querySelectorAll('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"],.turn-action-controls button[aria-label="응답 평가"]')];
+            // The turn's action row (copy/rate/regenerate) is rendered only for a finished answer; 2026-10 builds dropped the testids.
+            // The USER message carries its own copy/edit row inside its unit, so that row never counts.
+            const actions=[...turn.querySelectorAll('button[data-testid="copy-turn-action-button"],button[data-testid="good-response-turn-action-button"],button[data-testid="bad-response-turn-action-button"],.turn-action-controls button')]
+                .filter(button=>!button.closest('[data-message-author-role="user"],[data-content-search-unit-key$=":user"]'));
             const hasFinalAction=actions.some(button=>!button.disabled&&button.getAttribute('aria-disabled')!=='true'&&isVisible(button));
             return {text,final:!streaming&&!ChatGPTBridge.isGenerationBusy()&&hasFinalAction,streaming};
         },
@@ -15813,8 +16095,8 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         media:null,
         body:null,
         palettes:Object.freeze({
-            light:"color-scheme:light;--app:#F4F1FB;--card:#FFFFFF;--tx:#151222;--sub:#6B6779;--line:#E4DFF1;--hair:#EDE9F7;\n  --br:var(--text_brand, #6B4CD6);--br2:#9C82FF;--ink:#FFF;--brs:#E9E2FF;--brdeep:#5B3DC4;\n  --ok:#2C7F5E;--oks:#DFF1E8;--warn:#9A5F08;--warns:#FBEAD0;--mute:#EFEBF8;--danger:#C43B2C;--dangers:#FCEAE7",
-            dark:"color-scheme:dark;--app:#131219;--card:#1E1C27;--tx:#F5F3FB;--sub:#A5A0B4;--line:#322E3D;--hair:#282534;\n  --br:var(--text_brand, #BFAEFF);--br2:#8E79E8;--ink:#1B1330;--brs:#302A48;--brdeep:#BFAEFF;\n  --ok:#7FD5A6;--oks:#1C3027;--warn:#F2BC5E;--warns:#3A2E1B;--mute:#272433;--danger:#FF8878;--dangers:#3A211E",
+            light:"color-scheme:light;--paper:rgba(248,248,246,.58);--paper-solid:#F6F6F4;--ink:#121212;--sub:#575757;--mute:#707070;--line:rgba(18,18,18,.1);--line-strong:rgba(18,18,18,.3);--sep:rgba(18,18,18,.09);--soft:rgba(18,18,18,.035);--field:rgba(255,255,255,.55);--row:rgba(18,18,18,.035);--fresh:rgba(18,18,18,.04);--fresh-line:rgba(18,18,18,.45);--fill:#4A4A4E;--fill-line:rgba(74,74,78,.45);--on-fill:#F6F6F4;--acc2:#2F55EE;--acc2-soft:rgba(47,85,238,.16);--on-acc2:#FFFFFF;--hatch:rgba(18,18,18,.07);--scan:rgba(0,0,0,.022);--bad:#C43B3B;--on-bad:#FFFFFF;--bad-line:rgba(196,59,59,.45);--veil:rgba(20,16,28,.08);--toast-bg:#1C1C1E;--toast-fg:#F6F6F4;--isl-bg:rgba(248,248,246,.78);--shadow:0 0 0 1px rgba(18,18,18,.3),0 30px 70px -36px rgba(0,0,0,.4)",
+            dark:"color-scheme:dark;--paper:rgba(20,20,22,.56);--paper-solid:#18181A;--ink:#ECECEC;--sub:#A3A3A3;--mute:#858585;--line:rgba(255,255,255,.1);--line-strong:rgba(255,255,255,.3);--sep:rgba(255,255,255,.08);--soft:rgba(255,255,255,.035);--field:rgba(255,255,255,.04);--row:rgba(255,255,255,.035);--fresh:rgba(255,255,255,.04);--fresh-line:rgba(255,255,255,.45);--fill:#CDCDD0;--fill-line:rgba(205,205,208,.45);--on-fill:#161617;--acc2:#7690FF;--acc2-soft:rgba(118,144,255,.18);--on-acc2:#0E1430;--hatch:rgba(255,255,255,.06);--scan:rgba(255,255,255,.018);--bad:#F08A8A;--on-bad:#2A0D0D;--bad-line:rgba(240,138,138,.45);--veil:rgba(0,0,0,.18);--toast-bg:#ECECEC;--toast-fg:#161617;--isl-bg:rgba(22,22,24,.8);--shadow:0 0 0 1px rgba(255,255,255,.3),0 30px 70px -36px rgba(0,0,0,.6)",
         }),
         detect(){
             for(const el of [document.body,document.documentElement]){
@@ -15840,7 +16122,8 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         install(){
             if(this.installed){this.sync();return;}this.installed=true;
-            const targets=':is(.cgc-overlay,.cgc-mini-popover,.cgc-toast,.cgc-launcher,.cgc-task-bar)';
+            // v1.5.0 holo line: every AIC root carries the .cgc class and reads its tokens from here.
+            const targets='.cgc';
             injectStyleCompat(`:root ${targets}{${this.palettes.light}}@media(prefers-color-scheme:dark){:root:not([data-cgc-theme]) ${targets}{${this.palettes.dark}}}:root[data-cgc-theme="light"] ${targets}{${this.palettes.light}}:root[data-cgc-theme="dark"] ${targets}{${this.palettes.dark}}`);
             try{
                 this.media=globalThis.matchMedia?.('(prefers-color-scheme: dark)')||null;
@@ -15877,7 +16160,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         pendingIds(state=readValue(KEY.state,null)){
             const ids=[];
             for(const session of Object.values(state?.sessions||{})){
-                if(!session)continue;
+                if(!session)continue; // a room AI Companion has never been used in has no session yet
                 if(getPendingJobId(session))ids.push(getPendingJobId(session));
                 for(const slot of Object.values(session.conversations||{})){
                     if(slot?.memory1State?.awaitingResultJobId)ids.push(slot.memory1State.awaitingResultJobId);
@@ -15963,8 +16246,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             }
             return link;
         },
-        async replayCrack(room=''){
-            const state=readValue(KEY.state,null),ids=this.pendingIds(room?{sessions:{[room]:state?.sessions?.[room]}}:state);
+        async replayCrack(room='',known=null){
+            const state=known||readValue(KEY.state,null);
+            if(room&&!state?.sessions?.[room])return; // nothing can be pending in a room without a session
+            const ids=this.pendingIds(room?{sessions:{[room]:state.sessions[room]}}:state);
             for(const id of ids)if(readValue(this.key(id),null)||CGC_ASYNC_GM_STORAGE)await this.accept(id);
         },
         async locate(id,room,slotId,{wait=true}={}){
@@ -15997,6 +16282,8 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(this.wakeRunning){this.wakeAgain=true;return;}this.wakeRunning=true;
             try{
                 await refreshAsyncStorageKey(KEY.state);
+                // A Crack lookup can be waiting on a client-only address that this page can prove (30-minute backoff on misses).
+                void CgcConversationRepair.run({receipts:false}).catch(error=>console.warn('[cgc] conversation address repair',error));
                 const query=await refreshAsyncStorageKey(KEY.linkQuery);
                 const pending=new Set(this.pendingIds()),queryId=query?.expiresAt>Date.now()?query.jobId:'';
                 const ids=new Set([queryId,ChatGPTBridge.processingJobId,ChatGPTBridge.bootstrapJobId,...WebDelivery.ids()].filter(id=>id&&pending.has(id)));
@@ -16276,9 +16563,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 &&(conversationSlotOf(receipt.job)===LORE_TRANSIENT_SLOT||Boolean(state?.sessions?.[receipt.job.sessionKey]?.conversations?.[conversationSlotOf(receipt.job)]));
         },
         
-        linkedContext(url=persistentConversationUrl(location.href)){
+        // Read-only lookups use a plain read; getState() adds two deep copies of the ~250 KB state for writers.
+        linkedContext(url=persistentConversationUrl(location.href),state=normalizeState(readValue(KEY.state,null))){
             if(!url)return null;
-            const state=getState();
             for(const [sessionKey,session] of Object.entries(state.sessions||{})){
                 for(const [slotId,slot] of Object.entries(session?.conversations||{})){
                     if(persistentConversationUrl(slot?.url||'')===url)return {sessionKey,slotId,slot,session};
@@ -16289,7 +16576,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         async discover(){
             const url=persistentConversationUrl(location.href);if(!url)return null;
             let marker='';try{marker=new URLSearchParams(location.hash.slice(1)).get('cgc-review')||'';}catch{}
-            const state=getState(),linked=this.linkedContext(url);
+            const state=normalizeState(readValue(KEY.state,null)),linked=this.linkedContext(url,state);
             const rows=Object.values(state.sessions||{}).flatMap(s=>s.transmissions||[])
                 .filter(r=>persistentConversationUrl(r.conversationUrl||'')===url).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
             const ids=[ChatGPTBridge.processingJobId,WebDelivery.active?.job?.id,linked?.slot?.lastRequestId,
@@ -16301,7 +16588,14 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             found.sort((a,b)=>Number(b.job.createdAt||0)-Number(a.job.createdAt||0));
             return found[0]||null;
         },
-        headerActions(){return document.querySelector('#conversation-header-actions');},
+        headerActions(){
+            const legacy=document.querySelector('#conversation-header-actions');if(legacy)return legacy;
+            // 2026-10 app shell: Share + conversation-options group at the right of the titlebar.
+            const header=document.querySelector('header[data-app-shell-titlebar]');if(!header)return null;
+            const options=header.querySelector('[data-testid="conversation-options-button"]')
+                ||[...header.querySelectorAll('[data-app-shell-header-obstacle] button[aria-haspopup="menu"]')].filter(isVisible).pop();
+            return options?.parentElement||null;
+        },
         removeDock(){this.dock?.remove();this.bar?.remove();this.dock=null;this.trigger=null;this.bar=null;this.lastBar=null;this.lastHtml='';},
         handleBarAction(e){
             const action=e.target.closest('[data-task-action]')?.dataset.taskAction;if(!action)return;
@@ -16338,9 +16632,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 this.syncNativeTriggerStyle(actions);return this.dock;
             }
             this.removeDock();
-            const dock=document.createElement('div');dock.className='cgc-gpt-task-dock';dock.setAttribute('data-cgc-gpt-dock','1');
+            const dock=document.createElement('div');dock.className='cgc cgc-gpt-task-dock';dock.setAttribute('data-cgc-gpt-dock','1');
             const trigger=document.createElement('button');trigger.type='button';trigger.className='cgc-gpt-task-trigger';trigger.setAttribute('aria-label','Crack AI Companion');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="8.25"></circle><path d="m14.8 9.2-1.55 4.05-4.05 1.55 1.55-4.05 4.05-1.55Z"></path></svg><span class="cgc-gpt-task-dot" aria-hidden="true"></span>';
-            const bar=document.createElement('aside');bar.className='cgc-task-bar';bar.setAttribute('aria-label','Crack AI Companion 작업 메뉴');bar.setAttribute('role','menu');
+            const bar=document.createElement('aside');bar.className='cgc cgc-task-bar';bar.setAttribute('aria-label','Crack AI Companion 작업 메뉴');bar.setAttribute('role','menu');
             dock.append(trigger);parent.insertBefore(dock,actions);(document.body||document.documentElement).appendChild(bar);
             this.dock=dock;this.trigger=trigger;this.bar=bar;this.lastBar=null;this.lastHtml='';
             trigger.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();this.setOpen(!bar.classList.contains('open'));if(bar.classList.contains('open'))void this.refresh().catch(()=>{});});
@@ -16349,7 +16643,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         syncNativeTriggerStyle(actions=this.headerActions()){
             if(!this.trigger||!(actions instanceof HTMLElement))return;
-            const sample=actions.querySelector('[data-testid="conversation-options-button"]')||actions.querySelector('button');
+            const sample=actions.querySelector('[data-testid="conversation-options-button"]')||actions.querySelector('button[aria-haspopup="menu"]')||actions.querySelector('button');
             if(!(sample instanceof HTMLElement))return;
             const nativeClass=sample.getAttribute('class')||'';
             const wanted=`${nativeClass} cgc-gpt-task-trigger`.trim();if(this.trigger.className!==wanted)this.trigger.className=wanted;
@@ -16363,7 +16657,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         install(){
             CgcTheme.install();
-            injectStyleCompat(`.cgc-gpt-task-dock{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.cgc-gpt-task-trigger{position:relative}.cgc-gpt-task-trigger svg{fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}.cgc-gpt-task-dot{position:absolute;right:5px;bottom:5px;width:6px;height:6px;border-radius:999px;background:var(--br);border:1.5px solid var(--app);opacity:0;transform:scale(.7);transition:opacity .15s ease,transform .15s ease}.cgc-gpt-task-dock.has-task .cgc-gpt-task-dot{opacity:1;transform:scale(1)}.cgc-gpt-task-dock.answer-ready .cgc-gpt-task-dot{box-shadow:0 0 0 2px color-mix(in srgb,var(--br) 24%,transparent)}.cgc-task-bar{display:none;position:fixed;left:0;top:0;width:276px;max-width:min(276px,calc(100vw - 16px));z-index:2147483200;background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 28px #20103326;font:12px/1.42 system-ui;box-sizing:border-box;padding:10px 11px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.cgc-task-bar.open{display:block}.cgc-task-bar *{box-sizing:border-box}.cgc-task-bar header{display:flex;gap:7px;align-items:center}.cgc-task-bar strong{flex:1;overflow-wrap:anywhere;font-size:12.5px;line-height:1.35;font-weight:760}.cgc-task-bar header button{width:28px;height:28px;min-width:28px;padding:0;border-radius:8px;display:grid;place-items:center;font-size:15px;line-height:1}.cgc-task-bar p{margin:6px 0 4px;color:inherit;font-size:11.5px;font-weight:650}.cgc-task-bar small{display:block;margin:3px 0;opacity:.72;font-size:10.5px;line-height:1.4}.cgc-task-bar .task-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.cgc-task-bar button,.cgc-task-bar a{font:inherit;color:inherit;border:1px solid var(--line);background:transparent;border-radius:8px;padding:5px 7px;min-height:30px;cursor:pointer;text-decoration:none}.cgc-task-bar .task-actions button,.cgc-task-bar .task-actions a{font-size:11px}.cgc-task-bar button:hover,.cgc-task-bar a:hover{background:var(--app)}.cgc-task-bar button:disabled{opacity:.55;cursor:default}.cgc-task-bar button:focus-visible,.cgc-task-bar a:focus-visible{outline:2px solid var(--br);outline-offset:1px}@media(max-width:720px){.cgc-task-bar{width:min(260px,calc(100vw - 16px));max-width:calc(100vw - 16px);padding:9px 10px;border-radius:13px}.cgc-gpt-task-dot{right:4px;bottom:4px}}`);
+            injectStyleCompat(`.cgc-gpt-task-dock{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.cgc-gpt-task-trigger{position:relative}.cgc-gpt-task-trigger svg{fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}.cgc-gpt-task-dot{position:absolute;right:5px;bottom:5px;width:6px;height:6px;background:var(--ink);opacity:0;transform:scale(.7);transition:opacity .15s,transform .15s}.cgc-gpt-task-dock.has-task .cgc-gpt-task-dot{opacity:1;transform:scale(1)}.cgc-gpt-task-dock.answer-ready .cgc-gpt-task-dot{background:var(--acc2)}.cgc-task-bar{display:none;position:fixed;left:0;top:0;width:276px;max-width:min(276px,calc(100vw - 16px));overflow:auto;overscroll-behavior:contain;z-index:2147483200;background:var(--paper-solid);color:var(--ink);border-radius:3px;box-shadow:var(--shadow);font:12px/1.42 system-ui,-apple-system,sans-serif;box-sizing:border-box;padding:10px 11px}.cgc-task-bar.open{display:block}.cgc-task-bar *{box-sizing:border-box}.cgc-task-bar header{display:flex;gap:7px;align-items:center;padding-bottom:8px;box-shadow:inset 0 -1px 0 var(--sep)}.cgc-task-bar strong{flex:1;overflow-wrap:anywhere;font-size:12.5px;line-height:1.35;font-weight:760}.cgc-task-bar header button{width:26px;height:26px;min-width:26px;padding:0;display:grid;place-items:center;font-size:15px;line-height:1}.cgc-task-bar p{margin:8px 0 4px;font-size:11.5px;font-weight:650}.cgc-task-bar small{display:block;margin:3px 0;color:var(--sub);font-size:10.5px;line-height:1.4}.cgc-task-bar .task-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}.cgc-task-bar button,.cgc-task-bar a,.cgc-task-bar select{font:inherit;color:var(--fill);border:1px solid var(--fill-line);background:transparent;border-radius:2px;padding:5px 8px;min-height:30px;cursor:pointer;text-decoration:none}.cgc-task-bar .task-actions button,.cgc-task-bar .task-actions a{font-size:11px;font-weight:600}@media(hover:hover){.cgc-task-bar button:not(:disabled):hover,.cgc-task-bar a:hover{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}}.cgc-task-bar button:disabled{opacity:.45;cursor:default}.cgc-task-bar button:focus-visible,.cgc-task-bar a:focus-visible{outline:1px solid var(--ink);outline-offset:2px}@media(max-width:720px){.cgc-task-bar{width:min(260px,calc(100vw - 16px));max-width:calc(100vw - 16px);padding:9px 10px}.cgc-gpt-task-dot{right:4px;bottom:4px}}`);
             const ensure=()=>{void this.refresh().catch(()=>{});};
             document.addEventListener('pointerdown',event=>{if(this.bar?.classList.contains('open')&&!this.dock?.contains(event.target)&&!this.bar.contains(event.target))this.setOpen(false);},true);
             const reposition=()=>{if(this.bar?.classList.contains('open'))this.positionBar();};
@@ -16528,6 +16822,855 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         if(raw?.sessions?.[sessionKey])state.sessions[sessionKey]=cloneStateValue(raw.sessions[sessionKey]);
         return getSession(state,sessionKey);
     }
+    // v1.5.0 small display helpers shared by the panel, the top notice and the saved-data view.
+    function cgcHm(at){const d=new Date(Number(at||0));return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+    function cgcAgo(at){const s=(Date.now()-Number(at||0))/1000;if(s<45)return '방금';if(s<3600)return `${Math.max(1,Math.round(s/60))}분 전`;if(s<86400)return `${Math.round(s/3600)}시간 전`;return `${Math.round(s/86400)}일 전`;}
+    function cgcDayLabel(at){const d=new Date(Number(at||0)),n=new Date(),a=new Date(d.getFullYear(),d.getMonth(),d.getDate()),b=new Date(n.getFullYear(),n.getMonth(),n.getDate()),k=Math.round((b-a)/864e5);return k===0?'오늘':k===1?'어제':`${d.getMonth()+1}월 ${d.getDate()}일`;}
+    function cgcSizeLabel(chars){const kb=Number(chars||0)/1024;if(kb>=1024)return `${(kb/1024).toFixed(1)}MB`;return `${chars>0?Math.max(1,Math.round(kb)):0}KB`;}
+    function cgcJsonSize(value){try{return JSON.stringify(value??'').length;}catch{return 0;}}
+
+    // v1.5.0 local data. Rooms are never removed from KEY.state: saveState merges, and late acks, answer records and
+    // checkpoint restores would rebuild a missing room with resetAt 0. A resetAt tombstone rejects all of them.
+    function cgcRoomLastUsed(session){
+        const ts=[...(session?.transmissions||[]).map(x=>x?.createdAt),...(session?.results||[]).map(x=>x?.at),...Object.values(session?.conversations||{}).flatMap(c=>[c?.lastSyncAt,c?.lastAnswerAt]),...(session?.loreBatches||[]).map(b=>b?.createdAt)].map(Number).filter(n=>Number.isFinite(n)&&n>0);
+        return ts.length?Math.max(...ts):0;
+    }
+    function cgcRoomHasData(session){
+        if(!session||typeof session!=='object')return false;
+        return Boolean((session.results||[]).length||(session.transmissions||[]).length||(session.loreBatches||[]).length||(session.loreMergeHistory||[]).length||getPendingJobId(session)
+            ||Object.values(session.conversations||{}).some(c=>c?.url||Object.keys(c?.sent||{}).length));
+    }
+    function cgcStorageUsage(){
+        const raw=readValue(KEY.state,null),cps=readValue(KEY.roomCheckpoints,{})||{},stored=readValue(KEY.settings,{})||{},current=CrackAdapter.getRouteInfo()?.sessionKey||'';
+        const rooms=[];
+        for(const [key,session] of Object.entries(raw?.sessions||{})){
+            const hasData=cgcRoomHasData(session);if(!hasData&&key!==current)continue;
+            // Sizes come from what is already cached; large bodies and TXT chunks are estimated, never read.
+            const bodies=(session.results||[]).reduce((a,r)=>a+(r?.bodyKey?Number(r.fullTextLength||String(r.text||'').length||0):0),0);
+            const lore=(session.loreBatches||[]).reduce((a,b)=>a+(b?.sourceAvailable?Number(b.totalChars||0):0),0);
+            // A room never named (from before 1.5.0) gets a short id and a link, so it can be checked before deleting.
+            const named=cleanText(session.title||'')||(key===current?CrackAdapter.getHeaderTitle():''),[sid,eid]=String(key).split(':');
+            const title=named||`이름 없는 방 · ${String(eid||sid||'').slice(-4)}`,href=!named&&sid&&eid?`/stories/${encodeURIComponent(sid)}/episodes/${encodeURIComponent(eid)}`:'';
+            rooms.push({key,current:key===current,hasData,title,href,last:cgcRoomLastUsed(session),results:(session.results||[]).length,size:cgcJsonSize(session)+cgcJsonSize(cps[key])+bodies+lore});
+        }
+        let prompts=0,settings=0;
+        for(const [k,v] of Object.entries(stored)){const n=k.length+cgcJsonSize(v);if(/Prompt$|^customTasks$|^resultPolicyJson$/.test(k))prompts+=n;else settings+=n;}
+        const roomTotal=rooms.reduce((a,r)=>a+(r.hasData?r.size:0),0);
+        return {rooms,prompts,settings,roomTotal,total:roomTotal+prompts+settings};
+    }
+    function cgcRoomJobIds(session,sessionKey){
+        const ids=new Set(),add=id=>{id=cleanText(id||'');if(id)ids.add(id);};
+        add(getPendingJobId(session||{}));
+        for(const row of session?.transmissions||[])add(row?.jobId);
+        for(const row of session?.results||[])add(row?.jobId);
+        for(const id of session?.committedJobIds||[])add(id);
+        for(const id of session?.processedResultIds||[])add(id);
+        for(const key of session?.observedResultKeys||[])add(String(key||'').split(':')[0]);
+        for(const slot of Object.values(session?.conversations||{})){
+            add(slot?.lastRequestId);add(slot?.lastAnswerJobId);add(slot?.transportState?.lastJobId);
+            for(const st of [slot?.memory1State,slot?.usernoteState]){add(st?.awaitingResultJobId);add(st?.acceptedResultJobId);}
+        }
+        for(const batch of session?.loreBatches||[])for(const part of batch?.parts||[]){add(part?.jobId);add(part?.lastJobId);}
+        for(const merge of session?.loreMergeHistory||[]){add(merge?.jobId);add(merge?.lastJobId);}
+        for(const slot of Object.values(cgcReadRoomCheckpoint(sessionKey)?.slots||{})){add(slot?.lastRequestId);add(slot?.transport?.lastJobId);}
+        const submitted=readValue(KEY.submitted,[]);
+        if(Array.isArray(submitted))for(const row of submitted)if(row?.ack?.sessionKey===sessionKey)add(row.jobId||row.ack?.jobId);
+        return ids;
+    }
+    // Ids that may still be on their way: the pending job, results being awaited, lore parts and merges in flight.
+    function cgcRoomBusyIds(session){
+        return new Set([getPendingJobId(session||{}),
+            ...Object.values(session?.conversations||{}).flatMap(s=>[s?.memory1State?.awaitingResultJobId,s?.usernoteState?.awaitingResultJobId]),
+            ...(session?.loreBatches||[]).flatMap(b=>(b?.parts||[]).filter(p=>p?.status==='sending').map(p=>p.jobId)),
+            ...(session?.loreMergeHistory||[]).filter(m=>m?.status==='sending').map(m=>m.jobId)].map(id=>cleanText(id||'')).filter(Boolean));
+    }
+    // Hard busy uses fresh, time-limited evidence only, and soft busy only ids touched in the last 24 h, so stale
+    // records can never lock a room for good (an abandoned job is wiped with its room).
+    async function cgcRoomBusy(session,sessionKey){
+        const now=Date.now(),SOFT_MS=24*60*60*1000,ids=cgcRoomBusyIds(session),awaitAt=new Map();
+        for(const s of Object.values(session?.conversations||{}))for(const st of [s?.memory1State,s?.usernoteState])if(st?.awaitingResultJobId)awaitAt.set(cleanText(st.awaitingResultJobId),Number(st.awaitingResultAt||0));
+        let hard=CrackUI.startBusy(sessionKey),soft=false;
+        for(const id of ids){
+            const [receipt,claim,job]=await Promise.all([refreshAsyncStorageKey(WebDelivery.key(id)),refreshAsyncStorageKey(claimStorageKey(id)),refreshAsyncStorageKey(jobStorageKey(id))]);
+            if(receipt?.phase==='submitting'&&now-Number(receipt.updatedAt||receipt.at||0)<180000)hard=true;
+            if(claim&&now-Number(claim.claimedAt||0)<CLAIM_TTL_MS)hard=true;
+            const at=Math.max(Number(awaitAt.get(id)||0),Number(receipt?.updatedAt||receipt?.at||0),Number(job?.createdAt||0));
+            if(now-at<SOFT_MS)soft=true;
+        }
+        const progress=readValue(KEY.progress,null);
+        if(progress?.sessionKey===sessionKey&&now-Number(progress.at||0)<120000)hard=true;
+        return {hard,soft,ids};
+    }
+    async function cgcListStoreKeys(){
+        if(typeof GM_listValues==='function'){const keys=GM_listValues();return Array.isArray(keys)?keys:null;}
+        const api=modernGM();if(typeof api?.listValues!=='function')return null;
+        // Timed only while the page is visible, and tried twice: the fallback without a list leaves more behind.
+        for(let attempt=0;attempt<2;attempt++){
+            const listed=await cgcSettleWhileVisible(()=>api.listValues(),8000);
+            if(listed?.ok&&Array.isArray(listed.value))return listed.value;
+        }
+        return null;
+    }
+    function cgcRoomTombstone(now){
+        return {title:'',results:[],auditNotes:'',conversations:{},transport:{pendingJobId:'',pendingSlot:''},transmissions:[],committedJobIds:[],processedResultIds:[],observedResultKeys:[],loreBatches:[],loreMergeHistory:[],resetAt:now,wipedAt:now,conversationSchema:2};
+    }
+    function cgcFreshRoom(old,now){
+        const slotIds=[...new Set([...CONVERSATION_SLOT_IDS,...Object.keys(old?.conversations||{}).filter(isRoutableConversationSlot)])];
+        const conversations=Object.fromEntries(slotIds.map(id=>{const slot=makeConversationSlot(id);slot.resetAt=now;return [id,slot];}));
+        return {...cgcRoomTombstone(now),title:cleanText(old?.title||'')||CrackAdapter.getTitle()||'',conversations};
+    }
+    async function cgcWipeRooms(keys){
+        if(transportGcRunning||CgcTroubleshooting.busy||CgcTroubleshooting.snapshotting)throw new Error('다른 정리 작업이 진행 중이에요. 잠시 후 다시 눌러 주세요.');
+        transportGcRunning=true;
+        try{
+            await Promise.allSettled([KEY.state,KEY.roomCheckpoints,KEY.submitted,KEY.ack,KEY.result,KEY.error,KEY.completion,KEY.progress,KEY.active,KEY.answer].map(refreshAsyncStorageKey));
+            const current=CrackAdapter.getRouteInfo()?.sessionKey||'',now=Date.now();
+            // 1) Decide which rooms can go. The busy checks await storage, so nothing is changed yet.
+            const first=readValue(KEY.state,null),checked=new Map();let kept=0;
+            for(const key of new Set(keys)){
+                const old=first?.sessions?.[key];if(!old||!cgcRoomHasData(old)&&key!==current)continue;
+                const busy=await cgcRoomBusy(old,key);
+                if(busy.hard||busy.soft){kept++;continue;}
+                checked.set(key,busy.ids);
+            }
+            // 2) Re-read and change the state with no await before the write, so saves this tab made during the checks
+            // are kept. A room that picked up new work meanwhile is left alone.
+            const latest=normalizeState(cloneStateValue(readValue(KEY.state,null))),progress=readValue(KEY.progress,null);
+            const jobRoom=new Map(),batchParts=new Map(),bodyKeys=new Set(),wiped=new Set(),staleIds=new Set();
+            for(const [key,ids] of checked){
+                const old=latest.sessions?.[key];if(!old||!cgcRoomHasData(old)&&key!==current)continue;
+                const idsNow=cgcRoomBusyIds(old);
+                if(CrackUI.startBusy(key)||[...idsNow].some(id=>!ids.has(id))||progress?.sessionKey===key&&now-Number(progress.at||0)<120000){kept++;continue;}
+                for(const id of idsNow)staleIds.add(id);
+                for(const id of cgcRoomJobIds(old,key))jobRoom.set(id,key);
+                for(const batch of old.loreBatches||[])if(batch?.id)batchParts.set(batch.id,(batch.parts||[]).map(p=>Number(p?.index)||0));
+                for(const row of old.results||[])if(row?.bodyKey)bodyKeys.add(row.bodyKey);
+                latest.sessions[key]=key===current?cgcFreshRoom(old,now):cgcRoomTombstone(now);
+                wiped.add(key);
+            }
+            if(!wiped.size)return {wiped:0,kept,removed:0};
+            // One state commit and one checkpoint commit, confirmed durable before anything they referenced is deleted.
+            latest.schema=1;latest.uiRevision=uid('state');writeValue(KEY.state,latest);
+            const cps=readValue(KEY.roomCheckpoints,{}),nextCps=cps&&typeof cps==='object'&&!Array.isArray(cps)?{...cps}:{};
+            for(const key of wiped)nextCps[key]=key===current?cgcBuildRoomCheckpoint(key,latest.sessions[key]):{schema:1,sessionKey:key,savedAt:now,resetAt:now,slots:{}};
+            writeValue(KEY.roomCheckpoints,nextCps);
+            const backup=readValue(KEY.stateSlotBackup,null);if(backup&&!backup.dropped)writeValue(KEY.stateSlotBackup,{dropped:now});
+            await flushStorageWrites();
+            const check=await readStorageForCleanup(KEY.state).catch(()=>null);
+            if(check&&[...wiped].some(key=>Number(check.sessions?.[key]?.resetAt||0)<now))throw new Error('저장하지 못했어요. 다시 눌러 주세요.');
+            for(const k of [KEY.ack,KEY.result,KEY.error,KEY.completion,KEY.progress,KEY.active,KEY.answer]){const v=readValue(k,null);if(v?.sessionKey&&wiped.has(v.sessionKey)){if(v.jobId&&!jobRoom.has(v.jobId))jobRoom.set(v.jobId,v.sessionKey);deleteValue(k);}}
+            if(wiped.has(current)){const submitted=readValue(KEY.submitted,[]),fresh=readValue(KEY.progress,null);if(Array.isArray(submitted)&&!(fresh&&now-Number(fresh.at||0)<120000))writeValue(KEY.submitted,submitted.filter(row=>row?.ack?.sessionKey!==current));}
+            const fencePrefixes=[...wiped].map(key=>`CGC_SLOT_FENCE_V1_${hashString(String(key))}_`);
+            let removed=0;const del=key=>{deleteValue(key);removed++;};
+            const cancel=(id,room)=>writeValue(WebDelivery.key(id),{phase:'cancelled',job:{id,sessionKey:room,createdAt:0},cancelledAt:now,cancelReason:'data_wipe',updatedAt:now});
+            const keysList=await cgcListStoreKeys();
+            if(keysList){
+                for(const key of keysList){
+                    const id=transportKeyJobId(key);
+                    if(id&&jobRoom.has(id)){
+                        // A cancelled stub (not a delete) keeps a waking GPT tab from sending and lets GC reap late bodies.
+                        if(key===WebDelivery.key(id))cancel(id,jobRoom.get(id));
+                        else del(key);
+                        continue;
+                    }
+                    const lore=loreSourceGroupId(key);
+                    if(lore&&batchParts.has(lore.replace(/_\d+$/,''))){del(key);continue;}
+                    if(bodyKeys.has(key)||fencePrefixes.some(prefix=>key.startsWith(prefix)))del(key);
+                }
+            }else{
+                // No key list (slow iOS storage): delete what the room's records point to.
+                for(const [id,room] of jobRoom){
+                    if(staleIds.has(id))await hydrateAsyncPayloadStorage(id,1500).catch(()=>{}); // only unsent jobs still hold TXT chunks
+                    clearJobStorage(id);
+                    for(const key of [transformResultStorageKey(id),completionStorageKey(id),cgcAnswerRecordKey(id),CgcReturnDelivery.ackKey(id),CgcJobLinks.key(id),CgcJobLinks.ackKey(id),CgcJobLinks.queryKey(id)])del(key);
+                    cancel(id,room);
+                }
+                for(const [batchId,parts] of batchParts)for(const index of parts){await refreshAsyncStorageKey(loreSourceStorageKey(batchId,index));clearLorePartSource(batchId,index);}
+                for(const key of wiped)for(const slot of CONVERSATION_SLOT_IDS)del(cgcSlotFenceStorageKey(key,slot));
+                for(const key of bodyKeys)del(key);
+            }
+            await flushStorageWrites();
+            return {wiped:wiped.size,kept,removed};
+        }finally{transportGcRunning=false;}
+    }
+
+    // v1.5.0 top notice ("위쪽 알림 팝업"). Its width comes from CSS (max-content) and is never measured in JS,
+    // which is what made the design draft's pill grow by 8px on every hover, resize or render.
+    // Bottom of Crack's top bars (viewport px), 0 when none is found. They are plain divs: <main> starts below the global
+    // bar, and the room header is the first bar inside it. A real <header> is honoured too.
+    function cgcCrackBarsBottom(vv=cgcViewportBox()){
+        let bottom=0;const main=document.querySelector('main');
+        if(main){const r=main.getBoundingClientRect();if(r.top>vv.top&&r.top<vv.top+140)bottom=Math.max(bottom,r.top);}
+        for(const bar of [main?.querySelector('.group\\/header > div'),...document.querySelectorAll('header')]){
+            if(!bar||bar.closest('.cgc'))continue;const r=bar.getBoundingClientRect();
+            if(r.height>0&&r.bottom>vv.top&&r.bottom<vv.top+200&&r.width>vv.width*.4)bottom=Math.max(bottom,r.bottom);
+        }
+        return bottom;
+    }
+    const CgcIsland={
+        el:null,notes:[],timer:0,open:false,hover:false,
+        ICON:Object.freeze({
+            att:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.5v5.4"/><circle cx="10" cy="14.2" r="1.25" fill="currentColor" stroke="none"/></svg>',
+            done:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.8 10.4l2.8 2.8 5.6-6"/></svg>',
+            sent:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5L10 14"/><path d="M20.5 3.5l-6.5 17-4-6.5-6.5-4z"/></svg>',
+            x:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>',
+        }),
+        enabled(){try{return isCrack&&getSettings().islandNotices!==false;}catch{return false;}},
+        notify(note){
+            if(!note?.id||!this.enabled()||CrackUI.panelOpen||document.visibilityState==='hidden'||!document.body)return false;
+            const ttl=Number(note.ttl)||(note.kind==='att'?8000:note.kind==='done'?6500:4500);
+            const rank={att:0,done:1,sent:2};this.notes=[{...note,title:String(note.title||'작업'),ttl,at:Date.now()},...this.notes.filter(n=>n.id!==note.id)].sort((a,b)=>(rank[a.kind]??3)-(rank[b.kind]??3)||b.at-a.at).slice(0,6);
+            this.render();return true;
+        },
+        hide(){clearTimeout(this.timer);this.timer=0;this.notes=[];this.open=false;this.hover=false;this.el?.remove();this.el=null;},
+        drop(id){this.notes=this.notes.filter(n=>n.id!==id);if(this.notes.length)this.render();else this.hide();},
+        keepRoom(room){const kept=this.notes.filter(n=>!n.room||n.room===room);if(kept.length===this.notes.length)return;this.notes=kept;if(kept.length)this.render();else this.hide();},
+        label(n){return n.sub||(n.kind==='att'?'확인 필요':n.kind==='done'?'결과 도착':'보냈어요');},
+        render(){
+            if(!this.notes.length)return this.hide();
+            if(!this.el){
+                const el=this.el=document.createElement('div');el.setAttribute('role','status');
+                el.addEventListener('click',e=>this.onClick(e));
+                // Mouse only: touch browsers fire a sticky mouseenter on tap, which would keep the notice up for good.
+                el.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;this.hover=true;clearTimeout(this.timer);});
+                el.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;this.hover=false;this.arm();});
+                document.body.appendChild(el);
+                if(!this.bound){this.bound=true;const place=()=>{if(this.el)this.position();};window.addEventListener('resize',place,{passive:true});window.visualViewport?.addEventListener('resize',place,{passive:true});window.visualViewport?.addEventListener('scroll',place,{passive:true});}
+            }
+            const L=this.notes,first=L[0],icon=k=>this.ICON[k]||this.ICON.sent,gone=Math.min(first.ttl,Date.now()-first.at);
+            const head=L.length>1?`<b class="isl-cnt">알림 ${L.length}개</b><span class="isl-sub isl-more">${escapeHtml(first.title)} 외</span>`:`<b>${escapeHtml(first.title)}</b><span class="isl-sub">${escapeHtml(this.label(first))}</span>`;
+            const rows=L.map((n,i)=>{const acts=n.slot&&n.kind!=='sent'?`<div class="isl-acts"><button type="button" data-isl="gpt" data-slot="${escapeHtml(n.slot)}">GPT 보기</button></div>`:'';return `<div class="isl-it k-${n.kind}"><span class="isl-no">${String(i+1).padStart(2,'0')}</span><span class="nt-av k-${n.kind}">${icon(n.kind)}</span><div class="isl-t"><b>${escapeHtml(n.title)}</b><span><em>${escapeHtml(this.label(n))}</em><time>${cgcHm(n.at)}</time></span></div><button type="button" class="isl-x" data-isl="drop" data-id="${escapeHtml(n.id)}" aria-label="이 알림 닫기">${this.ICON.x}</button>${acts}</div>`;}).join('');
+            this.el.className=`cgc cgc-isl k-${first.kind}${this.open?' open':''}`;
+            this.el.innerHTML=`<button type="button" class="isl-row" data-isl="toggle" aria-label="알림 펼치기" aria-expanded="${this.open}"><span class="isl-stack">${L.slice(0,3).map(n=>`<span class="nt-av k-${n.kind}">${icon(n.kind)}</span>`).join('')}</span><span class="isl-lb">${head}</span><time class="isl-at">${cgcHm(first.at)}</time><svg class="isl-chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6.2L8 10.2 12 6.2"/></svg></button><i class="isl-timer" style="animation-duration:${first.ttl}ms;animation-delay:-${gone}ms"></i><div class="isl-card"><div class="isl-hd"><span class="isl-tab">ALERT ${String(L.length).padStart(2,'0')}</span><span class="isl-hint">끝난 일과 확인할 일</span><button type="button" class="isl-x" data-isl="toggle" aria-label="접기">${this.ICON.x}</button></div>${rows}<button type="button" class="isl-open" data-isl="open">도우미 열기</button></div>`;
+            this.position();this.arm();
+        },
+        arm(){
+            clearTimeout(this.timer);if(this.open||this.hover||!this.notes.length)return;
+            const first=this.notes[0];this.timer=setTimeout(()=>{if(!this.open&&!this.hover)this.hide();},Math.max(800,first.ttl-(Date.now()-first.at)));
+        },
+        position(){
+            const el=this.el;if(!el)return;
+            const vv=cgcViewportBox(),half=Math.min(170,vv.width/2),rect=CrackUI.launcherComposer?.isConnected?CrackUI.launcherComposer.getBoundingClientRect():null;
+            const cx=rect&&rect.width?rect.left+rect.width/2:vv.left+vv.width/2;
+            const bars=cgcCrackBarsBottom(vv),top=Math.max(vv.top+10,bars?bars+8:0);
+            el.style.top=`max(${Math.round(top)}px, calc(env(safe-area-inset-top) + 8px))`;el.style.maxHeight=`${Math.max(120,Math.round(vv.top+vv.height-top-12))}px`;el.style.left=`${Math.round(clamp(cx,vv.left+half,vv.left+vv.width-half))}px`;
+        },
+        onClick(e){
+            const b=e.target.closest('[data-isl]');if(!b)return;e.preventDefault();e.stopPropagation();
+            const action=b.dataset.isl;
+            if(action==='toggle'){this.open=!this.open;this.render();return;}
+            if(action==='drop'){this.drop(b.dataset.id||'');return;}
+            if(action==='open'){this.hide();CrackUI.showPanel('work');return;}
+            if(action==='gpt'){
+                // A notice from another room must not open this room's GPT conversation.
+                const room=CrackAdapter.getRouteInfo()?.sessionKey||'';if(this.notes.some(n=>n.room&&n.room!==room)){this.keepRoom(room);return;}
+                const slot=b.dataset.slot||'audit';this.hide();void CrackUI.openCurrentGpt(slot).catch(error=>CrackUI.toast(`GPT 대화를 열지 못했어요: ${error.message}`,true));}
+        },
+    };
+
+    // v1.5.0 hero wireframe, as in the design: real 3D (vertices rotated in 3D and projected with perspective onto a
+    // canvas) with afterimages, dashed back edges, a ground ring, an axis gizmo and a ROT readout.
+    // It draws only while the panel is open and the page is visible, at about 30fps, and a single frame for reduced motion.
+    const CgcEcho=(()=>{
+        let shapes=null,raf=0,last=0,active=false;const live=new Set(),scrollers=new WeakSet();
+        const reduced=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch{return false;}};
+        const build=()=>{
+            const P=(1+Math.sqrt(5))/2,S={};
+            const pairs=(V,len)=>{const E=[];for(let a=0;a<V.length;a++)for(let b=a+1;b<V.length;b++){const d=Math.hypot(V[a][0]-V[b][0],V[a][1]-V[b][1],V[a][2]-V[b][2]);if(Math.abs(d-len)<.01)E.push([a,b]);}return E;};
+            S.cube=(()=>{const V=[];for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1])V.push([x*.82,y*.82,z*.82]);return {V,E:pairs(V,1.64),dots:1};})();
+            S.tetra=(()=>{const V=[[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]].map(v=>v.map(c=>c*.82));return {V,E:pairs(V,Math.hypot(1.64,1.64)),dots:1};})();
+            S.icosa=(()=>{const V=[];for(const a of [-1,1])for(const b of [-1,1])V.push([0,a,b*P],[a,b*P,0],[b*P,0,a]);const k=1/Math.hypot(1,P)*1.05,W=V.map(v=>v.map(c=>c*k));return {V:W,E:pairs(W,2*k),dots:1};})();
+            S.torus=(()=>{const V=[],E=[],U=20,N=9,R=.78,r=.3;for(let i=0;i<U;i++)for(let j=0;j<N;j++){const u=i/U*Math.PI*2,v=j/N*Math.PI*2;V.push([(R+r*Math.cos(v))*Math.cos(u),r*Math.sin(v),(R+r*Math.cos(v))*Math.sin(u)]);const a=i*N+j;E.push([a,((i+1)%U)*N+j],[a,i*N+(j+1)%N]);}return {V,E,dots:0};})();
+            return S;
+        };
+        const rot=([x,y,z],ay,ax)=>{const cy=Math.cos(ay),sy=Math.sin(ay),cx=Math.cos(ax),sx=Math.sin(ax),x1=x*cy+z*sy,z1=-x*sy+z*cy;return [x1,y*cx-z1*sx,y*sx+z1*cx];};
+        const fit=(el,t)=>{
+            if(el.sizedAt&&t-el.sizedAt<1000&&el.cv.width)return el.shown;el.sizedAt=t;
+            const r=el.box.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);
+            const view=el.box.closest('.sc')?.getBoundingClientRect();
+            el.shown=Boolean(w&&h)&&(!view||r.bottom>view.top&&r.top<view.bottom);if(!el.shown)return false;
+            if(el.cv.width!==w||el.cv.height!==h){el.cv.width=w;el.cv.height=h;}el.dpr=dpr;return true;
+        };
+        // Rotation (cos/sin once per pass) and perspective into a reused flat buffer: x, y and depth per vertex.
+        const project=(el,V,a,ax,k,cx0,cy0,f,dist)=>{
+            const n=V.length,P=el.buf&&el.buf.length>=n*3?el.buf:(el.buf=new Float32Array(n*3)),cy=Math.cos(a),sy=Math.sin(a),cx=Math.cos(ax),sx=Math.sin(ax);
+            for(let i=0;i<n;i++){const v=V[i],x1=v[0]*cy+v[2]*sy,z1=-v[0]*sy+v[2]*cy,y=v[1]*cx-z1*sx,z=v[1]*sx+z1*cx,s=f*dist/(z+dist)*k;P[i*3]=cx0+x1*s;P[i*3+1]=cy0+y*s;P[i*3+2]=z;}
+            return P;
+        };
+        const lines=(g,P,edges)=>{g.beginPath();for(const e of edges){const a=e[0]*3,b=e[1]*3;g.moveTo(P[a],P[a+1]);g.lineTo(P[b],P[b+1]);}g.stroke();};
+        const draw=(el,t)=>{
+            if(!fit(el,t))return;const c=el.cv,w=c.width,h=c.height,S0=shapes[el.shape];if(!w||!h||!S0)return;
+            const g=c.getContext('2d'),dpr=el.dpr||1;if(!g)return;
+            if(!el.col||t-el.colAt>800){const cs=getComputedStyle(c);el.col=cs.color;el.ff=cs.fontFamily;el.colAt=t;}
+            const spd=el.run?.0011:.00042,ay=t*spd+el.a0,ax=.42+Math.sin(t*.0004)*.16,born=Math.min(1,Math.max(0,(t-el.t0)/900)),ease=1-Math.pow(1-born,3);
+            g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,w,h);g.setTransform(dpr,0,0,dpr,0,0);
+            const cw=w/dpr,ch=h/dpr,cx0=cw/2,cy0=ch*.45,f=cw*.324,dist=3.4;
+            g.strokeStyle=el.col;g.fillStyle=el.col;
+            // Ground ring and the arc that turns with the shape.
+            g.globalAlpha=.2*ease;g.lineWidth=1;g.beginPath();g.ellipse(cx0,ch*.86,cw*.36,ch*.07,0,0,Math.PI*2);g.stroke();
+            const turn=ay%(Math.PI*2);g.globalAlpha=.5*ease;g.lineWidth=2.2;g.beginPath();g.ellipse(cx0,ch*.86,cw*.36,ch*.07,0,turn+.2,turn+.75);g.stroke();
+            const V=born>=1?S0.V:S0.V.map((v,i)=>{const s=el.seed[i];return [v[0]+s[0]*(1-ease),v[1]+s[1]*(1-ease),v[2]+s[2]*(1-ease)];});
+            // Afterimages at the angles just passed.
+            for(let k=4;k>=1;k--){const a=ay-k*(el.run?.16:.11);g.globalAlpha=.04*(5-k)*ease;g.lineWidth=.8;lines(g,project(el,V,a,ax,ease,cx0,cy0,f,dist),S0.E);}
+            // Body: back edges faint and dashed, front edges sharp.
+            const P=project(el,V,ay,ax,ease,cx0,cy0,f,dist),back=el.back||(el.back=[]),front=el.front||(el.front=[]);back.length=0;front.length=0;
+            for(const e of S0.E)(P[e[0]*3+2]+P[e[1]*3+2]>0?back:front).push(e);
+            g.setLineDash([2,3]);g.globalAlpha=.18*ease;g.lineWidth=.9;lines(g,P,back);
+            g.setLineDash([]);g.globalAlpha=.58*ease;g.lineWidth=S0.dots?1.25:1;lines(g,P,front);
+            if(S0.dots){g.globalAlpha=.6*ease;for(let i=0;i<V.length;i++)if(P[i*3+2]<=0)g.fillRect(P[i*3]-1.4,P[i*3+1]-1.4,2.8,2.8);}
+            // Axis gizmo.
+            const ox=9,oy=ch-9;g.lineWidth=.8;g.font=`500 6.5px ${el.ff||'sans-serif'}`;
+            for(const [x,y,z,label] of [[1,0,0,'x'],[0,-1,0,'y'],[0,0,1,'z']]){const q=rot([x,y,z],ay,ax);g.globalAlpha=.35*ease;g.beginPath();g.moveTo(ox,oy);g.lineTo(ox+q[0]*7,oy+q[1]*7);g.stroke();g.globalAlpha=.4*ease;g.fillText(label,ox+q[0]*10-2,oy+q[1]*10+2);}
+            if(el.ro&&t-el.roAt>150){el.roAt=t;const deg=String(Math.round(((ay*180/Math.PI)%360+360)%360)).padStart(3,'0');if(el.ro.textContent!==deg)el.ro.textContent=deg;}
+        };
+        const onScreen=()=>{for(const el of live)if(el.shown!==false)return true;return false;};
+        // Nothing on screen (another tab, the hero scrolled away): no frames at all until the observer or start() wakes it.
+        const io=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{for(const en of entries)for(const el of live)if(el.box===en.target){el.shown=en.isIntersecting;el.sizedAt=0;}kick();}):null;
+        const loop=t=>{
+            raf=0;if(!active||document.visibilityState==='hidden')return;
+            if(t-last>=32){last=t;for(const el of live){if(!el.cv.isConnected){live.delete(el);io?.unobserve(el.box);continue;}draw(el,t);}}
+            if(onScreen())raf=requestAnimationFrame(loop);
+        };
+        const kick=()=>{if(active&&!raf&&document.visibilityState!=='hidden'&&onScreen())raf=requestAnimationFrame(loop);};
+        document.addEventListener('visibilitychange',kick);
+        return {
+            SHAPE:Object.freeze({att:'tetra',run:'torus',new:'cube',calm:'icosa'}),
+            mount(box,mode,fresh=false){
+                shapes||=build();const cv=box?.querySelector('canvas'),shape=this.SHAPE[mode]||'cube';if(!cv)return;
+                for(const el of live)if(el.box===box)live.delete(el);
+                const n=(shapes[shape]||{V:[]}).V.length,now=performance.now();
+                const el={box,cv,shape,run:mode==='run',t0:fresh?now:now-2000,a0:{tetra:.4,torus:1.1,cube:.7,icosa:.2}[shape]||0,ro:box.querySelector('.echo-ro b'),roAt:0,seed:Array.from({length:n},()=>[(Math.random()-.5)*4,(Math.random()-.5)*4,(Math.random()-.5)*4])};
+                if(reduced()){requestAnimationFrame(t=>{el.t0=t-3000;draw(el,t);});return;}
+                live.add(el);io?.observe(box);
+                // Backup for the observer: scrolling the panel re-checks a hero that was scrolled away.
+                const sc=box.closest('.sc');if(sc&&!scrollers.has(sc)){scrollers.add(sc);sc.addEventListener('scroll',()=>{if(raf)return;for(const e of live)if(e.shown===false){e.shown=undefined;e.sizedAt=0;}kick();},{passive:true});}
+                kick();
+            },
+            start(){active=true;for(const el of live){el.sizedAt=0;el.shown=undefined;}kick();},
+            stop(){active=false;if(raf){cancelAnimationFrame(raf);raf=0;}},
+        };
+    })();
+
+    // v1.5.0 holo line UI. Boot CSS (launcher, toast, top notice) is injected on every Crack page; the panel
+    // stylesheet is injected only when the panel is first opened.
+    const CGC_HOLO_BOOT_CSS = `.cgc-launcher{display:inline-flex;align-items:center}
+.cgc-launch-more{position:relative;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.cgc-launch-more:not(.cgc-native){display:inline-grid;place-items:center;width:28px;height:28px;padding:0;border-radius:999px;border:1px solid rgba(128,128,128,.38);background:transparent;color:inherit;opacity:.85}
+.cgc-launcher .cgc-launch-more>svg{width:18px;height:18px;overflow:visible;pointer-events:none;flex:none;fill:none}
+.cgc-launch-more .cmp-ring{fill:none;stroke:currentColor;stroke-width:1.8}
+.cgc-launch-more .cmp-a{fill:currentColor}
+.cgc-launch-more .cmp-b{fill:none;stroke:currentColor;stroke-width:1.4;stroke-linejoin:round}
+.cgc-launch-more .cmp-c{fill:none;stroke:currentColor;stroke-width:1.2}
+.cgc-launch-more .cmp-n{transform-origin:12px 12px;transform-box:view-box;transform:rotate(-14deg);transition:transform .5s cubic-bezier(.3,1.6,.5,1)}
+.cgc-launch-more[aria-expanded="true"] .cmp-n{transform:rotate(45deg)}
+@media(hover:hover){.cgc-launch-more:hover .cmp-n{transform:rotate(45deg)}}
+.cgc-launch-more[data-state="att"]{color:var(--acc2)!important;border-color:color-mix(in srgb,var(--acc2) 55%,transparent)!important}
+.cgc-launch-more[data-state="att"] svg.cmp{animation:cgcJitter 1.6s ease-in-out infinite}
+@media(prefers-reduced-motion:no-preference){.cgc-launch-more[data-state="att"] .cmp-n{transform:none}}
+.cgc-launch-more[data-state="fresh"],.cgc-launch-more[data-state="done"],.cgc-launch-more[data-state="run"]{color:var(--ink)!important}
+.cgc-launch-more .l-orb .o{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-dasharray:.1 7.6;animation:cgcOrbit 2s linear infinite}
+.cgc-launch-more .l-orb .o2{animation-duration:2.6s;animation-direction:reverse;opacity:.75}
+.cgc-launch-more .l-orb .o3{animation-duration:2.3s;opacity:.55}
+.cgc-launch-more .l-orb .core{fill:currentColor;transform-origin:12px 12px;transform-box:view-box;animation:cgcCore 1.6s ease-in-out infinite}
+.cgc-launcher .cgc-launch-more>.l-ring{position:absolute;left:-1px;top:-1px;width:calc(100% + 2px);height:calc(100% + 2px);animation:cgcRingSpin 1.4s linear infinite}
+.cgc-launch-more .l-ring circle{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-dasharray:22 78}
+.cgc-launch-more .l-done{animation:cgcPop .6s cubic-bezier(.3,1.5,.5,1) both}
+.cgc-launch-more .l-done circle{fill:none;stroke:currentColor;stroke-width:1.8;stroke-dasharray:1;stroke-dashoffset:1;animation:cgcDash .45s ease-out forwards}
+.cgc-launch-more .l-done path{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:cgcDash .3s .3s ease-out forwards}
+.cgc-launch-more .l-dot{position:absolute;top:-1px;right:-1px;width:7px;height:7px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px var(--paper-solid);pointer-events:none}
+.cgc-launch-more[data-state="att"] .l-dot{background:var(--acc2)}
+.cgc-launch-more[data-state="att"] .l-dot::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:2px solid var(--acc2);animation:cgcPing 1.6s ease-out infinite}
+@keyframes cgcJitter{0%,60%,100%{transform:rotate(0)}66%{transform:rotate(-16deg)}72%{transform:rotate(12deg)}78%{transform:rotate(-8deg)}84%{transform:rotate(4deg)}}
+@keyframes cgcOrbit{to{stroke-dashoffset:-23.1}}
+@keyframes cgcCore{50%{transform:scale(.6);opacity:.6}}
+@keyframes cgcRingSpin{to{transform:rotate(360deg)}}
+@keyframes cgcPop{from{transform:scale(.4) rotate(-30deg)}}
+@keyframes cgcDash{to{stroke-dashoffset:0}}
+@keyframes cgcPing{0%{transform:scale(.55);opacity:.9}100%{transform:scale(1.8);opacity:0}}
+.cgc-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483600;max-width:min(520px,calc(100vw - 32px));padding:10px 14px;border-radius:2px;background:var(--toast-bg);color:var(--toast-fg);box-shadow:0 10px 30px -8px rgba(0,0,0,.35);font-family:inherit;font-size:12.5px;font-weight:600;line-height:1.45;text-align:center;word-break:keep-all;overflow-wrap:anywhere;animation:cgcToast .32s cubic-bezier(.2,1.3,.4,1) both}
+.cgc-toast.error{box-shadow:inset 3px 0 0 var(--acc2),0 10px 30px -8px rgba(0,0,0,.35);padding-left:17px;text-align:left}
+@keyframes cgcToast{from{opacity:0;transform:translate(-50%,10px) scale(.96)}}
+.cgc-isl{position:fixed;z-index:2147483250;transform:translateX(-50%);max-width:calc(100vw - 24px);border-radius:3px;background:var(--isl-bg);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 0 0 1px var(--line-strong),0 14px 34px -18px rgba(0,0,0,.35);color:var(--ink);font-family:inherit;font-size:12.5px;line-height:1.4;letter-spacing:-.01em;overflow:hidden;animation:cgcIslIn .5s cubic-bezier(.22,1,.36,1) both}
+.cgc-isl *,.cgc-isl *::before,.cgc-isl *::after{box-sizing:border-box}
+.cgc-isl::before{content:"";position:absolute;inset:3px;pointer-events:none;z-index:2;opacity:.55;background:linear-gradient(var(--ink),var(--ink)) 0 0/6px 1px no-repeat,linear-gradient(var(--ink),var(--ink)) 0 0/1px 6px no-repeat,linear-gradient(var(--ink),var(--ink)) 100% 0/6px 1px no-repeat,linear-gradient(var(--ink),var(--ink)) 100% 0/1px 6px no-repeat,linear-gradient(var(--ink),var(--ink)) 0 100%/6px 1px no-repeat,linear-gradient(var(--ink),var(--ink)) 0 100%/1px 6px no-repeat,linear-gradient(var(--ink),var(--ink)) 100% 100%/6px 1px no-repeat,linear-gradient(var(--ink),var(--ink)) 100% 100%/1px 6px no-repeat}
+.cgc-isl button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+.cgc-isl .isl-row{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;height:44px;padding:0 12px 0 6px;white-space:nowrap}
+.cgc-isl .isl-stack{display:flex;align-items:center;flex:none}
+.cgc-isl .nt-av{position:relative;width:28px;height:28px;border-radius:2px;display:grid;place-items:center;background:var(--paper-solid);border:1px solid var(--line-strong);color:var(--ink);flex:none}
+.cgc-isl .isl-stack .nt-av+.nt-av{margin-left:-9px}
+.cgc-isl .nt-av svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cgc-isl .nt-av.k-att{background:var(--acc2);border-color:var(--acc2);color:var(--on-acc2)}
+.cgc-isl .isl-lb{display:flex;align-items:baseline;gap:7px;min-width:0;overflow:hidden}
+.cgc-isl .isl-lb b{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.cgc-isl .isl-sub,.cgc-isl .isl-at{font-size:10px;color:var(--sub);flex:none}
+.cgc-isl .isl-lb b.isl-cnt{flex:none}.cgc-isl .isl-lb .isl-more{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.cgc-isl .isl-at{padding-left:8px;border-left:1px solid var(--line-strong);letter-spacing:.06em}
+.cgc-isl .isl-chev{width:13px;height:13px;fill:none;stroke:var(--sub);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.cgc-isl .isl-timer{position:absolute;left:0;right:0;top:42px;height:2px;background:var(--fill);transform-origin:left;animation:cgcIslTimer linear forwards;pointer-events:none}
+.cgc-isl.k-att .isl-timer{background:var(--acc2)}
+@media(hover:hover){.cgc-isl:hover .isl-timer{animation-play-state:paused}}
+.cgc-isl.open{overflow-y:auto;overscroll-behavior:contain}
+.cgc-isl .isl-card{display:none;width:min(320px,calc(100vw - 24px));padding:10px 10px 10px 12px;background:repeating-linear-gradient(135deg,var(--hatch) 0 1px,transparent 1px 9px) right top/34% 100% no-repeat}
+.cgc-isl.open .isl-row,.cgc-isl.open .isl-timer{display:none}
+.cgc-isl.open .isl-card{display:block}
+.cgc-isl .isl-hd{display:flex;align-items:center;gap:10px;height:30px;margin:0 -2px 4px -2px;padding-right:2px;border-bottom:1px solid var(--line-strong)}
+.cgc-isl .isl-tab{height:30px;display:inline-flex;align-items:center;padding:0 20px 0 12px;background:var(--fill);color:var(--on-fill);font-size:9.5px;font-weight:600;letter-spacing:.14em;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 100%,0 100%)}
+.cgc-isl .isl-hint{flex:1;font-size:11px;color:var(--sub)}
+.cgc-isl .isl-x{width:22px;height:22px;border-radius:2px;display:grid;place-items:center;color:var(--sub)}
+.cgc-isl .isl-x:hover{background:var(--fill);color:var(--on-fill)}
+.cgc-isl .isl-x svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.cgc-isl .isl-it{display:grid;grid-template-columns:18px 28px 1fr 18px;align-items:center;column-gap:10px;padding:9px 0}
+.cgc-isl .isl-it+.isl-it{border-top:1px solid var(--sep)}
+.cgc-isl .isl-no{font-size:9.5px;color:var(--sub)}
+.cgc-isl .isl-t b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cgc-isl .isl-t span{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--sub)}
+.cgc-isl .isl-it.k-att .isl-t span em{background:var(--acc2);color:var(--on-acc2);padding:0 5px;font-style:normal}
+.cgc-isl .isl-t span em{font-style:normal}
+.cgc-isl .isl-acts{grid-column:3/5;display:flex;gap:6px;margin-top:8px}
+.cgc-isl .isl-acts button,.cgc-isl .isl-open{display:inline-flex;align-items:center;justify-content:center;flex:1;height:26px;border-radius:2px;border:1px solid var(--line-strong);font-size:11.5px;font-weight:600}
+.cgc-isl .isl-acts button:hover{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
+.cgc-isl .isl-open{display:flex;width:100%;height:34px;margin-top:10px;background:var(--fill);border-color:var(--fill);color:var(--on-fill);font-size:12.5px;font-weight:700}
+@keyframes cgcIslIn{from{opacity:0;transform:translateX(-50%) translateY(-8px) scale(.94)}}
+@keyframes cgcIslTimer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media(pointer:coarse){.cgc-isl .isl-x{position:relative}.cgc-isl .isl-x::after{content:"";position:absolute;inset:-9px}.cgc-isl .isl-acts button{height:34px}}
+@media(prefers-reduced-motion:reduce){.cgc-launch-more *,.cgc-launch-more *::before,.cgc-launch-more *::after,.cgc-isl,.cgc-isl *,.cgc-toast{animation:none!important;transition:none!important}.cgc-launch-more .l-done circle,.cgc-launch-more .l-done path{stroke-dashoffset:0}}`;
+    const CGC_HOLO_PANEL_CSS = `.cgc-overlay{position:fixed;inset:0;z-index:2147483300;pointer-events:none;font-family:inherit}
+.cgc-overlay *,.cgc-overlay *::before,.cgc-overlay *::after{box-sizing:border-box}
+.cgc-overlay [hidden],.cgc-overlay .cgc-file-hidden{display:none!important}
+.cgc-back{position:absolute;inset:0;background:var(--veil);opacity:0;transition:opacity .3s;pointer-events:none}
+.cgc-overlay.open .cgc-back{opacity:1;pointer-events:auto}
+.cgc-overlay[data-form="pc"] .cgc-back{display:none}
+.cgp{position:absolute;display:flex;flex-direction:column;pointer-events:auto;color:var(--ink);font-size:13px;line-height:1.45;letter-spacing:-.01em;-webkit-text-size-adjust:100%;background:var(--paper);-webkit-backdrop-filter:blur(12px) saturate(.85);backdrop-filter:blur(12px) saturate(.85);border-radius:3px;box-shadow:var(--shadow);clip-path:inset(0 0 100% 0);opacity:0;transition:clip-path .35s cubic-bezier(.5,0,.75,0),opacity .2s .15s}
+.cgc-overlay.open .cgp{clip-path:inset(-14px);opacity:1;transition:clip-path .7s cubic-bezier(.22,1,.36,1),opacity .25s}
+.cgp button,.cgp input,.cgp select,.cgp textarea{font-family:inherit;letter-spacing:inherit;color:inherit}
+.cgp button{background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit;font-size:inherit}
+.cgp p{margin:0}
+.cgp svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.cgp :focus-visible{outline:1px solid var(--ink);outline-offset:2px}
+.cgp .col{position:relative;flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;border-radius:3px;overflow:hidden}
+.cgp .dx-wash,.cgp .dx-grain,.cgp .dx-scan{position:absolute;left:0;right:0;top:0;pointer-events:none;z-index:0}
+.cgp .dx-wash{bottom:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px;-webkit-mask:linear-gradient(180deg,rgba(0,0,0,.55),transparent 42%);mask:linear-gradient(180deg,rgba(0,0,0,.55),transparent 42%)}
+.cgp .dx-grain{bottom:0;background:repeating-linear-gradient(0deg,var(--scan) 0 1px,transparent 1px 3px)}
+.cgp .dx-scan{height:1px;background:var(--ink);opacity:0;z-index:5}
+.cgp.booting .dx-scan{animation:cgcScan .9s cubic-bezier(.22,1,.36,1) .05s}
+@keyframes cgcScan{0%{top:0;opacity:.6}100%{top:100%;opacity:0}}
+.cgp .col>:not(.dx-wash):not(.dx-grain):not(.dx-scan):not(.x-over){position:relative;z-index:1}
+.cgp .hd{display:flex;align-items:flex-start;gap:10px;padding:16px 14px 14px 18px;box-shadow:inset 0 -1px 0 var(--sep);flex:none}
+.cgp .hd .t{flex:1;min-width:0}
+.cgp .p-micro{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:500;letter-spacing:.16em;color:var(--mute);margin-bottom:6px;white-space:nowrap;overflow:hidden}
+.cgp .p-micro i{width:16px;height:1px;background:var(--line-strong);flex:none}
+.cgp .p-micro time{color:var(--ink);opacity:.65;font-variant-numeric:tabular-nums}
+.cgp #cgc-ui-title{display:block;font-size:17px;font-weight:700;letter-spacing:-.025em;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgp #cgc-ui-room{display:block;font-size:11.5px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgp .hd.sub{align-items:center;padding-top:14px;padding-left:14px}
+.cgp .hd.sub .p-micro,.cgp .hd.sub #cgc-ui-room,.cgp .hd.sub .p-gptag{display:none}
+.cgp .hd.sub #cgc-ui-title{font-size:15px}
+.cgp .p-gptag{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;margin-top:1px;border:1px solid var(--line-strong);border-radius:2px;font-size:9.5px;font-weight:500;letter-spacing:.12em;color:var(--sub);flex:none}
+.cgp .p-gptag i{width:5px;height:5px;background:var(--mute)}
+.cgp .p-gptag.on i{background:var(--ink);animation:cgcBlink 2.6s steps(1) infinite}
+.cgp .p-gptag b{font-weight:700;color:var(--ink);letter-spacing:.04em}
+@keyframes cgcBlink{0%,88%{opacity:1}90%,96%{opacity:0}}
+.cgp .icon-btn{position:relative;display:inline-grid;place-items:center;width:24px;height:24px;flex:none;border:1px solid var(--line-strong);border-radius:2px;color:var(--ink);transition:background .15s,color .15s}
+.cgp .icon-btn::after{content:"";position:absolute;inset:-8px}
+@media(hover:hover){.cgp .icon-btn:not(:disabled):hover{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}}
+.cgp .icon-btn:disabled{opacity:.4;cursor:not-allowed;background:none;color:var(--ink);border-color:var(--line-strong)}
+.cgp .icon-btn svg.i{width:13px;height:13px}
+.cgp .sc{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:6px 18px 18px;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.cgp .cgc-view.in>*{animation:cgcHoloTab .38s linear both}
+.cgp .cgc-view.in>:nth-child(2){animation-delay:.04s}.cgp .cgc-view.in>:nth-child(3){animation-delay:.08s}.cgp .cgc-view.in>:nth-child(n+4){animation-delay:.12s}
+@keyframes cgcHoloTab{0%{opacity:0}20%{opacity:.7}30%{opacity:.2}55%,100%{opacity:1}}
+.cgp .tabs{position:relative;display:flex;padding:6px 12px 14px;box-shadow:inset 0 1px 0 var(--line-strong);flex:none}
+.cgp .tabs::after{content:"";position:absolute;left:12px;right:12px;bottom:8px;height:5px;background:repeating-linear-gradient(90deg,var(--line-strong) 0 1px,transparent 1px 7px);pointer-events:none}
+.cgp .x-ind{position:absolute;left:0;bottom:7px;width:0;height:3px;background:var(--fill);clip-path:inset(0 26%);z-index:1;pointer-events:none;transition:transform .55s cubic-bezier(.22,1,.36,1),width .55s cubic-bezier(.22,1,.36,1)}
+.cgp .cgc-tab{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:46px;color:var(--mute);font-size:10.5px;font-weight:550;transition:color .25s;touch-action:manipulation}
+.cgp .cgc-tab.on{color:var(--ink)}
+.cgp .cgc-tab svg.i{width:16px;height:16px;stroke-width:1.5}
+.cgp .t-no{font-style:normal;font-size:8.5px;font-weight:600;letter-spacing:.12em;line-height:1;padding:1px 3px;transition:background .3s,color .3s}
+.cgp .cgc-tab.on .t-no{background:var(--fill);color:var(--on-fill)}
+.cgp .x-badge{position:absolute;top:14px;right:calc(50% - 21px);min-width:14px;height:14px;padding:0 3px;display:grid;place-items:center;background:var(--acc2);color:var(--on-acc2);font-size:9px;font-weight:700;font-style:normal;box-shadow:0 0 0 2px var(--paper-solid)}
+.cgp .x-bdot{position:absolute;top:18px;right:calc(50% - 14px);width:5px;height:5px;background:var(--ink)}
+.cgp .cgc-tab.on .x-bdot{display:none}
+.cgp .btn{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 14px;border:1px solid var(--fill-line);border-radius:2px;background:transparent;color:var(--fill);font-size:12.5px;font-weight:600;letter-spacing:-.005em;white-space:nowrap;text-decoration:none;cursor:pointer;touch-action:manipulation;transition:background-color .5s,color .5s,border-color .3s,transform .08s}
+.cgp .btn>*{position:relative;z-index:1}
+.cgp .btn svg.i{width:13px;height:13px}
+.cgp .btn.sm{height:26px;padding:0 9px;font-size:11.5px;gap:4px}
+.cgp .btn.key{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
+.cgp .btn.danger{--draw:var(--bad);color:var(--bad);border-color:var(--bad-line)}
+.cgp .btn.danger.key{background:var(--bad);border-color:var(--bad);color:var(--on-bad)}
+.cgp .btn:active{transform:translateY(1px)}
+.cgp .btn:disabled{opacity:.42;cursor:not-allowed;transform:none}
+.cgp .btn::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(var(--draw,var(--fill)),var(--draw,var(--fill))) left top/0 1px no-repeat,linear-gradient(var(--draw,var(--fill)),var(--draw,var(--fill))) right top/1px 0 no-repeat,linear-gradient(var(--draw,var(--fill)),var(--draw,var(--fill))) right bottom/0 1px no-repeat,linear-gradient(var(--draw,var(--fill)),var(--draw,var(--fill))) left bottom/1px 0 no-repeat;transition:background-size .5s ease}
+@media(hover:hover){.cgp .btn:not(:disabled):hover::before{background-size:100% 1px,1px 100%,100% 1px,1px 100%}.cgp .btn:not(:disabled):hover{border-color:transparent}.cgp .btn.key:not(:disabled):hover{background:transparent;color:var(--fill)}.cgp .btn.danger.key:not(:disabled):hover{color:var(--bad)}}
+.cgp .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.cgp .btns .btn{flex:1;min-width:0}
+.cgp .link-btn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--sub);padding:8px 2px}
+.cgp .link-btn:hover{color:var(--ink)}
+.cgp .link-btn.danger{color:var(--bad)}
+.cgp .link-btn svg.i{width:14px;height:14px}
+.cgp .p-hero{position:relative;border:1px solid var(--line-strong);border-radius:2px;padding:34px 136px 16px 16px;margin:16px 0 8px;min-height:150px;background:repeating-linear-gradient(135deg,var(--hatch) 0 1px,transparent 1px 9px) right/46% 100% no-repeat}
+.cgp .p-hero::before{content:"";position:absolute;right:-4px;bottom:-4px;width:12px;height:12px;border-right:1px solid var(--ink);border-bottom:1px solid var(--ink);opacity:.7;pointer-events:none}
+.cgp .p-hero.in{animation:cgcHoloIn .6s linear both}
+.cgp .p-k{position:absolute;left:-1px;top:-1px;height:21px;display:inline-flex;align-items:center;gap:8px;padding:0 20px 0 9px;background:var(--fill);color:var(--on-fill);font-size:10px;font-weight:600;letter-spacing:.06em;clip-path:polygon(0 0,calc(100% - 11px) 0,100% 100%,0 100%);white-space:nowrap}
+.cgp .p-k em{font-style:normal;opacity:.7}
+.cgp .p-hero.att .p-k{background:var(--acc2);color:var(--on-acc2)}
+.cgp .p-hero.att .p-k::before{content:"";width:6px;height:6px;background:currentColor;animation:cgcBlink 1.2s steps(1) infinite}
+.cgp .p-num{display:flex;align-items:baseline;gap:4px;font-size:52px;font-weight:200;letter-spacing:-.04em;line-height:1;margin-top:2px;font-variant-numeric:tabular-nums}
+.cgp .p-num small{font-size:14px;font-weight:600;color:var(--sub);letter-spacing:0}
+.cgp .p-hero-t{display:block;font-size:22px;font-weight:800;letter-spacing:-.035em;line-height:1.25;margin-top:2px;overflow-wrap:anywhere}
+.cgp .p-hero p{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.6}
+.cgp .p-hero .btns{margin-top:16px}
+.cgp .p-hero .btns .btn{flex:0 0 auto;min-width:108px}
+.cgp .p-hero.att p{color:var(--ink);opacity:.82}
+.cgp .echo{position:absolute;right:8px;top:18px;width:120px;height:124px;pointer-events:none}
+.cgp .echo canvas{display:block;width:100%;height:100%;color:var(--sub)}
+.cgp .p-hero.att .echo canvas{color:var(--acc2)}
+.cgp .echo-ro{position:absolute;right:6px;bottom:-2px;font-size:8.5px;font-weight:500;letter-spacing:.1em;color:var(--mute);font-variant-numeric:tabular-nums}
+.cgp .echo-ro b{color:var(--sub);font-weight:600}
+.cgp .h-glitch{position:absolute;left:-34px;top:10px;width:40px;height:30px;pointer-events:none}
+.cgp .h-glitch b{position:absolute;left:0;height:4px;background:var(--ink);opacity:0}
+.cgp .h-glitch b:nth-child(1){top:0;width:26px}.cgp .h-glitch b:nth-child(2){top:7px;width:38px}.cgp .h-glitch b:nth-child(3){top:14px;width:14px}
+.cgp .p-hero.in .h-glitch b{animation:cgcGlitch .7s steps(1) .15s}
+.cgp .p-hero.in .h-glitch b:nth-child(2){animation-delay:.22s}.cgp .p-hero.in .h-glitch b:nth-child(3){animation-delay:.3s}
+@keyframes cgcGlitch{0%{opacity:1}20%{opacity:0}35%{opacity:1;transform:translateX(6px)}50%{opacity:0}65%{opacity:1;transform:translateX(-3px)}80%,100%{opacity:0}}
+@keyframes cgcHoloIn{0%{opacity:0;clip-path:inset(0 100% 0 0)}10%{opacity:.75}16%{opacity:.08}28%{opacity:.9;clip-path:inset(0 35% 0 0)}34%{opacity:.25}50%{opacity:1;clip-path:inset(0 0 0 0)}60%{opacity:.6}70%,100%{opacity:1;clip-path:inset(0 0 0 0)}}
+.cgp .progress-note{margin:8px 0 2px;padding:2px 0 2px 12px;box-shadow:inset 2px 0 0 var(--ink);font-size:12px;color:var(--sub);white-space:pre-line;overflow-wrap:anywhere}
+.cgp .progress-note.error{box-shadow:inset 2px 0 0 var(--acc2);color:var(--ink)}
+.cgp .p-meta{display:flex;align-items:center;gap:10px;margin:14px 2px 6px;font-size:10.5px;letter-spacing:.02em;color:var(--mute);flex-wrap:wrap}
+.cgp .p-meta button{color:var(--sub);transition:color .15s}.cgp .p-meta button:hover{color:var(--ink)}
+.cgp .p-meta b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.cgp .p-meta i{width:1px;height:11px;background:var(--line-strong)}
+.cgp .p-list{border-top:1px solid var(--line-strong);margin-top:8px}
+.cgp .job{position:relative;border-bottom:1px solid var(--sep)}
+.cgp .job .row-hd{display:flex;align-items:center;gap:8px;padding:0 4px 0 10px;transition:background .15s}
+.cgp .job:hover .row-hd,.cgp .job.open .row-hd{background:var(--row)}
+.cgp .job.fresh .row-hd{background:var(--fresh);box-shadow:inset 2px 0 0 var(--fresh-line)}
+.cgp .job-main{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:9px 0;text-align:left}
+.cgp .p-idx{font-size:10px;color:var(--mute);letter-spacing:.04em;width:16px;flex:none;font-variant-numeric:tabular-nums}
+.cgp .job:hover .p-idx,.cgp .job.open .p-idx{color:var(--ink)}
+.cgp .job .ic{width:26px;height:26px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:2px;color:var(--ink)}
+.cgp .job .ic svg.i{width:15px;height:15px;stroke-width:1.5}
+.cgp .job.st-run .ic{border-color:var(--ink)}
+.cgp .job.st-att .ic{border-color:var(--acc2);color:var(--acc2);background:repeating-linear-gradient(135deg,var(--acc2-soft) 0 1px,transparent 1px 4px)}
+.cgp .job .a{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgp .job .chip{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--mute);white-space:nowrap;flex:none;max-width:46%;overflow:hidden;text-overflow:ellipsis}
+.cgp .job.st-run .chip{color:var(--ink);font-weight:650}
+.cgp .job.st-run .chip::before{content:"";width:9px;height:9px;flex:none;border:1.5px solid var(--line-strong);border-top-color:var(--ink);border-radius:50%;animation:cgcSpin .9s linear infinite}
+.cgp .job.st-att .chip{background:var(--acc2);color:var(--on-acc2);padding:2px 7px 2px 6px;font-weight:600}
+.cgp .job.st-att .chip::before{content:"";width:5px;height:5px;flex:none;background:currentColor;animation:cgcBlink 1.2s steps(1) infinite}
+.cgp .job.st-done .chip{color:var(--ink)}
+@keyframes cgcSpin{to{transform:rotate(360deg)}}
+.cgp .caret{width:14px!important;height:14px!important;color:var(--sub);opacity:.4;transform:rotate(90deg);transition:transform .25s}
+.cgp .job.open .caret{transform:rotate(-90deg);opacity:.6}
+.cgp .row-q{width:48px;flex:none}
+.cgp .row-bd{padding:6px 10px 16px;animation:cgcExpand .3s cubic-bezier(.2,.9,.3,1) both}
+@keyframes cgcExpand{from{opacity:0;transform:translateY(-6px)}}
+.cgp .row-bd .desc{font-size:12.5px;color:var(--sub);margin-bottom:10px}
+.cgp .job-extra:empty{display:none}
+.cgp .job-extra{margin-bottom:6px}
+.cgp .p-mine{display:flex;align-items:center;gap:10px;margin-top:18px}
+.cgp .p-mine>span{font-size:10px;letter-spacing:.14em;color:var(--mute);flex:none}
+.cgp .p-mine>i{flex:1;height:1px;background:var(--line)}
+.cgp .p-mine .link-btn{padding:2px}
+.cgp .notice{position:relative;padding:2px 0 2px 16px;margin:2px 0 12px}
+.cgp .notice::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:2px;background:var(--ink)}
+.cgp .notice.att::before{background:var(--acc2)}
+.cgp .notice p{font-size:12.5px;line-height:1.6;color:var(--ink);opacity:.86}
+.cgp .notice.att p::before{content:"확인 필요";display:block;font-size:11.5px;font-weight:700;color:var(--acc2);margin-bottom:2px}
+.cgp .fld{display:grid;gap:6px;margin-top:12px}
+.cgp .fld>span,.cgp .fld>label{font-size:12px;font-weight:650;color:var(--sub)}
+.cgp .fld small,.cgp .hint,.cgp .hint-text{font-size:11.5px;color:var(--sub);line-height:1.55}
+.cgp .hint{margin-top:10px}
+.cgp textarea,.cgp input:not([type=checkbox]):not([type=hidden]):not([type=file]),.cgp select{width:100%;border:1px solid var(--line-strong);border-radius:2px;background:var(--field);color:var(--ink);font-size:13px;line-height:1.55;padding:9px 11px;outline:none;transition:border-color .15s}
+.cgp textarea{resize:vertical;min-height:72px}
+.cgp textarea.ta{min-height:260px;font-size:12.5px}
+.cgp select{height:38px;padding-top:0;padding-bottom:0}
+.cgp textarea:focus,.cgp input:focus,.cgp select:focus{border-color:var(--ink)}
+.cgp ::placeholder{color:var(--sub);opacity:.75}
+.cgp .tarow{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:11.5px;color:var(--sub)}
+.cgp .lead{color:var(--sub);font-size:12.5px;margin:4px 0 12px;line-height:1.55}
+.cgp .lead-row{display:flex;align-items:flex-start;gap:10px}.cgp .lead-row .lead{flex:1}
+.cgp .x-h2{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 12px}
+.cgp .x-h2 b{display:block;font-size:15px;font-weight:800}
+.cgp .x-h2 span{font-size:10.5px;color:var(--mute)}
+.cgp .x-tr{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--sep)}
+.cgp .x-list{border-top:1px solid var(--line-strong)}
+.cgp .x-tr-m{flex:1;min-width:0;display:flex;align-items:center;gap:11px;padding:9px 4px;text-align:left}
+.cgp .x-tr-m:hover{background:var(--row)}
+.cgp .x-tr .ic{position:relative;width:26px;height:26px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:2px}
+.cgp .x-tr .ic svg.i{width:15px;height:15px;stroke-width:1.5}
+.cgp .x-tr .ic .slash{position:absolute;inset:3px;width:auto;height:auto;stroke:var(--sub);stroke-width:2;stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset .35s}
+.cgp .x-tr.on .ic .slash{stroke-dashoffset:1}
+.cgp .x-tr .ic .okb{position:absolute;right:-5px;bottom:-5px;width:15px;height:15px;transform:scale(0);transition:transform .45s cubic-bezier(.3,1.5,.5,1)}
+.cgp .x-tr .ic .okb circle{fill:var(--ink);stroke:var(--paper-solid);stroke-width:1.6}
+.cgp .x-tr .ic .okb path{fill:none;stroke:var(--paper-solid);stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.cgp .x-tr.on .ic .okb{transform:scale(1)}
+.cgp .x-tr:not(.on):not(.x-tr-link) .x-rt{opacity:.5}
+.cgp .x-rt{flex:1;min-width:0}
+.cgp .x-rt b{display:block;font-size:13px;font-weight:650}
+.cgp .x-rt span{display:block;font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgp .x-tr-link{width:100%}
+.cgp .x-tr-link .chev{width:16px;height:16px;color:var(--sub)}
+.cgp .switch-control{position:relative;display:inline-flex;flex:none;cursor:pointer}
+.cgp .switch-control input{position:absolute;inset:-8px;opacity:0;margin:0;cursor:pointer;z-index:1}
+.cgp .sw{position:relative;display:block;width:34px;height:18px;border:1px solid var(--fill);border-radius:2px;background:var(--fill);transition:background .2s,border-color .2s}
+.cgp .sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:1px;background:var(--on-fill);transform:translateX(16px);transition:transform .35s cubic-bezier(.22,1,.36,1),background .2s}
+.cgp .sw.off{background:transparent;border-color:var(--line-strong)}
+.cgp .sw.off::after{transform:none;background:var(--mute)}
+.cgp .switch-control input:focus-visible+.sw{outline:1px solid var(--ink);outline-offset:2px}
+.cgp .switch-control input:disabled+.sw{opacity:.42}
+.cgp .seg{position:relative;display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));height:28px;padding:2px;border:1px solid var(--line-strong);border-radius:999px;flex:none;min-width:150px}
+.cgp .seg-ind{position:absolute;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)/var(--n,2));border-radius:999px;background:var(--fill);transform:translateX(calc(var(--si,0)*100%));transition:transform .55s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.cgp .seg button{position:relative;z-index:1;display:grid;place-items:center;line-height:1;font-size:11.5px;font-weight:600;color:var(--sub);padding:0 8px;white-space:nowrap;transition:color .3s;touch-action:manipulation}
+.cgp .seg button.on{color:var(--on-fill)}
+.cgp .step{display:flex;align-items:center;height:30px;border:1px solid var(--line-strong);border-radius:2px;overflow:hidden;flex:none}
+.cgp .step button{width:30px;height:100%;font-size:16px;color:var(--sub);text-align:center;touch-action:manipulation}
+.cgp .step button:hover{background:var(--soft);color:var(--ink)}
+.cgp .step input{width:92px!important;height:100%;border:0!important;border-inline:1px solid var(--line)!important;border-radius:0!important;background:transparent!important;text-align:center;font-weight:700;font-variant-numeric:tabular-nums;padding:0 4px!important;-moz-appearance:textfield}
+.cgp .step input::-webkit-inner-spin-button,.cgp .step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.cgp .sgroup{margin-top:18px}.cgp .sgroup:first-child{margin-top:4px}
+.cgp .sgroup>h4{margin:0 0 8px;font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--mute)}
+.cgp .sbox{border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
+.cgp .sbox+.sbox{margin-top:8px}
+.cgp .srow{display:flex;align-items:center;gap:10px;padding:11px 0;min-height:54px;width:100%;flex-wrap:wrap}
+.cgp .srow+.srow{border-top:1px solid var(--line)}
+.cgp .stx{flex:1;min-width:140px}
+.cgp .stx b{display:block;font-size:13.5px;font-weight:650}
+.cgp .stx span{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.cgp .s-ic{width:28px;height:28px;display:grid;place-items:center;flex:none;border:1px solid var(--line);border-radius:2px;margin-left:3px}
+.cgp .s-ic svg.i{width:15px;height:15px}
+.cgp .navrow{flex-wrap:nowrap;text-align:left}
+.cgp .navrow:hover .stx b{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.cgp .navrow .chev{width:16px;height:16px;color:var(--sub)}
+.cgp .ldot{width:8px;height:8px;flex:none;margin:0 3px;background:var(--line-strong)}
+.cgp .ldot.on{background:var(--ink);box-shadow:0 0 0 3px var(--soft)}
+.cgp .srow.link{flex-wrap:nowrap}
+.cgp .srow.link .stx{min-width:0}
+.cgp .s-end{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.cgp .ver{font-size:11px;color:var(--mute);letter-spacing:.06em}
+.cgp .foot{display:flex;gap:8px;padding:10px 18px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:inset 0 1px 0 var(--line);flex:none}
+.cgp .foot .btn{flex:1}
+.cgp .help{margin:4px 0 14px;padding:2px 0 2px 12px;box-shadow:inset 2px 0 0 var(--line-strong);font-size:12px;color:var(--sub);line-height:1.6}
+.cgp .help b{color:var(--ink)}
+.cgp .tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:2px;border:1px solid var(--line);font-size:10px;font-weight:650;color:var(--sub);white-space:nowrap}
+.cgp .tag.on{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
+.cgp .qchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.cgp .qchip,.cgp .cgc-task-source{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border:1px solid var(--line-strong);border-radius:2px;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s}
+.cgp .qchip:hover{color:var(--ink);border-color:var(--ink)}
+.cgp .qchip.on{background:var(--fill);border-color:var(--fill);color:var(--on-fill)}
+.cgp .cgc-task-sources{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.cgp .cgc-task-source input{margin:0;accent-color:var(--fill)}
+.cgp .pre{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font:inherit;font-size:12.5px;line-height:1.7;margin:10px 0 0;padding:14px;border-radius:2px;background:var(--soft);border:1px solid var(--line);color:var(--ink);max-height:none}
+.cgp .pv-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cgp .pv-top>span{font-size:12px;font-weight:650;color:var(--sub)}
+.cgp .empty{display:grid;justify-items:center;gap:4px;padding:28px 12px;text-align:center;color:var(--sub)}
+.cgp .empty b{color:var(--ink);font-size:13.5px}.cgp .empty span{font-size:12px}
+.cgp .x-tl{position:relative;padding-left:58px}
+.cgp .x-tl::before{content:"";position:absolute;left:47px;top:6px;bottom:6px;width:1px;background:var(--line-strong)}
+.cgp .x-day{margin:4px 0 8px -58px;font-size:11.5px;font-weight:700;color:var(--sub)}
+.cgp .x-ev{position:relative;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.cgp .x-ev.sent{padding-bottom:10px;margin-bottom:10px}
+.cgp .x-ev time{position:absolute;left:-58px;top:1px;width:40px;text-align:right;font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.cgp .x-dot{position:absolute;left:-14px;top:6px;width:7px;height:7px;background:var(--paper-solid);border:1px solid var(--ink)}
+.cgp .x-ev.fresh .x-dot{background:var(--ink)}
+.cgp .x-ev-sent{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--sub)}
+.cgp .x-ev-sent svg.i{width:14px;height:14px}
+.cgp .x-ev-b header{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cgp .x-ev-b header b{font-size:13.5px;margin-right:2px}
+.cgp .x-ev-b p{margin-top:5px;font-size:12.5px;color:var(--sub);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.cgp .x-ev-b .btns{margin-top:9px}
+.cgp .x-ev-b .btns .btn{flex:0 0 auto}
+.cgp .p-new{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700}
+.cgp .p-new::before{content:"";width:5px;height:5px;background:var(--ink)}
+.cgp .p-chips{font-size:11.5px;color:var(--sub);margin-left:auto}
+.cgp .x-over{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;background:var(--paper-solid);animation:cgcSlide .34s cubic-bezier(.2,.9,.25,1) both}
+@keyframes cgcSlide{from{transform:translateX(40px);opacity:0}}
+.cgp .x-over-hd{display:flex;align-items:center;gap:10px;padding:14px 18px 12px;box-shadow:inset 0 -1px 0 var(--line-strong);flex:none}
+.cgp .x-over-hd b{flex:1;font-size:15px;font-weight:750;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cgp .x-over-bd{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:14px 18px 22px}
+.cgp .x-over-bd .pre{margin-top:0}
+.cgp .st-sum{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);margin-top:4px}
+.cgp .st-sum>div{padding:10px 0 10px 12px;min-width:0}.cgp .st-sum>div:first-child{padding-left:2px}
+.cgp .st-sum>div+div{border-left:1px solid var(--line)}
+.cgp .st-sum b{display:block;font-size:19px;font-weight:300;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.cgp .st-sum b small{font-size:11.5px;font-weight:650;color:var(--sub);margin-left:2px}
+.cgp .st-sum span{font-size:11px;color:var(--sub)}
+.cgp .st-sum .warn b{color:var(--acc2)}
+.cgp .st-bar{display:flex;gap:2px;height:6px;margin:14px 0 8px}
+.cgp .st-bar i{display:block;height:100%;transform-origin:left;animation:cgcBar .7s cubic-bezier(.22,1,.36,1) both}
+.cgp .st-bar i:nth-child(2){animation-delay:.08s}.cgp .st-bar i:nth-child(3){animation-delay:.16s}
+@keyframes cgcBar{from{transform:scaleX(0)}}
+.cgp .b-room{background:var(--ink)}
+.cgp .b-prompt{background:repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px);opacity:.7}
+.cgp .b-set{background:var(--line-strong)}
+.cgp .st-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--sub)}
+.cgp .st-legend span{display:inline-flex;align-items:center;gap:6px}
+.cgp .st-legend i{width:8px;height:8px;display:inline-block}
+.cgp .st-tools{display:flex;align-items:center;gap:10px;margin:18px 0 6px;padding:0 6px 0 10px}
+.cgp .st-tools>span{flex:1;font-size:12px;font-weight:650;color:var(--sub)}
+.cgp .st-list{border-top:1px solid var(--line-strong)}
+.cgp .st-row{position:relative;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-bottom:1px solid var(--sep);transition:background .2s}
+.cgp .st-row:hover,.cgp .st-row.picked{background:var(--row)}
+.cgp .st-row.gone{animation:cgcGone .38s cubic-bezier(.5,0,.6,1) forwards;pointer-events:none}
+@keyframes cgcGone{0%{opacity:1;max-height:60px}40%{opacity:0;transform:translateX(18px);max-height:60px}100%{opacity:0;transform:translateX(18px);max-height:0;padding-top:0;padding-bottom:0}}
+.cgp .st-t{flex:1;min-width:0;text-align:left;padding:3px 0}
+.cgp .st-t b{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cgp .st-t span{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.cgp .st-t span.old{color:var(--acc2)}
+.cgp .st-cur{flex:none;font-style:normal;font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px;border:1px solid var(--line-strong);color:var(--sub)}
+.cgp .st-size{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;opacity:.8;min-width:48px;text-align:right}
+.cgp .st-del{opacity:.55}.cgp .st-row:hover .st-del{opacity:1}
+@media(hover:hover){.cgp .st-del:not(:disabled):hover{background:var(--bad);border-color:var(--bad);color:var(--on-bad)}}
+.cgp .st-open{flex:none;font-size:11px;font-weight:600;color:var(--sub);text-decoration:underline;text-underline-offset:2px}
+.cgp .st-row:not([data-pick]) .st-t{cursor:default}
+.cgp .ck{position:relative;width:16px;height:16px;flex:none;display:grid;place-items:center;border:1px solid var(--line-strong);border-radius:1px;transition:background .2s,border-color .2s}
+.cgp .ck::after{content:"";position:absolute;inset:-9px}
+.cgp .ck svg{width:12px;height:12px;fill:none;stroke:var(--on-fill);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.cgp .ck .ck-v{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .25s}
+.cgp .ck .ck-m{opacity:0}
+.cgp .ck.on,.cgp .ck.mid{background:var(--fill);border-color:var(--fill)}
+.cgp .ck.on .ck-v{stroke-dashoffset:0}
+.cgp .ck.mid .ck-v{display:none}.cgp .ck.mid .ck-m{opacity:1}
+.cgp .st-foot{display:flex;gap:8px;margin-top:14px}.cgp .st-foot .btn{flex:1}
+.cgp .cf-list{list-style:none;margin:0 0 4px;padding:0;border-top:1px solid var(--line)}
+.cgp .cf-list li{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
+.cgp .cf-list li span{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;flex:none}
+.cgp .cf-list li.more{color:var(--sub);font-weight:500}
+.cgp .faq details+details{border-top:1px solid var(--line)}
+.cgp .faq summary{display:flex;align-items:center;gap:10px;padding:13px 0;font-weight:650;font-size:13px;cursor:pointer;list-style:none}
+.cgp .faq summary::-webkit-details-marker{display:none}
+.cgp .faq summary span{flex:1}
+.cgp .faq summary .chev{width:16px;height:16px;color:var(--sub);transform:rotate(90deg);transition:transform .25s}
+.cgp .faq details[open] summary .chev{transform:rotate(-90deg)}
+.cgp .faq .faq-a{padding:0 0 14px;color:var(--sub);font-size:12.5px;line-height:1.65;animation:cgcExpand .3s ease-out both}
+.cgp .faq .faq-a .btns{margin-top:10px}
+.cgp .faq .faq-a .btn{flex:0 0 auto}
+.cgp details.more{margin:10px 0}
+.cgp details.more>summary{cursor:pointer;font-size:12px;font-weight:650;color:var(--sub);padding:6px 0}
+.cgp .inline-area{display:grid;gap:8px;margin-top:6px}
+.cgp .ac{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cgp .ac.grid2{display:grid;grid-template-columns:1fr 1fr}
+.cgp .ac .btn{flex:1}
+.cgp #cgc-lore-batch-view{display:grid;gap:0;margin:8px 0}
+.cgp .pc{display:grid;grid-template-columns:22px 1fr auto auto;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--sep);font-size:12px}
+.cgp .pc .no{font-size:10px;color:var(--mute);font-variant-numeric:tabular-nums}
+.cgp .pc .tx{min-width:0;color:var(--sub);overflow-wrap:anywhere}.cgp .pc .tx b{color:var(--ink)}
+.cgp .pc .bad{color:var(--bad)}
+.cgp .urlfield{display:grid;gap:6px;margin:8px 0;font-size:12px;font-weight:650;color:var(--sub)}
+.cgp.booting::after{content:"";position:absolute;inset:-1px;pointer-events:none;z-index:6;background:linear-gradient(var(--ink),var(--ink)) left top/0 1px no-repeat,linear-gradient(var(--ink),var(--ink)) right top/1px 0 no-repeat,linear-gradient(var(--ink),var(--ink)) right bottom/0 1px no-repeat,linear-gradient(var(--ink),var(--ink)) left bottom/1px 0 no-repeat;animation:cgcFrame .75s cubic-bezier(.22,1,.36,1) forwards,cgcFrameOut .4s 1s forwards}
+@keyframes cgcFrame{to{background-size:100% 1px,1px 100%,100% 1px,1px 100%}}
+@keyframes cgcFrameOut{to{opacity:0}}
+.cgp.booting :is(.hd,.p-hero,.p-meta,.p-list>.job,.tabs,.x-h2,.x-tr,.sgroup){animation:cgcHoloIn .85s linear both;animation-delay:calc(var(--bd,0)*70ms + 180ms)}
+.cgp.booting .p-hero{--bd:1}.cgp.booting .p-meta,.cgp.booting .tabs{--bd:2}.cgp.booting .p-list>.job,.cgp.booting .x-tr,.cgp.booting .sgroup{--bd:calc(3 + var(--i,0))}
+.cgc-overlay[data-form="m"] .cgp{left:calc(var(--cgc-vvleft,0px) + 8px);top:calc(var(--cgc-vvtop,0px) + 8px + env(safe-area-inset-top,0px));width:calc(var(--cgc-vvw,100vw) - 16px);height:min(668px,calc(var(--cgc-vvh,100vh) - 16px - env(safe-area-inset-top,0px)))}
+.cgc-overlay[data-form="m"] .cgp .hd{padding-left:16px}
+.cgc-overlay[data-form="m"] .cgp .sc{padding-left:16px;padding-right:16px}
+.cgc-overlay[data-form="m"] .cgp .x-over-hd,.cgc-overlay[data-form="m"] .cgp .x-over-bd{padding-left:16px;padding-right:16px}
+.cgc-overlay[data-form="m"] .cgp .tabs{padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
+.cgc-overlay[data-form="m"] .cgp .p-hero{padding-right:118px}
+.cgc-overlay[data-form="m"] .cgp .echo{width:104px;height:110px;right:4px}
+.cgc-overlay[data-form="m"] .cgp .p-hero .btns{margin-right:-102px}.cgc-overlay[data-form="m"] .cgp .p-hero .btns .btn{flex:1 1 0;min-width:0}
+.cgc-overlay[data-form="m"] .cgp .x-tl{padding-left:50px}.cgc-overlay[data-form="m"] .cgp .x-tl::before{left:39px}.cgc-overlay[data-form="m"] .cgp .x-day{margin-left:-50px}.cgc-overlay[data-form="m"] .cgp .x-ev time{left:-50px;width:34px}
+.cgc-overlay[data-form="m"] .cgp :is(textarea,input:not([type=checkbox]):not([type=hidden]):not([type=file]),select){font-size:16px}
+.cgc-overlay[data-form="m"] .cgp .icon-btn{width:30px;height:30px}
+.cgc-overlay[data-form="m"] .cgp .btn{min-height:36px}.cgc-overlay[data-form="m"] .cgp .btn.sm{min-height:32px}
+.cgc-overlay[data-form="m"] .cgp .row-q{width:52px}
+.cgc-overlay[data-form="m"] .cgp .seg{height:38px}
+.cgc-overlay[data-form="m"] .cgp .step{height:40px}
+.cgc-overlay[data-form="m"] .cgp .step button{width:40px}
+.cgc-overlay[data-form="m"] .cgp :is(.p-meta button,.p-mine .link-btn){position:relative}
+.cgc-overlay[data-form="m"] .cgp :is(.p-meta button,.p-mine .link-btn)::after{content:"";position:absolute;inset:-10px -4px}
+@supports not ((-webkit-backdrop-filter:blur(1px)) or (backdrop-filter:blur(1px))){.cgp{background:var(--paper-solid)}}
+
+.cgc-overlay[data-form="pc"] .cgp .hd{cursor:grab;touch-action:none}
+.cgc-overlay[data-form="pc"] .cgp.dragging{transition:none;user-select:none;-webkit-user-select:none}
+.cgc-overlay[data-form="pc"] .cgp.dragging .hd{cursor:grabbing}
+.cgp .cgc-grip{position:absolute;right:0;bottom:0;width:18px;height:18px;z-index:15;cursor:nwse-resize;touch-action:none;color:var(--sub)}
+.cgp .cgc-grip i{position:absolute;right:3px;bottom:3px;width:9px;height:9px;background:linear-gradient(135deg,transparent 0 46%,currentColor 46% 54%,transparent 54% 64%,currentColor 64% 72%,transparent 72% 82%,currentColor 82% 90%,transparent 90%)}
+.cgp .cgc-grip:hover,.cgp .cgc-grip:focus-visible,.cgp.resizing .cgc-grip{color:var(--ink)}
+.cgp .cgc-size{position:absolute;right:22px;bottom:5px;z-index:15;font-size:9.5px;font-weight:600;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:var(--on-fill);background:var(--fill);padding:1px 6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.cgp.resizing .cgc-size{opacity:1}
+.cgc-overlay[data-form="m"] .cgp :is(.cgc-grip,.cgc-size){display:none}
+.cgc-overlay[data-form="pc"] .cgp.resizing{transition:none;user-select:none;-webkit-user-select:none}
+.cgc-overlay[data-form="pc"] .cgp.resizing::after,.cgc-overlay[data-form="pc"] .cgp.dragging::after{content:"";position:absolute;inset:-1px;border:1px dashed var(--ink);pointer-events:none;z-index:7;opacity:.5}
+.cgp .nseg{position:relative;display:grid;grid-template-columns:1fr 1.25fr;width:250px;height:40px;padding:2px;border-radius:999px;border:1px solid var(--line-strong);flex:none}
+.cgp .nseg>button{position:relative;z-index:1;display:grid;place-items:center;align-content:center;text-align:center;font-size:11.5px;font-weight:600;color:var(--sub);line-height:1.15;transition:color .5s,opacity .45s;touch-action:manipulation}
+.cgp .nseg>button small{display:block;font-size:9px;font-weight:500;opacity:.75;margin-top:1px}
+.cgp .nseg.l .nseg-a{color:var(--on-fill)}
+.cgp .nseg-ind{position:absolute;z-index:0;top:2px;bottom:2px;left:2px;width:calc((100% - 4px)*1/2.25);border-radius:999px;background:var(--fill);transition:left .78s cubic-bezier(.22,1,.36,1),width .78s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.cgp .nseg.r .nseg-ind{z-index:2;left:calc(2px + (100% - 4px)*1/2.25);width:calc((100% - 4px)*1.25/2.25);pointer-events:auto}
+.cgp .nseg.c .nseg-ind{opacity:0}
+.cgp .nseg-sub{position:absolute;inset:3px;display:grid;grid-template-columns:1fr 1fr;border-radius:999px;opacity:0;transform:scale(.85);transition:opacity .45s,transform .7s cubic-bezier(.22,1,.36,1)}
+.cgp .nseg.r .nseg-sub{opacity:1;transform:none;transition-delay:.22s}
+.cgp .nseg-subind{position:absolute;top:0;bottom:0;left:0;width:50%;border-radius:999px;background:var(--on-fill);transition:transform .65s cubic-bezier(.22,1,.36,1)}
+.cgp .nseg.b .nseg-subind{transform:translateX(100%)}
+.cgp .nseg-sub button{position:relative;z-index:1;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:600;color:var(--on-fill);opacity:.7;transition:color .45s,opacity .45s;touch-action:manipulation}
+.cgp .nseg.a .nseg-sub button:first-of-type,.cgp .nseg.b .nseg-sub button:last-of-type{color:var(--fill);opacity:1}
+.cgp .nseg.r .nseg-b{opacity:0}
+.cgc-overlay[data-form="m"] .cgp .nseg{width:232px}
+.cgp svg.ai .a-ck,.cgp svg.ai .a-w,.cgp svg.ai .bk-ll,.cgp svg.ai .bk-rl{stroke-dasharray:1;stroke-dashoffset:0}
+.cgp svg.ai .a-scan{opacity:0}
+.cgp svg.ai .a-d{fill:currentColor;stroke:none}
+.cgp svg.ai-t_settings .k{fill:var(--paper-solid)}
+.cgp svg.ai-spark .a-s1,.cgp svg.ai-spark .a-s2,.cgp svg.ai-t_home .g{transform-box:fill-box;transform-origin:center}
+.cgp svg.ai-lore .bk-p{fill:var(--paper-solid);stroke:currentColor;opacity:0;transform-box:view-box;transform-origin:12px 12px}
+.cgp svg.ai-lore .bk-sp{stroke-width:1.6}
+.cgp svg.ai-t_history .hand{transform-origin:12px 12px}
+.cgp svg.ai .lid{transform-origin:4.5px 7px;transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+@media(hover:hover){
+.cgp .job-main:hover svg.ai-audit .a-ck,.cgp .btn:hover svg.ai-audit .a-ck{animation:cgcRedraw .5s ease-out}
+.cgp .job-main:hover svg.ai-ask .a-d,.cgp .btn:hover svg.ai-ask .a-d{animation:cgcTyping .9s ease-in-out infinite}
+.cgp .job-main:hover svg.ai-mem .a-l1{animation:cgcLift .9s cubic-bezier(.3,1.25,.5,1)}
+.cgp .job-main:hover svg.ai-mem .a-l3{animation:cgcDrop .9s cubic-bezier(.3,1.25,.5,1)}
+.cgp .job-main:hover svg.ai-mem2 .a-up{animation:cgcPress 1s ease-in-out}
+.cgp .job-main:hover svg.ai-mem2 .a-dn{animation:cgcPressUp 1s ease-in-out}
+.cgp .job-main:hover svg.ai-note .a-w1{animation:cgcWrite 1.4s ease-in-out}
+.cgp .job-main:hover svg.ai-note .a-w2{animation:cgcWrite 1.4s .25s ease-in-out}
+.cgp .job-main:hover svg.ai-spark .a-s1{animation:cgcTwinkle 1.1s ease-in-out}
+.cgp .job-main:hover svg.ai-spark .a-s2{animation:cgcTwinkle 1.1s .2s ease-in-out}
+.cgp .job-main:hover svg.ai-lore .bk-p{animation:cgcPageTurn 1.25s cubic-bezier(.45,.05,.35,1) both}
+.cgp .job-main:hover svg.ai-lore .bk-p2{animation-delay:.2s}.cgp .job-main:hover svg.ai-lore .bk-p3{animation-delay:.4s}
+.cgp .job-main:hover svg.ai-lore .bk-rl{animation:cgcRlRedraw 1.7s ease both}
+.cgp .job-main:hover svg.ai-lore .bk-ll{animation:cgcLlBlink 1.7s ease both}
+.cgp .btn:hover svg.ai .lid,.cgp .icon-btn:hover svg.ai .lid,.cgp .link-btn:hover svg.ai .lid{transform:rotate(-14deg) translateY(-.5px)}
+}
+.cgp .job.st-run svg.ai-audit .a-scan{opacity:1;animation:cgcScanLine 1.4s ease-in-out infinite}
+.cgp .job.st-run svg.ai-ask .a-d{animation:cgcTyping .9s ease-in-out infinite}
+.cgp svg.ai-ask .a-d2{animation-delay:.12s!important}.cgp svg.ai-ask .a-d3{animation-delay:.24s!important}
+.cgp .job.st-run svg.ai-mem .a-l1{animation:cgcLift .9s cubic-bezier(.3,1.25,.5,1) infinite}
+.cgp .job.st-run svg.ai-mem .a-l3{animation:cgcDrop .9s cubic-bezier(.3,1.25,.5,1) infinite}
+.cgp .job.st-run svg.ai-mem2 .a-up{animation:cgcPress 1s ease-in-out infinite}
+.cgp .job.st-run svg.ai-mem2 .a-dn{animation:cgcPressUp 1s ease-in-out infinite}
+.cgp .job.st-run svg.ai-note .a-w1{animation:cgcWrite 1.4s ease-in-out infinite}
+.cgp .job.st-run svg.ai-note .a-w2{animation:cgcWrite 1.4s .25s ease-in-out infinite}
+.cgp .job.st-run svg.ai-spark .a-s1{animation:cgcTwinkle 1.1s ease-in-out infinite}
+.cgp .job.st-run svg.ai-spark .a-s2{animation:cgcTwinkle 1.1s .2s ease-in-out infinite}
+.cgp .job.st-run svg.ai-lore .bk-p{animation:cgcPageTurn 1.9s cubic-bezier(.45,.05,.35,1) infinite both}
+.cgp .job.st-run svg.ai-lore .bk-p2{animation-delay:.2s}.cgp .job.st-run svg.ai-lore .bk-p3{animation-delay:.4s}
+.cgp .cgc-tab.on svg.ai-t_home .g{animation:cgcGpop .45s cubic-bezier(.3,1.5,.5,1) both}
+.cgp .cgc-tab.on svg.ai-t_home .g2{animation-delay:.05s}.cgp .cgc-tab.on svg.ai-t_home .g3{animation-delay:.1s}.cgp .cgc-tab.on svg.ai-t_home .g4{animation-delay:.15s}
+.cgp .cgc-tab.on svg.ai-t_data .c1{animation:cgcCdrop .5s cubic-bezier(.3,1.5,.5,1) both}
+.cgp .cgc-tab.on svg.ai-t_data .c2{animation:cgcCdrop .5s .06s cubic-bezier(.3,1.5,.5,1) both}
+.cgp .cgc-tab.on svg.ai-t_history .hand{animation:cgcSpin .7s cubic-bezier(.3,1.25,.5,1)}
+.cgp .cgc-tab.on svg.ai-t_settings .k1{animation:cgcKl .6s cubic-bezier(.3,1.5,.5,1) both}
+.cgp .cgc-tab.on svg.ai-t_settings .k2{animation:cgcKr .6s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes cgcRedraw{from{stroke-dashoffset:1}}
+@keyframes cgcScanLine{0%,100%{transform:translateY(0);opacity:.2}50%{transform:translateY(7px);opacity:1}}
+@keyframes cgcTyping{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-2.5px)}}
+@keyframes cgcLift{40%{transform:translateY(-2.5px)}}
+@keyframes cgcDrop{40%{transform:translateY(2px)}}
+@keyframes cgcPress{50%{transform:translateY(2px)}}
+@keyframes cgcPressUp{50%{transform:translateY(-2px)}}
+@keyframes cgcWrite{0%{stroke-dashoffset:1}60%,100%{stroke-dashoffset:0}}
+@keyframes cgcTwinkle{50%{transform:scale(.6) rotate(30deg)}}
+@keyframes cgcPageTurn{0%{opacity:0;transform:scaleX(1)}6%{opacity:1;transform:scaleX(1)}42%{transform:scaleX(.18) skewY(-14deg)}50%{transform:scaleX(0) skewY(-16deg)}58%{transform:scaleX(-.18) skewY(-12deg)}88%{opacity:1;transform:scaleX(-1)}100%{opacity:0;transform:scaleX(-1)}}
+@keyframes cgcRlRedraw{0%,8%{stroke-dashoffset:0;opacity:1}14%{opacity:0}70%{stroke-dashoffset:1;opacity:0}72%{opacity:1}100%{stroke-dashoffset:0;opacity:1}}
+@keyframes cgcLlBlink{0%,55%{opacity:1}62%{opacity:.25}75%,100%{opacity:1}}
+@keyframes cgcGpop{from{transform:scale(.4)}}
+@keyframes cgcCdrop{from{transform:translateY(-4px);opacity:0}}
+@keyframes cgcKl{from{transform:translateX(-6px)}}
+@keyframes cgcKr{from{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){.cgc-overlay *,.cgc-overlay *::before,.cgc-overlay *::after,.cgc-overlay .cgp{animation:none!important;transition:none!important}}`;
+
     const CrackUI = {
         panel: null,
         toastTimer: 0,
@@ -16536,7 +17679,6 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         launcherHost: null,
         launcherComposer: null,
         launcherObserverRoot: null,
-        miniMenuClose: null,
         referenceSnapshot: null,
         selectedSourceKey: 'profile',
         referenceStatusSlot: 'qa',
@@ -16545,6 +17687,22 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         launcherSessionKey: '',
         pendingRecoveryTimer: 0,
         startingSessionKey: '',
+        startingAt: 0,
+        startingToken: '',
+        // v1.4.1: the per-room send latch is owned by a token and expires. Every await in the send path is now
+        // bounded, so a latch older than CGC_START_LATCH_STALE_MS can only be one an iOS suspension orphaned.
+        startBusy(sessionKey) {
+            if(!this.startingSessionKey||this.startingSessionKey!==sessionKey)return false;
+            if(Date.now()-Number(this.startingAt||0)<CGC_START_LATCH_STALE_MS)return true;
+            console.warn(`[${APP.id}] stale send latch released`,sessionKey);
+            this.startingSessionKey='';this.startingToken='';this.startingAt=0;return false;
+        },
+        beginStart(sessionKey) {
+            const token=uid('start');this.startingSessionKey=sessionKey;this.startingToken=token;this.startingAt=Date.now();return token;
+        },
+        endStart(token) {
+            if(token&&this.startingToken===token){this.startingSessionKey='';this.startingToken='';this.startingAt=0;}
+        },
         duplicateWarningShown: false,
         uiBooted: false,
         storageFeaturesBooted: false,
@@ -16579,358 +17737,20 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 
         storageReadyForAction() {
             if(!CGC_ASYNC_GM_STORAGE||cgcStorageReady)return true;
-            void warmAsyncStorageInBackground().then(()=>{this.placeLauncher();if(this.panel)this.refreshPanel();});
+            // The boot gate skips listener/lifecycle setup when its first reads were slow; install them once warm.
+            void warmAsyncStorageInBackground().then(()=>{this.finishStorageInit();this.placeLauncher();this.refreshPanel();});
             this.toast('iOS 저장소가 아직 준비 중이에요. 버튼은 유지하고 준비가 끝나면 다시 누를 수 있게 할게요.',true);
             return false;
         },
 
         injectStyles() {
             CgcTheme.install();
-            injectStyleCompat(`.cgc-overlay{position:fixed;inset:0;z-index:2147483300;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,10,30,.36);backdrop-filter:blur(2px);box-sizing:border-box}
-.cgc-panel{width:min(376px,calc(100vw - 36px));height:min(700px,calc(100dvh - 36px));max-height:calc(100dvh - 36px);min-height:0;border-radius:24px;overflow:hidden;display:flex;flex-direction:column;background:var(--card);color:var(--tx);border:1px solid var(--line);box-shadow:0 14px 40px rgba(40,30,70,.15);font:13px/1.5 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.cgc-panel,.cgc-panel *,.cgc-panel *::before,.cgc-panel *::after{box-sizing:border-box}
-.cgc-panel [hidden],.cgc-file-hidden{display:none!important}
-.cgc-panel button{font-family:inherit}
-.cgc-panel button:disabled{cursor:default;opacity:.5}
-.cgc-panel :is(button,input,select,textarea):focus-visible{outline:2px solid var(--br);outline-offset:2px}
-.cgc-panel .cgc-body{flex:1;min-height:0;overflow:auto}
-.cgc-panel .cgc-view{display:none}
-.cgc-panel .cgc-view.active{display:block}
-.cgc-panel svg.i{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.cgc-panel svg.i.sm{width:15px;height:15px;stroke-width:1.8}
-.cgc-panel svg.i.tab{width:20px;height:20px}
-.cgc-panel .alert{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--warns);color:var(--warn);flex:none}
-.cgc-panel .alert svg{flex:none}
-.cgc-panel .alert p{margin:0;font-size:12.5px;font-weight:700;line-height:1.4;flex:1}
-.cgc-panel .alert button{border:0;border-radius:9px;background:var(--warn);color:var(--card);padding:8px 11px;font:780 11.5px/1 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;cursor:pointer;flex:none}
-.cgc-panel .sect-t{display:flex;align-items:baseline;gap:8px;margin:0 3px 10px}
-.cgc-panel .sect-t b{font-size:13px;font-weight:800;letter-spacing:-.018em}
-.cgc-panel .sect-t span{font-size:11.5px;color:var(--sub)}
-.cgc-panel .spin{width:9px;height:9px;border-radius:50%;border:1.6px solid currentColor;border-right-color:transparent}
-.cgc-panel .pane{padding:16px 14px 18px}
-.cgc-panel .mn{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:transparent;color:var(--tx);font:750 12px/1 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;cursor:pointer}
-.cgc-panel .mn.key{background:var(--br);border-color:var(--br);color:var(--ink)}
-.cgc-panel .pick{display:flex;gap:6px;padding:4px;background:var(--app);border-radius:12px;margin-left:auto}
-.cgc-panel .pick span{padding:7px 11px;border-radius:9px;font-size:11.5px;font-weight:730;color:var(--sub)}
-.cgc-panel .pick span.on{background:var(--card);color:var(--tx)}
-.cgc-panel .pc{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;background:var(--app);margin-bottom:7px}
-.cgc-panel .pc .no{width:26px;height:26px;border-radius:8px;background:var(--card);color:var(--sub);display:grid;place-items:center;font:780 11px/1 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;flex:none}
-.cgc-panel .pc.done .no{background:var(--ok);color:var(--card)}
-.cgc-panel .pc .tx{flex:1;min-width:0;font-size:12.5px;font-weight:700}
-.cgc-panel .pc .tx em{display:block;font-style:normal;font-size:11px;color:var(--sub);font-weight:500;margin-top:2px}
-.cgc-panel .bar{height:6px;border-radius:4px;background:var(--mute);overflow:hidden;margin:2px 3px 15px}
-.cgc-panel .bar i{display:block;height:100%;width:42%;background:var(--br);border-radius:4px}
-.cgc-panel svg.i{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.cgc-panel svg.i.sm{width:15px;height:15px;stroke-width:1.8}
-.cgc-panel svg.i.tab{width:20px;height:20px}
-.cgc-panel .pane{padding:16px 14px 20px}
-.cgc-panel .gt{display:flex;align-items:baseline;gap:8px;margin:20px 3px 9px}
-.cgc-panel .gt b{font-size:12.5px;font-weight:800;letter-spacing:-.015em}
-.cgc-panel .gt span{font-size:11.5px;color:var(--sub)}
-.cgc-panel .gt:first-of-type{margin-top:4px}
-.cgc-panel .tt{min-width:0;flex:1}
-.cgc-panel .tt .a{font-size:13.5px;font-weight:740;letter-spacing:-.012em}
-.cgc-panel .tt .b{font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.45}
-.cgc-panel .val{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:730;color:var(--sub);flex:none}
-.cgc-panel .val b{color:var(--tx);font-weight:750}
-.cgc-panel .seg{display:flex;gap:4px;padding:4px;background:var(--app);border-radius:12px}
-.cgc-panel .seg span{flex:1;text-align:center;padding:9px 6px;border-radius:9px;font-size:12px;font-weight:730;color:var(--sub);cursor:pointer}
-.cgc-panel .seg span.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.cgc-panel .seg.mini span{padding:7px 5px;font-size:11.5px}
-.cgc-panel .step{display:flex;align-items:center;gap:2px;background:var(--app);border-radius:11px;padding:3px;flex:none}
-.cgc-panel .step button{width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:var(--tx);font:750 15px/1 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;cursor:pointer}
-.cgc-panel .step em{font-style:normal;min-width:62px;text-align:center;font-size:12.5px;font-weight:780;font-variant-numeric:tabular-nums}
-.cgc-panel .ta{width:100%;border:1px solid var(--line);border-radius:14px;background:var(--app);color:var(--tx);
-  padding:13px;font:400 12px/1.7 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;resize:none;min-height:250px;outline:none}
-.cgc-panel .ta:focus{border-color:var(--br)}
-.cgc-panel .tarow{display:flex;align-items:center;gap:8px;margin-top:10px}
-.cgc-panel .tarow small{font-size:11.5px;color:var(--sub);margin-right:auto;font-variant-numeric:tabular-nums}
-.cgc-panel .mn{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:transparent;color:var(--tx);font:750 12.5px/1 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;cursor:pointer}
-.cgc-panel .mn.key{background:var(--br);border-color:var(--br);color:var(--ink)}
-.cgc-panel .mn.dgr{background:var(--dangers);border-color:transparent;color:var(--danger)}
-.cgc-panel .link{display:flex;align-items:center;gap:9px;padding:12px 13px;border-radius:13px;background:var(--app);margin-bottom:8px}
-.cgc-panel .link .tt .b{font-variant-numeric:tabular-nums}
-.cgc-panel .link .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
-.cgc-panel .link .dot.no{background:var(--line)}
-.cgc-panel .link .x{width:32px;height:32px;border:1px solid var(--line);border-radius:9px;background:transparent;color:var(--sub);cursor:pointer;display:grid;place-items:center;flex:none}
-.cgc-panel .hint{display:flex;gap:9px;padding:12px;border-radius:13px;background:var(--app);margin-top:10px}
-.cgc-panel .hint svg{color:var(--sub);flex:none;margin-top:1px}
-.cgc-panel .hint p{margin:0;font-size:11.5px;line-height:1.6;color:var(--sub)}
-.cgc-panel .foot{padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--hair);display:flex;gap:8px;flex:none}
-.cgc-panel .foot .mn{flex:1;text-align:center;padding:13px}
-.cgc-panel :is(.b,.bd,.hint p){overflow-wrap:anywhere}
-.cgc-panel .seg button{flex:1;text-align:center;padding:9px 6px;border:0;border-radius:9px;font-size:12px;font-weight:730;color:var(--sub);background:transparent;cursor:pointer}
-.cgc-panel .seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.cgc-panel .seg.mini button{padding:7px 5px;font-size:11.5px}
-.cgc-panel .grab{width:38px;height:4px;border-radius:3px;background:var(--line);margin:10px auto 2px;flex:none}
-.cgc-launch-more:hover{ background:color-mix(in srgb,currentColor 10%,transparent); border-color:color-mix(in srgb,currentColor 42%,transparent); }
-.cgc-launch-more[data-working="1"]{ opacity:.62; }
-.cgc-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483600;max-width:min(540px,90vw);padding:10px 14px;border-radius:11px;background:#1f1f1d;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,.28);font:700 12.5px/1.45 Pretendard,sans-serif;text-align:center}
-.cgc-toast.error{background:#b6382c}
-.cgc-mini-popover{position:fixed;z-index:2147483400;min-width:172px;padding:5px;border-radius:11px;background:var(--card);color:var(--tx);border:1px solid var(--line);box-shadow:0 14px 40px rgba(40,30,70,.2)}
-.cgc-mini-popover button{width:100%;border:0;border-radius:7px;background:transparent;color:inherit;padding:8px 9px;text-align:left;cursor:pointer;font:720 12px/1.3 Pretendard,sans-serif}
-.cgc-mini-popover button:hover{background:var(--brs);color:var(--br)}
-.cgc-mini-sep{height:1px;background:var(--line);margin:5px 4px}
-@media(max-width:720px),(pointer:coarse) and (max-width:900px){
-.cgc-overlay{inset:auto;left:var(--cgc-vvleft,0px);top:var(--cgc-vvtop,0px);width:var(--cgc-vvw,100vw);height:var(--cgc-vvh,100dvh);padding:env(safe-area-inset-top,0px) 0 0;align-items:flex-end;justify-content:center}
-.cgc-panel{width:100%;height:min(94dvh,calc(var(--cgc-vvh,100dvh) - env(safe-area-inset-top,0px)));max-height:calc(var(--cgc-vvh,100dvh) - env(safe-area-inset-top,0px));min-height:0;border-radius:26px 26px 0 0;border-left:0;border-right:0;border-bottom:0}
-.cgc-panel .hd{padding-top:14px}.cgc-panel .sc{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}.cgc-panel .tabs{padding-bottom:env(safe-area-inset-bottom,0px)}
-.cgc-panel .cgc-body{padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
-.cgc-panel :is(.ta,input:not([type=hidden]),textarea,select){font-size:16px}
-.cgc-panel :is(.hd button,.step button,.link .x,.mn,.seg button,.tabs button),.cgc-mini-popover button{min-height:42px;touch-action:manipulation}
-.cgc-panel :is(.hd button,.step button,.link .x){min-width:42px}.cgc-panel .sw{touch-action:manipulation}.cgc-panel .sw::before{content:"";position:absolute;inset:-9px 0}
-.cgc-launch-more{width:34px;height:34px;min-width:34px;min-height:34px;touch-action:manipulation}
-.cgc-mini-popover{max-height:calc(var(--cgc-vvh,100dvh) - 16px);overflow:auto;-webkit-overflow-scrolling:touch}.cgc-toast{bottom:max(14px,env(safe-area-inset-bottom,0px))}
-}
-.cgc-panel{position:relative}
-.cgc-panel button{letter-spacing:inherit}
-.cgc-panel .plain{border:0;background:transparent;color:inherit;padding:0;text-align:left;cursor:pointer;font:inherit}
-.cgc-panel .plain.subtle{font-size:12px;color:var(--sub);padding:9px 3px}
-.cgc-panel .plain.danger{color:var(--danger);padding:22px 3px 8px;font-size:12px}
-.cgc-panel .row-main{border:0;background:transparent;color:inherit;width:100%;display:flex;align-items:center;gap:12px;padding:12px 13px;text-align:left;font:inherit;cursor:pointer;border-radius:inherit}
-.cgc-panel .row-main:hover{background:var(--app)}
-.cgc-panel .hero-sub{font-size:12px;margin-top:5px;opacity:.86}
-.cgc-panel .navrow{width:100%;text-align:left;background:transparent;color:var(--tx);font:inherit;cursor:pointer}
-.cgc-panel .navrow .a,.cgc-panel .navrow .b{display:block}
-.cgc-panel .gt{margin-top:20px}
-.cgc-panel .settings-page.active{display:flex;flex-direction:column;height:100%;min-height:0}
-.cgc-panel .settings-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
-.cgc-panel .ui-input{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--app);color:var(--tx);padding:10px;font:inherit;font-size:13px;line-height:1.5}
-.cgc-panel .urlfield{display:block;margin:12px 0}
-.cgc-panel .urlfield>span{display:block;font-size:12px;color:var(--sub);margin-bottom:5px}
-.cgc-panel .ta{display:block;margin-top:8px;font-family:inherit}
-.cgc-panel .ta.small{min-height:95px;resize:vertical}
-.cgc-panel .more{border:1px solid var(--line);border-radius:12px;margin:8px 0 12px;padding:10px 12px;font-size:12px}
-.cgc-panel .more summary{cursor:pointer;color:var(--sub)}
-.cgc-panel .more[open] summary{margin-bottom:10px}
-.cgc-panel .inline-area{padding:12px;border-radius:13px;background:var(--app);margin:8px 0}
-.cgc-panel .inline-area>.mn{margin-top:8px}
-.cgc-panel .hint-text{font-size:11.5px;line-height:1.6;color:var(--sub)}
-.cgc-panel label.hint-text{display:block;margin:10px 0 5px}
-.cgc-panel .ac{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.cgc-panel .mn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;line-height:1.35}
-.cgc-panel .switch-control{position:relative;display:inline-flex;flex:none;width:44px;height:44px;align-items:center;cursor:pointer}
-.cgc-panel .switch-control input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;z-index:1;cursor:pointer}
-.cgc-panel .step input{width:80px;min-width:0;border:0;padding:7px 1px;text-align:center;background:transparent;color:var(--tx);font:700 12px/1.4 Pretendard,"Apple SD Gothic Neo",system-ui,sans-serif;appearance:textfield;-moz-appearance:textfield}
-.cgc-panel .step input::-webkit-inner-spin-button{appearance:none}
-.cgc-panel .source-picks{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0}
-.cgc-panel .source-preview{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--tx);font:12px/1.7 ui-monospace,monospace}
-.cgc-panel .progress-note{margin:12px 14px 0;padding:9px 12px;border-radius:11px;background:var(--app);color:var(--sub);font-size:11.5px;line-height:1.55;white-space:pre-wrap}
-.cgc-panel .progress-note.error{color:var(--danger)}
-.cgc-panel .issue{padding:12px;border:1px solid var(--warn);border-radius:13px;margin-bottom:8px;background:var(--warns)}
-.cgc-panel .issue p{margin:5px 0;color:var(--warn);font-size:12px}
-.cgc-panel .detail-layer{position:absolute;inset:0;z-index:4;background:var(--card);display:flex;flex-direction:column}
-.cgc-panel .result-full{margin:0;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.7 ui-monospace,monospace}
-.cgc-panel #cgc-ui-room{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:235px}
-.cgc-panel #cgc-ui-connected.no{background:var(--line)}
-.cgc-panel .cgc-task-sources{display:flex;gap:7px;flex-wrap:wrap}
-.cgc-panel .cgc-task-source{font-size:12px;display:inline-flex;gap:5px;align-items:center;color:var(--sub)}
-.cgc-panel .pc{flex-wrap:wrap;margin-top:8px}
-.cgc-panel .pc .tx{overflow-wrap:anywhere}
-.cgc-panel #cgc-ui-alert button{white-space:nowrap}
-.cgc-panel .seg button{line-height:1.4}
-@media(max-width:720px),(pointer:coarse) and (max-width:900px){.cgc-panel .ui-input,.cgc-panel .step input{font-size:16px}.cgc-panel .step input{width:88px}.cgc-panel .mn{min-height:42px}.cgc-panel .sect{margin-top:18px}.cgc-panel .row .tag{padding:6px;font-size:10.5px}.cgc-panel .row-main{gap:9px}.cgc-panel .row .b{font-size:11px}.cgc-panel .hd{padding-bottom:11px}.cgc-panel .settings-content{padding-bottom:18px}}
-.cgc-mini-popover{box-sizing:border-box;padding:8px;border-radius:18px;min-width:0;font:13px/1.4 Pretendard,system-ui,sans-serif}
-.cgc-mini-popover *{box-sizing:border-box}
-.cgc-mini-popover .quick-heading{padding:7px 10px 9px;color:var(--sub);font-size:11px;font-weight:700;letter-spacing:.04em}
-.cgc-mini-popover button{display:flex;align-items:center;gap:11px;min-height:43px;padding:9px 10px;border-radius:11px;font:600 13px/1.4 Pretendard,system-ui,sans-serif}
-.cgc-mini-popover button:hover,.cgc-mini-popover button:focus-visible{background:var(--brs);color:var(--br);outline:2px solid var(--br);outline-offset:-2px}
-.cgc-mini-popover .quick-icon{width:29px;height:29px;display:grid;place-items:center;background:var(--app);border-radius:9px;color:var(--br);flex:none}
-.cgc-mini-popover svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.cgc-mini-popover .quick-arrow{margin-left:auto;color:var(--sub)}
-.cgc-panel .cgc-resize-grip{display:none}
-.cgc-overlay[data-panel-mode="floating"]{inset:0;left:0;top:0;width:100%;height:100%;padding:0;background:transparent;backdrop-filter:none;pointer-events:none;display:block}
-.cgc-overlay[data-panel-mode="floating"]>.cgc-panel{position:absolute;pointer-events:auto;max-height:none;min-height:0;max-width:none;border-radius:22px;box-shadow:0 16px 60px #17102430;font-size:14px}
-.cgc-overlay[data-panel-mode="floating"]>.cgc-panel>.hd{cursor:move;touch-action:none;user-select:none;min-height:70px}
-.cgc-overlay[data-panel-mode="floating"] .sc{padding:22px 26px}
-.cgc-overlay[data-panel-mode="floating"] .row{min-height:70px}
-.cgc-overlay[data-panel-mode="floating"] .cgc-resize-grip{display:block;position:absolute;right:2px;bottom:2px;width:24px;height:24px;border:0;border-radius:8px;background:transparent;color:var(--sub);cursor:nwse-resize;touch-action:none;z-index:4;padding:4px}
-.cgc-panel .cgc-resize-grip:focus-visible{outline:2px solid var(--br)}
-.cgc-overlay[data-panel-mode="floating"] .tabs{padding-right:24px}
-.cgc-panel svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.cgc-panel svg.i.sm{width:14px;height:14px}
-.cgc-panel svg.i.tab{width:19px;height:19px}
-@keyframes up{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:none}}
-@keyframes ch-wipe{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes ch-jb-run{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
-.cgc-panel .anim .st{opacity:0;animation:up .48s cubic-bezier(.2,.75,.3,1) forwards;animation-delay:calc(var(--i,0)*52ms)}
-.cgc-panel .anim .fill{transform-origin:left center;animation:ch-wipe .95s cubic-bezier(.3,.85,.3,1) .4s both}
-.cgc-panel .live{animation:none}
-.cgc-panel .hd{display:flex;align-items:flex-start;gap:10px;padding:16px 16px 12px;flex:none}
-.cgc-panel .hd .t{min-width:0;flex:1}
-.cgc-panel .hd .t b{display:block;font-size:16px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cgc-panel .hd .t s{display:flex;align-items:center;gap:5px;text-decoration:none;font-size:10.5px;color:var(--sub);margin-top:4px;font-weight:730}
-.cgc-panel .hd .t s i{width:5px;height:5px;border-radius:50%;background:var(--ok);flex:none}
-.cgc-panel .hd .x{width:30px;height:30px;border:0;border-radius:10px;background:var(--card);color:var(--sub);cursor:pointer;display:grid;place-items:center;flex:none}
-.cgc-panel .sc{flex:1;overflow:auto;padding-bottom:6px}
-.cgc-panel .sc::-webkit-scrollbar{width:4px}
-.cgc-panel .sc::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px}
-.cgc-panel .alert{display:flex;align-items:center;gap:9px;margin:0 14px 10px;padding:11px 12px;border-radius:13px;background:var(--warns);color:var(--warn);flex:none}
-.cgc-panel .alert p{margin:0;font-size:12px;font-weight:770;flex:1;line-height:1.35}
-.cgc-panel .alert button{border:0;border-radius:9px;background:var(--warn);color:var(--app);padding:8px 11px;font:780 11px/1 inherit;cursor:pointer;flex:none}
-.cgc-panel .headcard{margin:0 14px;background:var(--card);border-radius:20px;padding:16px 16px 15px}
-.cgc-panel .eyebrow{font-size:9.5px;font-weight:800;letter-spacing:.13em;color:var(--sub);text-transform:uppercase}
-.cgc-panel .hero-n{display:flex;align-items:flex-end;gap:8px;margin-top:7px}
-.cgc-panel .hero-n .num{font-size:64px;font-weight:800;letter-spacing:-.06em;line-height:.84;font-variant-numeric:tabular-nums;
-  background:linear-gradient(112deg,var(--br) 5%,var(--br2) 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.cgc-panel .hero-n .unit{font-size:15px;font-weight:790;color:var(--sub);padding-bottom:8px}
-.cgc-panel .hero-n .side{margin-left:auto;text-align:right;padding-bottom:4px}
-.cgc-panel .hero-n .side b{display:block;font-size:11.5px;font-weight:790;font-variant-numeric:tabular-nums}
-.cgc-panel .hero-n .side span{display:block;font-size:9px;color:var(--sub);margin-top:3px;letter-spacing:.11em;font-weight:750}
-.cgc-panel .ln{font-size:12px;color:var(--sub);margin-top:10px;line-height:1.5}
-.cgc-panel .ln b{color:var(--tx);font-weight:770}
-.cgc-panel .stats{display:flex;gap:8px;margin-top:14px}
-.cgc-panel .stats a{flex:1;background:var(--brs);border-radius:12px;padding:10px;text-decoration:none;color:inherit;cursor:pointer}
-.cgc-panel .stats .k{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--brdeep);text-transform:uppercase;opacity:.75}
-.cgc-panel .stats .v{font-size:16.5px;font-weight:800;letter-spacing:-.035em;margin-top:5px;font-variant-numeric:tabular-nums;color:var(--brdeep)}
-.cgc-panel .stats .v em{font-style:normal;font-size:9.5px;font-weight:750;margin-left:2px;opacity:.7}
-.cgc-panel .cta{margin:12px 14px 0;width:calc(100% - 28px);border:0;border-radius:15px;padding:16px;cursor:pointer;
-  background:var(--br);color:var(--ink);font:800 14.5px/1 inherit;letter-spacing:-.02em;
-  display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .12s ease}
-.cgc-panel .cta:active{transform:scale(.985)}
-.cgc-panel .cta.calm{background:var(--card);color:var(--sub);font-weight:770}
-.cgc-panel .grp{display:flex;align-items:center;gap:8px;margin:20px 18px 8px}
-.cgc-panel .grp b{font-size:10px;font-weight:800;letter-spacing:.11em;color:var(--sub);text-transform:uppercase}
-.cgc-panel .grp .cnt{font-size:9.5px;font-weight:800;color:var(--ink);background:var(--br);border-radius:20px;padding:2px 7px;font-variant-numeric:tabular-nums}
-.cgc-panel .grp .cnt.w{background:var(--warn)}
-.cgc-panel .grp i{flex:1;height:1px;background:var(--line)}
-.cgc-panel .list{margin:0 14px;background:var(--card);border-radius:18px;overflow:hidden}
-.cgc-panel .job{display:flex;align-items:center;gap:11px;padding:13px 13px;cursor:pointer;position:relative;transition:background .15s}
-.cgc-panel .job:active{background:var(--mute)}
-.cgc-panel .job+.job{border-top:1px solid var(--hair)}
-.cgc-panel .job.run{padding-bottom:18px}
-.cgc-panel .job.att:before,.cgc-panel .job.run:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--warn)}
-.cgc-panel .job.run:before{background:var(--br)}
-.cgc-panel .job .ic{width:34px;height:34px;border-radius:11px;background:var(--brs);color:var(--brdeep);display:grid;place-items:center;flex:none}
-.cgc-panel .job.att .ic{background:var(--warns);color:var(--warn)}
-.cgc-panel .job .tx{flex:1;min-width:0}
-.cgc-panel .job .a{font-size:14px;font-weight:790;letter-spacing:-.024em;display:flex;align-items:center;gap:6px}
-.cgc-panel .job .meta{display:flex;gap:5px;margin-top:5px}
-.cgc-panel .chip{font-size:9.5px;font-weight:760;color:var(--sub);background:var(--mute);border-radius:5px;padding:3px 6px;white-space:nowrap}
-.cgc-panel .chip.hot{background:var(--warns);color:var(--warn)}
-.cgc-panel .chip.on{background:var(--brs);color:var(--brdeep)}
-.cgc-panel .job .right{text-align:right;flex:none;min-width:38px}
-.cgc-panel .job .right .big{font-size:16px;font-weight:800;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1}
-.cgc-panel .job .right .big u{text-decoration:none;font-size:10px;font-weight:760;color:var(--sub)}
-.cgc-panel .job .right .sm{font-size:9px;color:var(--sub);margin-top:4px;letter-spacing:.06em;font-weight:750}
-.cgc-panel .job .track{position:absolute;left:58px;right:13px;bottom:8px;height:3px;border-radius:2px;background:var(--mute);overflow:hidden}
-.cgc-panel .job .track .fill{display:block;height:100%;width:var(--w,100%);border-radius:2px;background:var(--br)}
-.cgc-panel .job .track.run .fill{display:none}
-.cgc-panel .job .track.run::after{content:"";position:absolute;left:0;top:0;height:100%;width:30%;border-radius:2px;background:var(--br);animation:ch-jb-run 1.3s cubic-bezier(.2,.8,.3,1) infinite}
-.cgc-panel .dotlive{width:6px;height:6px;border-radius:50%;background:var(--br);flex:none}
-.cgc-panel .empty{margin:0 14px;padding:24px 16px;border-radius:18px;background:var(--card);text-align:center}
-.cgc-panel .empty b{display:block;font-size:13.5px;font-weight:790}
-.cgc-panel .empty span{display:block;font-size:11.5px;color:var(--sub);margin-top:6px;line-height:1.55}
-.cgc-panel .tabs{display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0));flex:none;background:var(--card);
-  border-top:1px solid var(--hair);position:relative}
-.cgc-panel .tabs button{flex:1;border:0;background:transparent;color:var(--sub);padding:9px 0 10px;cursor:pointer;border-radius:12px;
-  display:flex;flex-direction:column;align-items:center;gap:4px;font:740 10px/1 inherit;position:relative;transition:background .2s,color .2s}
-.cgc-panel .tabs button.on{color:var(--brdeep);background:transparent;z-index:1}
-.cgc-panel .tabs::before{content:"";position:absolute;left:6px;top:6px;bottom:max(6px,env(safe-area-inset-bottom,0px));width:calc((100% - 12px)/4);border-radius:12px;background:var(--brs);transition:transform .46s cubic-bezier(.34,1.42,.5,1);pointer-events:none}
-.cgc-panel .tabs:has(button:nth-child(2).on)::before{transform:translateX(100%)}
-.cgc-panel .tabs:has(button:nth-child(3).on)::before{transform:translateX(200%)}
-.cgc-panel .tabs:has(button:nth-child(4).on)::before{transform:translateX(300%)}
-.cgc-panel .tabs .dotmark{position:absolute;top:7px;right:calc(50% - 20px);width:5px;height:5px;border-radius:50%;background:var(--warn)}
-.cgc-panel .pane{padding:0 14px 16px}
-.cgc-panel .pane-t{font-size:19px;font-weight:800;letter-spacing:-.035em;margin:0 4px 5px}
-.cgc-panel .pane-s{font-size:11.5px;color:var(--sub);line-height:1.55;margin:0 4px 14px}
-.cgc-panel .src{display:flex;align-items:center;gap:11px;padding:13px;border-radius:15px;background:var(--card);margin-bottom:8px}
-.cgc-panel .src .tx{flex:1;min-width:0}
-.cgc-panel .src .a{font-size:13.5px;font-weight:780;letter-spacing:-.022em}
-.cgc-panel .src .b{display:flex;gap:5px;margin-top:5px}
-.cgc-panel .sw{width:42px;height:25px;border-radius:14px;background:var(--br);position:relative;flex:none;cursor:pointer;transition:background .2s}
-.cgc-panel .sw:after{content:"";position:absolute;top:3px;left:20px;width:19px;height:19px;border-radius:50%;background:#fff;transition:left .2s cubic-bezier(.3,.8,.3,1)}
-.cgc-panel .sw.off{background:var(--mute)}
-.cgc-panel .sw.off:after{left:3px;background:var(--sub)}
-.cgc-panel .ev{border-radius:17px;background:var(--card);padding:14px;margin-bottom:9px}
-.cgc-panel .ev .h{display:flex;align-items:center;gap:8px}
-.cgc-panel .ev .h .d{width:24px;height:24px;border-radius:8px;background:var(--brs);color:var(--brdeep);display:grid;place-items:center;flex:none}
-.cgc-panel .ev .h b{font-size:13.5px;font-weight:790;letter-spacing:-.022em}
-.cgc-panel .ev .h span{margin-left:auto;font-size:9.5px;color:var(--sub);font-weight:750}
-.cgc-panel .ev .bd{font-size:11.5px;line-height:1.65;color:var(--sub);margin-top:10px;max-height:56px;overflow:hidden}
-.cgc-panel .ev .ac{display:flex;gap:6px;margin-top:11px}
-.cgc-panel .mn{border:0;border-radius:10px;padding:9px 12px;background:var(--mute);color:var(--tx);font:770 11.5px/1 inherit;cursor:pointer}
-.cgc-panel .mn.key{background:var(--br);color:var(--ink)}
-
-.cgc-panel{background:var(--app)}.cgc-panel .sc{min-height:0}.cgc-panel .headcard.calm .num{background:none;-webkit-text-fill-color:var(--sub);color:var(--sub)}
-.cgc-panel .hd .t b{max-width:100%}.cgc-panel .hd .no{background:var(--sub);animation:none}.cgc-panel .hd .x{min-width:32px}.cgc-panel .job{display:block;padding:0;cursor:default}.cgc-panel .job-main{width:100%;display:flex;align-items:center;gap:11px;background:transparent;border:0;color:inherit;text-align:left;padding:14px;font:inherit;cursor:pointer}.cgc-panel .job-main:disabled{opacity:1;cursor:default}.cgc-panel .job .desc{color:var(--sub);font-size:11px;line-height:1.5;margin-top:4px}.cgc-panel .job .job-extra{margin:0 12px 12px}.cgc-panel .job .right{margin-left:auto}.cgc-panel .job .meta{flex-wrap:wrap}.cgc-panel .job.run{padding-bottom:0}.cgc-panel .job .track{position:relative;left:auto;right:auto;bottom:auto;margin:0 14px 12px 58px}.cgc-panel .job .fill{width:var(--w)}
-.cgc-panel .settings-content .grp{display:block;margin:0 0 12px;border-radius:16px;background:var(--card);overflow:hidden}.cgc-panel .settings-content .grp b{font:inherit;letter-spacing:normal;color:inherit}.cgc-panel .settings-content .r{padding:14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--hair)}.cgc-panel .settings-content .r:last-child{border-bottom:0}.cgc-panel .settings-content .r.col2{align-items:stretch;flex-direction:column}.cgc-panel .settings-content .tt{flex:1;min-width:0}.cgc-panel .settings-content .a{font-weight:700}.cgc-panel .settings-content .b{color:var(--sub);font-size:11px;line-height:1.6}.cgc-panel .settings-content .gt{margin:20px 4px 8px}.cgc-panel .link{display:flex;align-items:center;gap:9px;background:var(--card);border-radius:14px;padding:12px;margin-bottom:8px}.cgc-panel .link .tt{flex:1}.cgc-panel .link .dot{width:6px;height:6px;border-radius:50%;background:var(--ok)}.cgc-panel .link .dot.no{background:var(--sub)}.cgc-panel .link .x{border:0;background:var(--mute);color:var(--sub);border-radius:9px;padding:8px}.cgc-panel .seg{display:flex;gap:3px;padding:4px;background:var(--app);border-radius:11px}.cgc-panel .seg button{flex:1;min-width:0;border:0;border-radius:8px;background:transparent;color:var(--sub);padding:9px 5px;font:inherit;font-size:11px}.cgc-panel .seg button.on{background:var(--brs);color:var(--brdeep)}.cgc-panel .ta{width:100%;min-height:240px;border:1px solid var(--line);border-radius:13px;padding:14px;background:var(--card);color:var(--tx);font:13px/1.7 inherit;resize:vertical}.cgc-panel .foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 14px;background:var(--card);border-top:1px solid var(--hair)}.cgc-panel .tarow{display:flex;justify-content:space-between;align-items:center;margin-top:9px}.cgc-panel .step{display:flex;align-items:center;background:var(--app);border-radius:11px}.cgc-panel .step button{background:transparent;border:0;color:var(--br);padding:10px;font:inherit}.cgc-panel .src .tx{min-width:0}.cgc-panel .src .b{flex-wrap:wrap}.cgc-panel .ev .bd{max-height:80px}.cgc-panel .ev .meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}.cgc-panel .ev .h span{max-width:130px;text-align:right}.cgc-panel .stats a:focus-visible{outline:2px solid var(--br)}.cgc-panel #cgc-ui-room{max-width:none}.cgc-panel .dash-aux{margin:12px 14px}.cgc-panel .cgc-view{padding-bottom:16px}.cgc-overlay[data-panel-mode="floating"] .sc{padding:0 12px 12px}.cgc-overlay[data-panel-mode="floating"] .hero-n .num{font-size:76px}
-@media(max-width:720px),(pointer:coarse) and (max-width:900px){.cgc-panel .ta,.cgc-panel .ui-input,.cgc-panel .step input{font-size:16px}.cgc-panel .mn,.cgc-panel .seg button,.cgc-panel .hd .x{min-height:44px}.cgc-panel .sc{overscroll-behavior:contain}.cgc-panel .tabs{padding-bottom:max(6px,env(safe-area-inset-bottom,0px))}}
-@media(prefers-reduced-motion:reduce){.cgc-panel .st{opacity:1!important;animation:none!important}.cgc-panel .fill,.cgc-panel .live,.cgc-panel .track::after{animation:none!important}.cgc-panel .tabs::before{transition:none!important}}
-
-/* ===== v4.6.6 UI density & alignment pass ===== */
-.cgc-panel .headcard{padding:13px 14px 12px;border-radius:18px}
-.cgc-panel .hero-n{margin-top:5px}
-.cgc-panel .hero-n .num{font-size:52px}
-.cgc-panel .hero-n .unit{font-size:13.5px;padding-bottom:6px}
-.cgc-panel .ln{margin-top:8px;font-size:11.5px}
-.cgc-panel .stats{margin-top:11px;gap:6px}
-.cgc-panel .stats a{padding:9px}
-.cgc-panel .stats .v{font-size:15px;margin-top:4px}
-.cgc-panel .cta{margin:10px 14px 0;padding:14px;border-radius:14px;font-size:14px}
-.cgc-panel .grp{margin:16px 16px 7px}
-.cgc-panel .list{border-radius:16px}
-.cgc-panel .job-main{padding:11px 12px;gap:10px}
-.cgc-panel .job .ic{width:30px;height:30px;border-radius:10px}
-.cgc-panel .job .a{font-size:13.5px}
-.cgc-panel .job .desc{margin-top:3px}
-.cgc-panel .job .meta{margin-top:5px;gap:4px}
-.cgc-panel .job .job-extra{margin:0 12px 10px}
-.cgc-panel .job .right{min-width:0;margin-left:2px;color:var(--sub)}
-.cgc-panel .more{margin:6px 0 2px;padding:9px 11px;border:0;background:var(--app);border-radius:12px}
-.cgc-panel .pane{padding:0 14px 14px}
-.cgc-panel .src{padding:9px 12px;margin-bottom:6px;border-radius:14px;gap:10px}
-.cgc-panel .src .a{font-size:13px}
-.cgc-panel .src .b{margin-top:4px}
-.cgc-panel .link{padding:9px 11px;margin-bottom:6px;border-radius:13px}
-.cgc-panel .gt,.cgc-panel .settings-content .gt{margin:16px 4px 7px}
-.cgc-panel .settings-content .r{padding:11px 13px;gap:10px}
-.cgc-panel .settings-content .grp{margin:0 0 10px}
-.cgc-panel .pane-head{display:flex;align-items:flex-start;gap:10px;margin:0 0 12px}
-.cgc-panel .pane-head .head-tx{flex:1;min-width:0}
-.cgc-panel .pane-head .pane-t{margin:0 0 4px}
-.cgc-panel .pane-head .pane-s{margin:0}
-.cgc-panel .mn.sm{padding:7px 11px;font-size:11.5px;min-height:32px;flex:none}
-.cgc-panel .navrow.card{display:flex;align-items:center;gap:10px;width:100%;margin:2px 0 0;padding:11px 12px;border:0;border-radius:14px;background:var(--card);cursor:pointer}
-.cgc-panel .navrow.card .tt{flex:1;min-width:0}
-.cgc-panel .navrow.card .a{font-size:13px;font-weight:760}
-.cgc-panel .navrow.card .b{font-size:11px;color:var(--sub);margin-top:3px}
-.cgc-panel .navrow.card svg{color:var(--sub);flex:none}
-.cgc-panel #cgc-data-main .hint-text{margin:10px 2px 0}
-.cgc-panel .sc{--cgc-scx:0px;--cgc-scb:6px}
-.cgc-overlay[data-panel-mode="floating"] .sc{--cgc-scx:12px;--cgc-scb:12px}
-.cgc-panel .settings-page{padding-bottom:0}
-.cgc-panel .settings-page .foot{margin:0 calc(var(--cgc-scx,0px)*-1) calc(var(--cgc-scb,0px)*-1);padding:10px 14px calc(10px + var(--cgc-scb,0px));background:var(--app);border-top:1px solid var(--line);box-shadow:0 -8px 18px rgba(0,0,0,.07)}
-.cgc-panel .settings-page .foot .mn{flex:1;padding:12px;border-radius:12px}
-.cgc-panel .plain.danger{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:16px 0 0;padding:12px;border-radius:13px;background:var(--dangers);color:var(--danger);font:760 12.5px/1.2 inherit;text-align:center}
-.cgc-panel #cgc-settings-content>.hint-text:last-child{margin:8px 0 2px;text-align:center}
-@media(max-width:720px),(pointer:coarse) and (max-width:900px){
-.cgc-panel .mn.sm{min-height:36px}
-.cgc-panel .job-main{padding:12px}
-}
-.cgc-panel .ac.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.cgc-panel .ac.grid2 .mn{width:100%;padding:10px 6px;white-space:nowrap}
-.cgc-panel .mn:disabled{opacity:.45}
-.cgc-panel .mn.key:disabled{background:var(--mute);color:var(--sub);opacity:1}
-.cgc-panel #cgc-custom-list{margin-bottom:4px}
-.cgc-panel #cgc-custom-list .job .meta{margin-top:5px}
-.cgc-panel .cgc-task-sources{padding:4px 0 2px}
-
-/* ===== v1.0.2 settings breathing-room pass ===== */
-.cgc-panel .settings-page .settings-content{padding:18px 18px 24px}
-.cgc-panel .settings-content .pane-s{margin-bottom:18px}
-.cgc-panel .settings-content .gt{margin:24px 4px 9px}
-.cgc-panel .settings-content .grp{margin-bottom:14px}
-.cgc-panel .settings-content .r{padding:13px 14px;gap:12px}
-.cgc-panel .settings-content .link{margin-bottom:9px}
-.cgc-panel .settings-page .foot{padding:12px 18px calc(12px + var(--cgc-scb,0px))}
-.cgc-panel .settings-help{margin:-2px 4px 10px;color:var(--sub);font-size:11px;line-height:1.65}
-.cgc-panel .settings-help b{color:var(--tx);font-weight:700}
-.cgc-panel .settings-help code{padding:1px 4px;border-radius:5px;background:var(--mute);color:var(--tx);font:10.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
-@media(max-width:720px),(pointer:coarse) and (max-width:900px){
-.cgc-panel .settings-page .settings-content{padding-left:18px;padding-right:18px}
-}
-`);
+            injectStyleCompat(CGC_HOLO_BOOT_CSS);
+        },
+        ensurePanelStyles() {
+            if(this.panelStylesInjected)return;
+            this.panelStylesInjected=true;
+            injectStyleCompat(CGC_HOLO_PANEL_CSS);
         },
 
         updateMobileViewportVars() {
@@ -16959,34 +17779,102 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const slot=session.conversations?.[id],progress=id==='memory1'?slot?.memory1State:slot?.usernoteState;
                 if(progress?.awaitingResultJobId)ids.add(progress.awaitingResultJobId);
             }
-            for(const id of ids)void CgcReturnDelivery.receive(id).catch(error=>console.warn('[cgc] result replay',error));
+            for(const id of ids)void CgcReturnDelivery.receive(id,latest?.jobId===id?{result:latest}:null).catch(error=>console.warn('[cgc] result replay',error));
+        },
+
+        // While this Crack room is on screen, nudge the ChatGPT page of every submitted-but-unanswered job every 10 s.
+        // A hidden ChatGPT page may hold its own timers for a minute, but it handles this storage event at once.
+        pokeWaitingCompletions(session){
+            if(Date.now()-Number(this.lastCompletionPokeAt||0)<10000)return;
+            const ids=[];
+            const consider=id=>{
+                if(!id||ids.includes(id))return;
+                const r=readValue(WebDelivery.key(id),null);
+                if(r?.phase==='submitted'&&!r.answerCompletedAt&&Date.now()-Number(r.at||0)<60*60*1000)ids.push(id);
+            };
+            for(const slot of Object.values(session?.conversations||{}))
+                consider(slot?.memory1State?.awaitingResultJobId||slot?.usernoteState?.awaitingResultJobId
+                    ||(slot?.lastRequestId&&slot.lastAnswerJobId!==slot.lastRequestId?slot.lastRequestId:''));
+            // Lore parts and merges keep their own submitted state outside the task slots.
+            for(const batch of session?.loreBatches||[])for(const part of batch?.parts||[])if(part?.status==='submitted'&&!part.answerCompletedAt)consider(part.lastJobId);
+            for(const merge of session?.loreMergeHistory||[])if(merge?.status==='submitted'&&!merge.answerCompletedAt)consider(merge.lastJobId);
+            if(!ids.length)return;
+            this.lastCompletionPokeAt=Date.now();
+            writeValue(KEY.completionPoke,{jobIds:ids,nonce:uid('poke'),at:Date.now()});
         },
 
         async reconcileLiveResults(){
             if(this.reconcilingResults||document.visibilityState==='hidden')return;
+            const here=CrackAdapter.getRouteInfo();if(!here)return;
+            // v1.5.2: idle and closed, only the three small wake records are checked between full passes (12 s).
+            if(!this.panelOpen&&here.sessionKey===this.reconcileIdleRoom&&Date.now()<Number(this.reconcileIdleUntil||0)){
+                const seen=this.reconciledWake||{};
+                if(![KEY.ack,KEY.result,KEY.completion].some(key=>{const e=readValue(key,null);return e?.jobId&&e.nonce!==seen[key];}))return;
+            }
             this.reconcilingResults=true;
             try{
-                await Promise.all([KEY.state,KEY.roomCheckpoints,KEY.ack,KEY.result,KEY.completion].map(refreshAsyncStorageKey));
+                const [stateNow]=await Promise.all([KEY.state,KEY.roomCheckpoints,KEY.ack,KEY.result,KEY.completion].map(refreshAsyncStorageKey));
                 const route=CrackAdapter.getRouteInfo();if(!route)return;
-                const session=readValue(KEY.state,null)?.sessions?.[route.sessionKey]||{},ids=new Set(),wakeIds=new Set();
+                const session=stateNow?.sessions?.[route.sessionKey]||{},ids=new Set(),wakeIds=new Set();
+                this.pokeWaitingCompletions(session);
                 if(getPendingJobId(session))ids.add(getPendingJobId(session));
                 for(const slot of Object.values(session.conversations||{})){
                     const awaiting=slot?.memory1State?.awaitingResultJobId||slot?.usernoteState?.awaitingResultJobId;
                     if(awaiting)ids.add(awaiting);
                     if(slot?.lastRequestId)ids.add(slot.lastRequestId);
                 }
-                // Shared wake records may represent a corrected/new packet for an already-known job,
-                // so always re-check those. Ordinary slot history can skip a durable acknowledged return.
-                for(const key of [KEY.ack,KEY.result,KEY.completion]){const e=readValue(key,null);if(e?.jobId){ids.add(e.jobId);wakeIds.add(e.jobId);}}
-                for(const id of ids){
-                    if(!wakeIds.has(id)&&CgcReturnDelivery.settledFromCache(id))continue;
-                    try{await CgcReturnDelivery.receive(id);}catch(error){console.warn('[cgc] return pending',id,error);}
+                // Shared wake records may represent a corrected/new packet for an already-known job, so a new
+                // packet is always re-checked. The same packet for a durably acknowledged job is not: re-running
+                // it every 3 s cost ~100 ms per job on the Crack page (v1.4.0 measurement).
+                const seenWake=this.reconciledWake||(this.reconciledWake={}),handled=[];
+                for(const [key,field] of [[KEY.ack,'ack'],[KEY.result,'result'],[KEY.completion,'event']]){
+                    const e=readValue(key,null);if(!e?.jobId)continue;
+                    if(e.nonce&&seenWake[key]===e.nonce&&CgcReturnDelivery.settledFromCache(e.jobId,stateNow))continue;
+                    ids.add(e.jobId);wakeIds.add(e.jobId);CgcReturnDelivery.hint(e.jobId,{[field]:e});handled.push([key,e.nonce]);
                 }
+                let received=0;
+                for(const id of ids){
+                    if(!wakeIds.has(id)&&CgcReturnDelivery.settledFromCache(id,stateNow))continue;
+                    received++;try{await CgcReturnDelivery.receive(id);}catch(error){console.warn('[cgc] return pending',id,error);}
+                }
+                for(const [key,nonce] of handled)seenWake[key]=nonce;
+                // One state read serves the rest of the pass unless a receive above may have saved a newer one.
+                const known=received?readValue(KEY.state,null):stateNow;
                 // History/address presentation cannot abort essential result delivery.
-                void this.replayAnswerHistory(false).catch(error=>console.warn('[cgc] history pending',error));
-                void CgcJobLinks.replayCrack(route.sessionKey).catch(error=>console.warn('[cgc] link pending',error));
-                if(this.panel)this.refreshPanel();
+                void this.replayAnswerHistory(false,known).catch(error=>console.warn('[cgc] history pending',error));
+                void CgcJobLinks.replayCrack(route.sessionKey,known).catch(error=>console.warn('[cgc] link pending',error));
+                this.refreshPanel(known);
+                // Busy = something can still arrive soon: a pending send, or a job GPT took in the last hour and has
+                // not answered (the same rule as pokeWaitingCompletions). Old unanswered ids do not keep the 3 s pace.
+                const room=known?.sessions?.[route.sessionKey]||{},inFlight=id=>{if(!id)return false;const r=readValue(WebDelivery.key(id),null);return Boolean(r)&&['submitting','submitted','uncertain'].includes(r.phase)&&!r.answerCompletedAt&&Date.now()-Number(r.updatedAt||r.at||0)<60*60*1000;};
+                const busy=this.inlineWorking||Boolean(getPendingJobId(room))
+                    ||Object.values(room.conversations||{}).some(s=>inFlight(s?.memory1State?.awaitingResultJobId)||inFlight(s?.usernoteState?.awaitingResultJobId)||s?.lastRequestId&&s.lastAnswerJobId!==s.lastRequestId&&inFlight(s.lastRequestId))
+                    ||(room.loreBatches||[]).some(b=>(b?.parts||[]).some(p=>p?.status==='sending'||p?.status==='submitted'&&inFlight(p.lastJobId||p.jobId)))
+                    ||(room.loreMergeHistory||[]).some(m=>m?.status==='sending'||m?.status==='submitted'&&inFlight(m.lastJobId||m.jobId));
+                this.reconcileIdleRoom=route.sessionKey;this.reconcileIdleUntil=busy?0:Date.now()+12000;
             }finally{this.reconcilingResults=false;}
+        },
+
+        // v1.4.1: answers that arrived while this tab was in the background are applied silently by the replay;
+        // on return, tell the user once (iOS cannot notify while either tab is in the background).
+        answeredSnapshot() {
+            const route=CrackAdapter.getRouteInfo(),session=route?readValue(KEY.state,null)?.sessions?.[route.sessionKey]:null;
+            const out={};for(const [slotId,slot] of Object.entries(session?.conversations||{}))out[slotId]=slot?.lastAnswerJobId||'';
+            return {sessionKey:route?.sessionKey||'',answers:out};
+        },
+        announceAfterResume(before) {
+            const route=CrackAdapter.getRouteInfo();if(!route||route.sessionKey!==before?.sessionKey)return;
+            const session=readValue(KEY.state,null)?.sessions?.[route.sessionKey];if(!session)return;
+            const done=Object.entries(session.conversations||{}).filter(([slotId,slot])=>slot?.lastAnswerJobId&&slot.lastAnswerJobId===slot.lastRequestId&&before.answers[slotId]!==slot.lastAnswerJobId);
+            if(done.length){this.notice('done',done.map(([slotId])=>conversationSlotLabel(slotId)).join(' · '),'GPT 답변 완료',done.length===1?done[0][0]:'');return;}
+            // A job the ChatGPT tab never picked up keeps the room waiting; say how to get out of it.
+            const id=getPendingJobId(session);
+            if(!CGC_PLATFORM.mobile||!id||readValue(WebDelivery.key(id),null))return;
+            const job=readJob(id),age=Date.now()-Number(job?.createdAt||0);
+            const noticed=this.resumeNoticeIds||(this.resumeNoticeIds=new Set());
+            if(!validV3Job(job)||age<CGC_MOBILE_PENDING_GRACE_MS||noticed.has(id))return;
+            noticed.add(id);this.setInlineStatus('GPT 시작 대기',true);
+            this.toast('ChatGPT 탭이 아직 작업을 받지 못했어요. 같은 작업 버튼을 다시 누르면 취소하고 다시 보낼 수 있어요.',true);
         },
 
         installLifecycleRefresh() {
@@ -16997,16 +17885,22 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(document.visibilityState==='hidden')return;
                 clearTimeout(timer);
                 timer=setTimeout(async()=>{
-                    try{await pollAsyncStorageListeners();if(CGC_ASYNC_GM_STORAGE)await refreshAsyncStorageKey(KEY.settings);for(const id of peekBootstrapJobIds())await hydrateAsyncJobStorage(id);}catch(error){console.warn('[cgc] resume storage',error);}
+                    // v1.5.0: read room state first, so a woken iOS tab never saves its stale copy over newer
+                    // room records (for example rooms wiped from another tab).
+                    try{if(CGC_ASYNC_GM_STORAGE)await Promise.allSettled([KEY.state,KEY.roomCheckpoints].map(refreshAsyncStorageKey));await pollAsyncStorageListeners();if(CGC_ASYNC_GM_STORAGE)await Promise.allSettled([KEY.settings,KEY.submitted].map(refreshAsyncStorageKey));for(const id of peekBootstrapJobIds())await hydrateAsyncJobStorage(id);}catch(error){console.warn('[cgc] resume storage',error);}
                     this.updateMobileViewportVars();
+                    const before=this.answeredSnapshot();
                     // Mobile browsers may suspend background tabs and defer GM change callbacks.
                     // Replay only durable ACK/result records here; do not auto-reconcile/rollback live jobs on resume.
-                    this.recoverSubmittedAcks();
-                    await this.replayDurableCompletions(true);
-                    this.replayDurableTransformResults();
-                    await this.replayAnswerHistory(true);
+                    try{
+                        this.recoverSubmittedAcks();
+                        await this.replayDurableCompletions(true);
+                        this.replayDurableTransformResults();
+                        await this.replayAnswerHistory(true);
+                    }catch(error){console.warn('[cgc] resume replay',error);}
                     this.placeLauncher();
-                    if(this.panel)this.refreshPanel();
+                    this.refreshPanel();
+                    this.announceAfterResume(before);
                 },180);
             };
             document.addEventListener('visibilitychange',resume,{passive:true});
@@ -17026,7 +17920,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                         conversationUrl: ack.conversationUrl || '',
                         submittedAt: Number(ack.submittedAt || 0),
                     });
-                    void CgcReturnDelivery.receive(ack.jobId).catch(error=>console.warn('[cgc] submission receive',error));
+                    void CgcReturnDelivery.receive(ack.jobId,{ack}).catch(error=>console.warn('[cgc] submission receive',error));
                 }
             });
             addValueChangeListenerCompat(KEY.error, (_name, _oldValue, error) => {
@@ -17044,10 +17938,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             });
             setTimeout(()=>{void this.replayAnswerHistory(true).catch(error=>console.warn('[cgc] history recovery',error));},0);
             addValueChangeListenerCompat(KEY.result, (_name, _oldValue, result) => {
-                if(result?.jobId&&result?.sessionKey)void CgcReturnDelivery.receive(result.jobId).catch(error=>console.warn('[cgc] result receive',error));
+                if(result?.jobId&&result?.sessionKey)void CgcReturnDelivery.receive(result.jobId,{result}).catch(error=>console.warn('[cgc] result receive',error));
             });
             addValueChangeListenerCompat(KEY.completion, (_name, _oldValue, event) => {
-                if(event?.jobId&&event?.sessionKey)void CgcReturnDelivery.receive(event.jobId).catch(error=>console.warn('[cgc] completion receive',error));
+                if(event?.jobId&&event?.sessionKey)void CgcReturnDelivery.receive(event.jobId,{event}).catch(error=>console.warn('[cgc] completion receive',error));
             });
             addValueChangeListenerCompat(KEY.progress, (_name, _oldValue, progress) => {
                 if (!progress?.jobId) return;
@@ -17087,14 +17981,294 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             setTimeout(()=>this.replayDurableTransformResults(),0);
         },
 
-        // 크랙 도우미: 입력창 "⋯" 버튼·빠른 메뉴·페이지 감시는 공통 런처로 옮겼다. 방 바뀜만 기록한다.
+        installLauncherObserver() {
+            // Coalesce without resetting the deadline: streaming cannot postpone a needed remount forever.
+            let timer=0;
+            const schedule=()=>{
+                if(timer)return;
+                timer=setTimeout(()=>{timer=0;bindRoot();this.placeLauncher();},120);
+            };
+            const bindRoot=()=>{
+                const root=document.querySelector('main')||document.documentElement;if(!root||this.launcherObserverRoot===root)return;
+                this.messageObserver?.disconnect();this.launcherObserverRoot=root;this.messageObserver?.observe(root,{childList:true,subtree:true});
+            };
+            this.messageObserver=new MutationObserver(records=>{
+                const dock=this.launcher,host=this.launcherHost,composer=this.launcherComposer;
+                if(!dock?.isConnected||!host?.isConnected||!composer?.isConnected||dock.parentElement!==host){schedule();return;}
+                const relevant=records.some(record=>{
+                    const target=record.target instanceof Element?record.target:record.target.parentElement;
+                    if(target?.closest('.cgc-launcher'))return false;
+                    const nodes=[...record.addedNodes,...record.removedNodes];
+                    if(nodes.length&&nodes.every(node=>node===dock||node instanceof Element&&node.closest('.cgc-launcher')))return false;
+                    if(target&&(host.contains(target)||composer.contains(target)))return true;
+                    return nodes.some(node=>node instanceof Element&&(node.contains(host)||node.contains(composer)));
+                });
+                if(relevant)schedule();
+            });
+            bindRoot();
+            window.addEventListener('popstate',()=>{bindRoot();schedule();});
+            window.addEventListener('resize',schedule,{passive:true});
+            setInterval(()=>{if(document.visibilityState!=='hidden'){bindRoot();schedule();}},15000);
+            schedule();
+        },
+
+        findCrackComposer() {
+            const root = document.querySelector('main') || document.body;
+            if(!root)return null;
+            const vp=cgcViewportBox();
+            const candidates = Array.from(root.querySelectorAll('textarea, [contenteditable="true"], [role="textbox"], [data-lexical-editor="true"], .ProseMirror'))
+                .filter(el => isVisible(el) && !el.closest('.cgc-overlay') && !el.closest('#crack-ai-panel'))
+                .filter(el => { const r=el.getBoundingClientRect(); return r.width > 120 && r.height > 18 && r.bottom > vp.top + vp.height * 0.34; });
+            candidates.sort((a,b) => b.getBoundingClientRect().top - a.getBoundingClientRect().top);
+            return candidates[0] || null;
+        },
+
+        findLauncherToolbar(composer) {
+            if (!composer) return null;
+            const nearComposer = (el, maxDistance = 260) => {
+                if (!(el instanceof HTMLElement) || !isVisible(el)) return false;
+                const er = el.getBoundingClientRect();
+                const cr = composer.getBoundingClientRect();
+                const verticalGap = Math.max(0, cr.top - er.bottom, er.top - cr.bottom);
+                return verticalGap <= maxDistance && er.width > 20 && er.height > 12;
+            };
+
+            // 1순위: 크랙 입력창의 순정 단축어(/) 버튼 줄.
+            const shortcutButtons = Array.from(document.querySelectorAll('main button[aria-label*="단축어"], main button[title*="단축어"], main button[aria-label*="shortcut" i], main button[title*="shortcut" i]'));
+            const shortcut = shortcutButtons.find(btn => nearComposer(btn));
+            if (shortcut?.parentElement) return { toolbar: shortcut.parentElement, before: null };
+
+            // 2순위: 캡처/첨부 계열 버튼이 이미 있는 입력 툴바.
+            const capture = document.getElementById('capture-action-button');
+            if (capture?.parentElement && nearComposer(capture)) return { toolbar: capture.parentElement, before: null };
+
+            const utilityButtons = Array.from(document.querySelectorAll('main button')).filter(btn => {
+                if (!nearComposer(btn)) return false;
+                const label = `${btn.getAttribute('aria-label') || ''} ${btn.title || ''}`;
+                return /캡처|capture|첨부|attach|파일|file|이미지|image/i.test(label);
+            });
+            if (utilityButtons[0]?.parentElement) return { toolbar: utilityButtons[0].parentElement, before: null };
+
+            // 3순위: 입력창 주변의 작은 버튼들이 모여 있는 실제 flex 툴바를 찾는다.
+            let node = composer.parentElement;
+            for (let depth = 0; node instanceof HTMLElement && depth < 9; depth += 1, node = node.parentElement) {
+                const rows = Array.from(node.querySelectorAll(':scope > div, :scope > section, :scope > footer')).filter(row => {
+                    if (!(row instanceof HTMLElement) || !nearComposer(row, 180)) return false;
+                    const buttons = Array.from(row.children).filter(child => child instanceof HTMLElement && (child.matches('button') || child.querySelector('button')));
+                    const rr = row.getBoundingClientRect();
+                    const style = getComputedStyle(row);
+                    return buttons.length >= 2 && rr.height <= 64 && (style.display === 'flex' || style.display === 'inline-flex');
+                });
+                if (rows.length) {
+                    rows.sort((a,b) => Math.abs(a.getBoundingClientRect().bottom - composer.getBoundingClientRect().bottom) - Math.abs(b.getBoundingClientRect().bottom - composer.getBoundingClientRect().bottom));
+                    return { toolbar: rows[0], before: null };
+                }
+            }
+
+            // 4순위: 전송 버튼 바로 앞. 다른 입력 확프들이 가장 안정적으로 쓰는 자리.
+            const sendCandidates = Array.from(document.querySelectorAll('main button')).filter(btn => {
+                if (!nearComposer(btn, 180) || btn.closest('.cgc-launcher')) return false;
+                const label = `${btn.getAttribute('aria-label') || ''} ${btn.title || ''}`;
+                const r = btn.getBoundingClientRect();
+                const cr = composer.getBoundingClientRect();
+                const explicit = /전송|보내기|send/i.test(label) || btn.type === 'submit';
+                const visual = r.width <= 58 && r.height <= 58 && r.left >= cr.left + cr.width * .58 && Math.abs(r.bottom - cr.bottom) <= 90;
+                return explicit || visual;
+            });
+            sendCandidates.sort((a,b) => b.getBoundingClientRect().left - a.getBoundingClientRect().left);
+            const send = sendCandidates[0];
+            if (send?.parentElement) return { toolbar: send.parentElement, before: send };
+
+            // 5순위: 크랙이 툴바 마크업을 바꿔도 화면을 떠다니는 버튼은 만들지 않는다.
+            // 대신 입력창과 같은 작은 shell 안에만 붙여서 메뉴 진입점이 완전히 사라지는 것을 막는다.
+            const cr=composer.getBoundingClientRect();
+            const shells=[];
+            let shell=composer.parentElement;
+            for(let depth=0;shell instanceof HTMLElement&&depth<4;depth+=1,shell=shell.parentElement){
+                if(shell.closest('.cgc-overlay,.cgc-isl'))continue;
+                const sr=shell.getBoundingClientRect(),style=getComputedStyle(shell);
+                if(sr.width<Math.max(140,cr.width*.72)||sr.height<cr.height||sr.height>Math.max(180,cr.height+110))continue;
+                const layout=/flex|grid/.test(style.display)?0:1;
+                const distance=Math.abs(sr.bottom-cr.bottom);
+                shells.push({shell,score:layout*1000+distance+depth*10});
+            }
+            shells.sort((a,b)=>a.score-b.score);
+            if(shells[0]?.shell)return {toolbar:shells[0].shell,before:null,composerFallback:true};
+            return null;
+        },
+
+        ensureLauncher() {
+            const route=CrackAdapter.getRouteInfo();
+            if(route&&this.launcherSessionKey!==route.sessionKey){
+                this.launcherSessionKey=route.sessionKey;
+                this.auditTargetId='';
+            }
+            if (this.launcher?.isConnected) return this.launcher;
+            const dock=document.createElement('div');
+            dock.className='cgc cgc-launcher';
+            dock.setAttribute('data-cgc-native-toolbar','1');
+            dock.dataset.cgcVersion=APP.version;
+            // v1.5.0: one compass button that wears Crack's own tool-button classes (see syncLauncherNativeStyle); it opens the panel directly.
+            dock.innerHTML=`<button type="button" class="cgc-launch-more" data-state="idle" aria-label="AI 도우미" title="AI 도우미" aria-haspopup="dialog" aria-expanded="false">${this.launcherGlyph('idle')}</button>`;
+            Object.assign(dock.style,{display:'inline-flex',alignItems:'center',gap:'0',boxSizing:'border-box'});
+            dock.querySelector('.cgc-launch-more').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();this.togglePanel();});
+            this.launcher=dock;this.launcherSig='';
+            setTimeout(()=>{
+                const count=document.querySelectorAll('.cgc-launcher').length;
+                if(count>1&&!this.duplicateWarningShown){
+                    this.duplicateWarningShown=true;
+                    this.toast(`Crack AI Companion이 ${count}개 동시에 실행 중인 것으로 보여요. Tampermonkey에서 이전 버전을 꺼 주세요.`,true);
+                }
+            },80);
+            return dock;
+        },
+
+        syncLauncherNativeStyle(toolbar, dock = this.launcher) {
+            // v1.5.0: wear the classes of Crack's own round tool button, so size, border, card colour, hover and theme all
+            // follow Crack. Without a sample the CSS fallback draws a matching round outline.
+            if (!(toolbar instanceof HTMLElement) || !(dock instanceof HTMLElement)) return;
+            const sample = Array.from(toolbar.querySelectorAll('button')).find(button => {
+                if (!(button instanceof HTMLElement) || button.closest('.cgc-launcher') || !isVisible(button)) return false;
+                const r = button.getBoundingClientRect();
+                return r.width >= 24 && r.width <= 44 && r.height >= 24 && r.height <= 44 && Math.max(r.width,r.height)/Math.max(1,Math.min(r.width,r.height)) <= 1.25;
+            });
+            const native=sample?String(sample.getAttribute('class')||'').trim():'';
+            dock.querySelectorAll('.cgc-launch-more').forEach(button=>{
+                const next=native?`${native} cgc-launch-more cgc-native`:'cgc-launch-more';
+                if(button.getAttribute('class')!==next)button.setAttribute('class',next);
+            });
+        },
+
+        keepConnectedLauncher(route) {
+            return !!(route?.sessionKey===this.launcherSessionKey
+                &&this.launcher?.isConnected&&this.launcherHost?.isConnected&&this.launcherComposer?.isConnected
+                &&this.launcher.parentElement===this.launcherHost);
+        },
+
         placeLauncher() {
             const route=CrackAdapter.getRouteInfo();
-            if(!route){this.launcherSessionKey='';this.auditTargetId='';return;}
-            if(this.launcherSessionKey!==route.sessionKey){this.launcherSessionKey=route.sessionKey;this.auditTargetId='';}
-        },
-        refreshLauncherNativeStyle(){},
+            if (!route) {
+                this.hidePanel();CgcIsland.hide();
+                this.launcher?.remove();
+                this.launcher=null;
+                this.launcherHost=null;
+                this.launcherComposer=null;
+                this.launcherSessionKey='';
+                this.launcherValidatedAt=0;
+                this.auditTargetId='';
+                return;
+            }
+            if(this.launcher?.isConnected&&this.launcherHost?.isConnected&&this.launcherComposer?.isConnected&&this.launcher.parentElement===this.launcherHost){
+                const composerNotHidden=this.launcherComposer.getAttribute('aria-hidden')!=='true'&&!this.launcherComposer.closest('[hidden],[aria-hidden="true"]');
+                const hostNotHidden=this.launcherHost.getAttribute('aria-hidden')!=='true'&&!this.launcherHost.closest('[hidden],[aria-hidden="true"]');
+                const validationFresh=Date.now()-Number(this.launcherValidatedAt||0)<15000;
+                if(composerNotHidden&&hostNotHidden&&validationFresh){
+                    if(this.launcherSessionKey!==route.sessionKey){this.launcherSessionKey=route.sessionKey;this.auditTargetId='';}
+                    return;
+                }
+            }
+            this.launcherValidatedAt=Date.now();
+            const composer=this.findCrackComposer();
+            if (!composer) {
+                if(this.keepConnectedLauncher(route))return;
+                // Never flash a floating fallback while the Crack SPA is still mounting the composer.
+                this.launcher?.remove();
+                this.launcher=null;
+                this.launcherHost=null;
+                this.launcherComposer=null;
+                this.launcherValidatedAt=0;
+                return;
+            }
+            const target=this.findLauncherToolbar(composer);
+            if (!target?.toolbar?.isConnected) {
+                if(this.keepConnectedLauncher(route))return;
+                // The observer/periodic retry will attach the menu once a genuine toolbar exists.
+                this.launcher?.remove();
+                this.launcher=null;
+                this.launcherHost=null;
+                this.launcherComposer=null;
+                this.launcherValidatedAt=0;
+                return;
+            }
 
+            const dock=this.ensureLauncher();
+            const toolbar=target.toolbar;
+            const before=target.before;
+            const alreadyPlaced=dock.parentElement===toolbar&&(!before||dock.nextElementSibling===before);
+            if(alreadyPlaced){this.launcherHost=toolbar;this.launcherComposer=composer;this.launcherValidatedAt=Date.now();return;}
+            dock.style.position='relative';
+            dock.style.left=''; dock.style.top=''; dock.style.right=''; dock.style.bottom='';
+            dock.style.zIndex='2';dock.style.padding='0';dock.style.border='0';dock.style.background='transparent';dock.style.boxShadow='none';
+            if (before && before.parentElement === toolbar) toolbar.insertBefore(dock,before);
+            else if (dock.parentElement !== toolbar) toolbar.appendChild(dock);
+            this.launcherHost=toolbar;
+            this.launcherComposer=composer;
+            this.launcherValidatedAt=Date.now();
+            // getComputedStyle/getBoundingClientRect are intentionally paid only when the dock is created/moved.
+            this.syncLauncherNativeStyle(toolbar,dock);
+            this.syncLauncherState(true);
+        },
+
+        refreshLauncherNativeStyle(){
+            if(this.launcher?.isConnected&&this.launcherHost?.isConnected)this.syncLauncherNativeStyle(this.launcherHost,this.launcher);
+        },
+
+        launcherGlyph(state='idle'){
+            // The design's compass inside Crack's own round tool button. The needle shakes when something needs a look,
+            // orbits spin while sending (an arc runs round the button's border), and a check pops when a result lands.
+            if(state==='run')return '<svg class="l-orb" viewBox="0 0 24 24" aria-hidden="true"><ellipse class="o" cx="12" cy="12" rx="9" ry="3.4" pathLength="100"/><ellipse class="o o2" cx="12" cy="12" rx="9" ry="3.4" pathLength="100" transform="rotate(60 12 12)"/><ellipse class="o o3" cx="12" cy="12" rx="9" ry="3.4" pathLength="100" transform="rotate(120 12 12)"/><circle class="core" cx="12" cy="12" r="2.6"/></svg><svg class="l-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="17" pathLength="100"/></svg>';
+            if(state==='done')return '<svg class="l-done" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" pathLength="1"/><path pathLength="1" d="M7.6 12.4l3 3 5.8-6.2"/></svg>';
+            return `<svg class="cmp" viewBox="0 0 24 24" aria-hidden="true"><circle class="cmp-ring" cx="12" cy="12" r="8.6"/><g class="cmp-n"><path class="cmp-a" d="M12 5.6l2.1 6.4h-4.2z"/><path class="cmp-b" d="M12 18.4l-2.1-6.4h4.2z"/></g><circle class="cmp-c" cx="12" cy="12" r="1.15"/></svg>${state==='att'||state==='fresh'?'<i class="l-dot"></i>':''}`;
+        },
+        // Launcher state while the panel is closed: running > needs attention > new result > idle.
+        // Recomputed only when the room's state revision, the inline status or the minute changes.
+        syncLauncherState(force=false,raw=readValue(KEY.state,null)){
+            const button=this.launcher?.querySelector('.cgc-launch-more');
+            const route=CrackAdapter.getRouteInfo(),rawSession=route?raw?.sessions?.[route.sessionKey]:null;
+            const sig=[route?.sessionKey||'',raw?.uiRevision||'',this.inlineWorking?1:0,this.inlineText||'',this.launcherDoneUntil>Date.now()?1:0,Math.floor(Date.now()/60000),Boolean(button),document.visibilityState].join('|');
+            if(!force&&this.launcherSig===sig)return;this.launcherSig=sig;
+            let state='idle',tip='AI 도우미';const attention=[];
+            if(rawSession){
+                const session=cgcUiSession(route.sessionKey,raw),settings=getSettings();
+                const label=id=>customTaskDefinition(id,settings)?.name||this.WORK_LABEL[id==='qa'?'ask':id]?.[0]||conversationSlotLabel(id);
+                const pid=getPendingJobId(session),age=pid?Date.now()-Number(readJob(pid)?.createdAt||0):Infinity;
+                for(const id of [...this.WORK_ROWS,...(settings.customTasks||[]).map(task=>task.id)]){
+                    const s=this.workStatusOf(session,id);if(s.kind!=='att')continue;
+                    // A job the GPT tab has not picked up yet gets the usual grace period before it counts as needing a look.
+                    if(s.chip==='GPT 시작 대기'&&age<CGC_MOBILE_PENDING_GRACE_MS){clearTimeout(this.launcherGraceTimer);this.launcherGraceTimer=setTimeout(()=>this.syncLauncherState(true),CGC_MOBILE_PENDING_GRACE_MS-age+100);continue;}
+                    attention.push([id,s]);
+                }
+                const fresh=(session.results||[]).some(r=>!this.dashSeenResults?.has(r.jobId)&&Date.now()-Number(r.at||0)<30*60000);
+                // A send whose arrival is uncertain waits for the user, so it shows as needing a look, not as sending.
+                const uncertain=Boolean(pid)&&readValue(WebDelivery.key(pid),null)?.phase==='uncertain';
+                if(this.launcherDoneUntil>Date.now()){state='done';tip='결과가 도착했어요';}
+                else if(uncertain){state='att';tip=`확인 필요: ${label(session.transport?.pendingSlot||'')}`;}
+                else if(pid||this.inlineWorking){state='run';tip=this.inlineText?`AI 도우미 · ${this.inlineText}`:'AI 도우미 · 보내는 중';}
+                else if(attention.length){state='att';tip=`확인 필요: ${label(attention[0][0])}`;}
+                else if(fresh){state='fresh';tip='새 결과가 있어요';}
+                // A task that newly needs attention is announced once, only while the panel is closed. What a room already
+                // shows when it is entered is left to the launcher dot; a hidden tab announces it when the user comes back.
+                const seen=this.noticedAttention||(this.noticedAttention=new Set()),now=new Set(),quiet=this.noticedRoom!==route.sessionKey;this.noticedRoom=route.sessionKey;if(quiet)CgcIsland.keepRoom(route.sessionKey);
+                for(const [id,s] of attention){
+                    const key=`${route.sessionKey}:${id}:${s.chip}`;
+                    if(seen.has(key)||quiet||this.panelOpen){now.add(key);continue;}
+                    if(document.visibilityState==='hidden')continue;
+                    now.add(key);CgcIsland.notify({id:`att:${id}`,kind:'att',title:label(id),sub:s.chip,slot:id==='lore'?'':id,room:route.sessionKey});
+                }
+                this.noticedAttention=now;
+            }else if(route&&this.noticedRoom!==route.sessionKey){this.noticedRoom=route.sessionKey;CgcIsland.keepRoom(route.sessionKey);}
+            if(!button)return;
+            if(button.dataset.state!==state){button.dataset.state=state;button.innerHTML=this.launcherGlyph(state);}
+            if(button.title!==tip){button.title=tip;button.setAttribute('aria-label',tip);}
+            button.setAttribute('aria-busy',state==='run'?'true':'false');
+        },
+        flashLauncherDone(){this.launcherDoneUntil=Date.now()+1800;this.syncLauncherState(true);setTimeout(()=>this.syncLauncherState(true),1900);},
+        // Short task news: the top notice while the panel is closed, a toast otherwise.
+        notice(kind,title,sub='',slot=''){
+            if(kind==='done')this.flashLauncherDone();
+            if(CgcIsland.notify({id:`${kind}:${slot||title}`,kind,title,sub,slot,room:CrackAdapter.getRouteInfo()?.sessionKey||''}))return;
+            this.toast(sub?`${title} · ${sub}`:title,false);
+        },
         recoverSubmittedAcks(onlySessionKey='') {
             const rows=readValue(KEY.submitted,[]);
             if(!Array.isArray(rows)||!rows.length)return 0;
@@ -17147,7 +18321,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             saveState(state);
             const route=CrackAdapter.getRouteInfo();
             if(route?.sessionKey===event.sessionKey){
-                if(!silent&&!event.expectsResult)this.toast(`${event.displayLabel||conversationSlotLabel(conversationSlotOf(event))} · GPT 답변 완료`);
+                if(!silent&&!event.expectsResult)this.notice('done',event.displayLabel||conversationSlotLabel(conversationSlotOf(event)),'GPT 답변 완료',isLoreJob(event)?'':conversationSlotOf(event));
                 this.refreshPanel();void this.refreshHomeCounts();
                 if(isLoreJob(event)||event.conversationSlot===LORE_TRANSIENT_SLOT)this.renderLoreBatch();
             }
@@ -17166,7 +18340,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         async replayDurableCompletions(deep=false){
             const latest=await refreshAsyncStorageKey(KEY.completion);
-            if(latest?.jobId)await CgcReturnDelivery.receive(latest.jobId);
+            if(latest?.jobId)await CgcReturnDelivery.receive(latest.jobId,{event:latest});
             if(!deep)return;
             await refreshAsyncStorageKey(KEY.state);
             const sessions=readValue(KEY.state,null)?.sessions||{};
@@ -17179,7 +18353,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 
         applyAnswerRecord(row,options={}){
             if(!row?.jobId||!row?.sessionKey||!row.bodyKey||row.kind==='audit')return false;
-            const known=readValue(KEY.state,null)?.sessions?.[row.sessionKey];
+            // options.known: a state snapshot shared by a replay loop. It only filters unchanged rows; any
+            // real change re-reads the latest state below, so a snapshot older than this loop's own writes is safe.
+            const known=(options.known||readValue(KEY.state,null))?.sessions?.[row.sessionKey];
             const prior=known?.results?.find(item=>cgcHistoryRowId(item)===cgcHistoryRowId(row));
             if(prior&&!stateFieldChanged(prior,row))return false;
             if(!prior&&known?.results?.length>=CGC_HISTORY_LIMIT&&Number(row.at||0)<=Math.min(...known.results.map(r=>Number(r.at||0))))return false;
@@ -17193,12 +18369,12 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(!existing&&session.results?.length>=CGC_HISTORY_LIMIT&&Number(row.at||0)<=Math.min(...session.results.map(r=>Number(r.at||0))))return false;
             cgcPushResultHistory(session,row);saveState(state);if(!options.silent)this.refreshPanel();return true;
         },
-        async replayAnswerHistory(deep=false){
+        async replayAnswerHistory(deep=false,known=null){
             if(this.replayingAnswerHistory)return;
             this.replayingAnswerHistory=true;
             try{
                 const event=await refreshAsyncStorageKey(KEY.answer),ids=new Set(event?.jobId?[event.jobId]:[]);
-                const state=readValue(KEY.state,null);
+                const state=known||readValue(KEY.state,null);
                 const room=CrackAdapter.getRouteInfo()?.sessionKey;
                 const sessions=deep?Object.values(state?.sessions||{}):[state?.sessions?.[room]].filter(Boolean);
                 for(const session of sessions)for(const row of session.transmissions||[])if(row.jobId)ids.add(row.jobId);
@@ -17208,8 +18384,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                     this.lastAnswerScanAt=Date.now();
                 }
                 let changed=false;
-                for(const id of ids){const row=await refreshAsyncStorageKey(cgcAnswerRecordKey(id));if(row&&this.applyAnswerRecord(row,{silent:true}))changed=true;}
-                if(changed&&this.panel)this.refreshPanel();
+                // One state read for the whole loop (each read of the ~250 KB state cost ~6 ms per answer row).
+                for(const id of ids){const row=await refreshAsyncStorageKey(cgcAnswerRecordKey(id));if(row&&this.applyAnswerRecord(row,{silent:true,known:state}))changed=true;}
+                if(changed)this.refreshPanel();
             }finally{this.replayingAnswerHistory=false;}
         },
         applyTransformResult(result,options={}) {
@@ -17237,7 +18414,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             const text=envelope?.valid?envelope.body:String(result.text||'').replace(/\r\n?/g,'\n').trim();
 
             if(session.processedResultIds.includes(result.jobId)){
-                if(awaiting===result.jobId){progress.awaitingResultJobId='';progress.awaitingResultAt=0;saveState(state);if(this.panel)this.refreshPanel();}
+                if(awaiting===result.jobId){progress.awaitingResultJobId='';progress.awaitingResultAt=0;saveState(state);this.refreshPanel();}
                 return false;
             }
 
@@ -17285,7 +18462,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 }
                 const route=CrackAdapter.getRouteInfo();
                 if(route?.sessionKey===result.sessionKey&&!silent)this.toast(validFresh?'새 세션 결과를 기록했어요. 기존 이어보내기 처리 상태에는 반영하지 않았습니다.':'새 세션 결과 형식을 확인하지 못했어요. 기존 처리 상태는 건드리지 않았습니다.',!validFresh);
-                if(route?.sessionKey===result.sessionKey&&this.panel)this.refreshPanel();
+                if(route?.sessionKey===result.sessionKey)this.refreshPanel();
                 return validFresh;
             }
 
@@ -17494,11 +18671,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
 
         setInlineStatus(text='', working=false) {
-            CH.shell.setBusy('gpt', working ? (text || 'GPT 작업 중') : '');
+            this.inlineText=working?String(text||''):'';this.inlineWorking=Boolean(working);if(working)this.reconcileIdleUntil=0;
+            this.syncLauncherState(true);
         },
-
-        toast(message,error=false){CH.ui.toast(message,error?'error':'info',4300);},
-
+        toast(message,error=false){document.querySelector('.cgc-toast')?.remove();const t=document.createElement('div');t.className=`cgc cgc-toast${error?' error':''}`;t.setAttribute('role',error?'alert':'status');t.textContent=message;document.body.appendChild(t);clearTimeout(this.toastTimer);this.toastTimer=setTimeout(()=>t.remove(),4300);},
         syncLoreActionState(batch=undefined){
             if(!this.panel)return;
             if(batch===undefined){const route=CrackAdapter.getRouteInfo();batch=route?getSession(getState(),route.sessionKey).loreBatches?.[0]||null:null;}
@@ -17518,23 +18694,23 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             this.syncLoreActionState(batch||null);
             if(!batch){
                 const merges=(session.loreMergeHistory||[]).filter(row=>row.conversationUrl).slice(0,5);
-                cgcSetUiHtml(host,'<div class="hint-text">아직 만든 로어 분할 계획이 없어요.</div>'+(merges.length?`<details class="more" style="grid-column:1/-1"><summary>최근 병합 GPT ${merges.length}개</summary><div class="inline-area">${merges.map(row=>`<div class="ac" style="align-items:center;margin:4px 0"><span class="hint-text" style="flex:1">${new Date(row.submittedAt||row.createdAt||Date.now()).toLocaleString()} · ${escapeHtml(shortConversationId(row.conversationUrl)||'GPT')}</span><button class="mn" data-action="lore-open-merge-result" data-merge-id="${escapeHtml(row.id)}">GPT 열기</button></div>`).join('')}</div></details>`:''));
+                cgcSetUiHtml(host,'<div class="hint-text">아직 만든 로어 분할 계획이 없어요.</div>'+(merges.length?`<details class="more"><summary>최근 병합 GPT ${merges.length}개</summary><div class="inline-area">${merges.map(row=>`<div class="ac"><span class="hint-text">${new Date(row.submittedAt||row.createdAt||Date.now()).toLocaleString()} · ${escapeHtml(shortConversationId(row.conversationUrl)||'GPT')}</span><button class="btn sm" data-action="lore-open-merge-result" data-merge-id="${escapeHtml(row.id)}">GPT 열기</button></div>`).join('')}</div></details>`:''));
                 return;
             }
             const archived=batch.sourceAvailable===false;
             const partsHtml=batch.parts.map(part=>{
                 const status=part.answerCompletedAt?'답변 도착':part.status==='submitted'?'전송됨':part.status==='sending'?'전송 중':part.status==='failed'?'실패':'대기';
-                const detail=part.error?`<br><span style="color:var(--danger)">${escapeHtml(part.error)}</span>`:part.progress?`<br>${escapeHtml(part.progress)}`:'';
+                const detail=part.error?`<br><span class="bad">${escapeHtml(part.error)}</span>`:part.progress?`<br>${escapeHtml(part.progress)}`:'';
                 const action=part.conversationUrl?'lore-open-result':'lore-open-part';
                 const label=part.conversationUrl?'GPT 열기':part.status==='failed'?'재시도':'변환 열기';
                 const disabled=part.status==='sending';
-                return `<div class="pc"><span class="no">${String(part.index).padStart(2,'0')}</span><div class="tx"><b>${part.startTurn}~${part.endTurn}턴</b> · ${Number(part.charCount||0).toLocaleString()}자${part.conversationUrl?`<br>${escapeHtml(shortConversationId(part.conversationUrl)||part.conversationUrl)}`:''}${detail}</div><button class="mn" data-action="${action}" data-batch-id="${escapeHtml(batch.id)}" data-part-index="${part.index}" ${disabled?'disabled':''}>${label}</button><span class="tag idle">${status}</span></div>`;
+                return `<div class="pc"><span class="no">${String(part.index).padStart(2,'0')}</span><div class="tx"><b>${part.startTurn}~${part.endTurn}턴</b> · ${Number(part.charCount||0).toLocaleString()}자${part.conversationUrl?`<br>${escapeHtml(shortConversationId(part.conversationUrl)||part.conversationUrl)}`:''}${detail}</div><button class="btn sm" data-action="${action}" data-batch-id="${escapeHtml(batch.id)}" data-part-index="${part.index}" ${disabled?'disabled':''}>${label}</button><span class="tag">${status}</span></div>`;
             }).join('');
             const oldBatches=(session.loreBatches||[]).slice(1).filter(row=>(row.parts||[]).some(part=>part.conversationUrl));
-            const historyHtml=oldBatches.length?`<details class="more" style="grid-column:1/-1;margin-top:9px"><summary>이전 로어 작업 ${oldBatches.length}개</summary><div class="inline-area">${oldBatches.map(old=>`<div style="margin-bottom:10px"><div class="hint-text"><b>${escapeHtml(old.label||'로어 JSON')}</b> · ${new Date(old.createdAt||Date.now()).toLocaleString()}</div>${(old.parts||[]).filter(part=>part.conversationUrl).map(part=>`<div class="ac" style="align-items:center;margin:4px 0"><span class="hint-text" style="flex:1">${String(part.index).padStart(2,'0')} · ${escapeHtml(shortConversationId(part.conversationUrl)||'GPT')}</span><button class="mn" data-action="lore-open-result" data-batch-id="${escapeHtml(old.id)}" data-part-index="${part.index}">GPT 열기</button></div>`).join('')}</div>`).join('')}</div></details>`:'';
+            const historyHtml=oldBatches.length?`<details class="more"><summary>이전 로어 작업 ${oldBatches.length}개</summary><div class="inline-area">${oldBatches.map(old=>`<div><div class="hint-text"><b>${escapeHtml(old.label||'로어 JSON')}</b> · ${new Date(old.createdAt||Date.now()).toLocaleString()}</div>${(old.parts||[]).filter(part=>part.conversationUrl).map(part=>`<div class="ac"><span class="hint-text">${String(part.index).padStart(2,'0')} · ${escapeHtml(shortConversationId(part.conversationUrl)||'GPT')}</span><button class="btn sm" data-action="lore-open-result" data-batch-id="${escapeHtml(old.id)}" data-part-index="${part.index}">GPT 열기</button></div>`).join('')}</div>`).join('')}</div></details>`:'';
             const merges=(session.loreMergeHistory||[]).slice(0,8);
-            const mergeHtml=merges.length?`<details class="more" style="grid-column:1/-1;margin-top:9px"><summary>병합 작업 ${merges.length}개</summary><div class="inline-area">${merges.map(row=>{const status=row.answerCompletedAt?'답변 도착':row.status==='submitted'?'전송됨':row.status==='sending'?'전송 중':row.status==='failed'?'실패':'대기';return `<div class="ac" style="align-items:center;margin:4px 0"><span class="hint-text" style="flex:1">${new Date(row.submittedAt||row.createdAt||Date.now()).toLocaleString()} · ${row.inputCount||0}개 입력 · ${status}${row.conversationUrl?` · ${escapeHtml(shortConversationId(row.conversationUrl)||'GPT')}`:''}${row.error?` · ${escapeHtml(row.error)}`:''}</span>${row.conversationUrl?`<button class="mn" data-action="lore-open-merge-result" data-merge-id="${escapeHtml(row.id)}">GPT 열기</button>`:''}</div>`;}).join('')}</div></details>`:'';
-            cgcSetUiHtml(host,`<div class="hint-text" style="grid-column:1/-1"><b>${escapeHtml(batch.label||'로어 변환')}</b> · ${Number(batch.totalChars||0).toLocaleString()}자 → ${batch.parts.length}개 · 목표 ${Number(batch.targetChars||0).toLocaleString()}자${batch.sourceComplete?` · 전체 로그 ${Number(batch.sourceMessageCount||0)}메시지 확인`:''}${archived?' · 입력 TXT 보관 종료':''}</div>`+partsHtml+historyHtml+mergeHtml);
+            const mergeHtml=merges.length?`<details class="more"><summary>병합 작업 ${merges.length}개</summary><div class="inline-area">${merges.map(row=>{const status=row.answerCompletedAt?'답변 도착':row.status==='submitted'?'전송됨':row.status==='sending'?'전송 중':row.status==='failed'?'실패':'대기';return `<div class="ac"><span class="hint-text">${new Date(row.submittedAt||row.createdAt||Date.now()).toLocaleString()} · ${row.inputCount||0}개 입력 · ${status}${row.conversationUrl?` · ${escapeHtml(shortConversationId(row.conversationUrl)||'GPT')}`:''}${row.error?` · ${escapeHtml(row.error)}`:''}</span>${row.conversationUrl?`<button class="btn sm" data-action="lore-open-merge-result" data-merge-id="${escapeHtml(row.id)}">GPT 열기</button>`:''}</div>`;}).join('')}</div></details>`:'';
+            cgcSetUiHtml(host,`<div class="hint-text"><b>${escapeHtml(batch.label||'로어 변환')}</b> · ${Number(batch.totalChars||0).toLocaleString()}자 → ${batch.parts.length}개 · 목표 ${Number(batch.targetChars||0).toLocaleString()}자${batch.sourceComplete?` · 전체 로그 ${Number(batch.sourceMessageCount||0)}메시지 확인`:''}${archived?' · 입력 TXT 보관 종료':''}</div>`+partsHtml+historyHtml+mergeHtml);
         },
 
         async createLoreBatchPlan(){
@@ -17707,7 +18883,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
 
             const settings=getSettings(),jobId=uid('request'),openMode=getToolOpenMode('loreExtract',settings);
             const surfaceKey=`${makeLoreBatchPopupKey(batch.id,'extract',partIndex)}-${String(jobId).slice(-8)}`;
-            const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(LORE_TRANSIENT_SLOT,route.sessionKey,surfaceKey):null;
+            const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(LORE_TRANSIENT_SLOT,route.sessionKey,surfaceKey,{focus:false}):null;
             let stored=false;
             try{
                 const part={...durable,text:source};
@@ -17785,7 +18961,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             let state=getState(),session=getSession(state,route.sessionKey);
             const settings=getSettings(),jobId=uid('request'),mergeId=uid('lore-merge'),openMode=getToolOpenMode('loreMerge',settings);
             const surfaceKey=`${makeLoreBatchPopupKey(mergeId,'merge')}-${String(jobId).slice(-8)}`;
-            const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(LORE_TRANSIENT_SLOT,route.sessionKey,surfaceKey):null;
+            const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(LORE_TRANSIENT_SLOT,route.sessionKey,surfaceKey,{focus:false}):null;
             let stored=false;
             try{
                 const payload=buildLoreMergePayload(inputs,settings,'최종 병합'),txtFileName=`${sanitizeTxtFileName(session.title||'rp')}_lore_merge_input.txt`,prompt=buildTxtLead(txtFileName,'loreMerge',false),attachment={name:txtFileName,text:payload,type:'text/plain'};
@@ -17803,12 +18979,12 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(!this.storageReadyForAction())return;
             const route=CrackAdapter.getRouteInfo(); if(!route)return this.toast('크랙 채팅 세션에서만 사용할 수 있어요.',true);
             const slotId=toolConversationSlot(toolId);this.recoverSubmittedAcks(route.sessionKey);
-            if(this.startingSessionKey===route.sessionKey)return this.toast('같은 채팅방의 GPT 작업을 이미 준비 중이에요.');
+            if(this.startBusy(route.sessionKey))return this.toast('같은 채팅방의 GPT 작업을 이미 준비 중이에요. 잠시 뒤 다시 눌러 주세요.');
             const settings=getSettings(),conversationMode=getToolConversationMode(toolId,settings),openMode=getToolOpenMode(toolId,settings);
             let state=getState(),session=getSession(state,route.sessionKey),createdJobId='';
             if(await this.handleExistingPending(route.sessionKey))return;
             state=getState();session=getSession(state,route.sessionKey);
-            this.startingSessionKey=route.sessionKey;const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(slotId,route.sessionKey):null;
+            const startToken=this.beginStart(route.sessionKey);const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(slotId,route.sessionKey,'',{focus:false}):null;
             this.setInlineStatus('자료 확인 중',true);
             try{
                 state=getState();session=getSession(state,route.sessionKey);let slot=ensureConversationSlot(session,slotId);
@@ -18000,22 +19176,22 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(toolId==='memory1'&&failSlot.memory1State.awaitingResultJobId===createdJobId){failSlot.memory1State.awaitingResultJobId='';failSlot.memory1State.awaitingResultAt=0;}
                 if(toolId==='usernote'&&failSlot.usernoteState.awaitingResultJobId===createdJobId){failSlot.usernoteState.awaitingResultJobId='';failSlot.usernoteState.awaitingResultAt=0;}
                 saveState(failState);this.rollbackPendingJob(createdJobId,route.sessionKey,{phase:'dispatch',message:error.message||String(error),toast:false,status:'전송 실패'});
-            }ChatGptPopup.closeIfWaiting(reservedPopup);this.setInlineStatus();this.updatePanelStatus(error.message,true);this.toast(error.message,true);}finally{if(this.startingSessionKey===route.sessionKey)this.startingSessionKey='';}
+            }ChatGptPopup.closeIfWaiting(reservedPopup);this.setInlineStatus();this.updatePanelStatus(error.message,true);this.toast(error.message,true);}finally{this.endStart(startToken);}
         },
 
         async startTool(toolId, question='', options={}) {
             if(!this.storageReadyForAction())return;
-            if(toolId==='audit')return this.toast('검수(찐빠 검사)는 크랙 도우미에 없어요. 검수는 WRMC에서 사용해 주세요.');
+            if(toolId==='audit')return this.toast('응답 검수는 크랙 도우미의 검수 탭에서 사용해 주세요.');
             if(toolId==='sync')return this.toast('「동기화만」 기능은 제거했어요. 각 작업이 필요한 신규 RP를 자동으로 이어서 보냅니다.');
             if(['memory1','memory2','usernote'].includes(toolId))return this.startStandaloneMemoryTool(toolId);
             const route=CrackAdapter.getRouteInfo();if(!route)return this.toast('크랙 채팅 세션에서만 사용할 수 있어요.',true);
             const {expectedSessionKey=''}=options||{};if(expectedSessionKey&&expectedSessionKey!==route.sessionKey)return this.toast('크랙 세션이 바뀌어 작업을 멈췄어요.',true);
-            this.recoverSubmittedAcks(route.sessionKey);if(this.startingSessionKey===route.sessionKey)return this.toast('같은 채팅방의 GPT 작업을 이미 준비 중이에요.');
+            this.recoverSubmittedAcks(route.sessionKey);if(this.startBusy(route.sessionKey))return this.toast('같은 채팅방의 GPT 작업을 이미 준비 중이에요. 잠시 뒤 다시 눌러 주세요.');
             const settings=getSettings(),customTask=isCustomTaskId(toolId)?customTaskDefinition(toolId,settings):null;if(isCustomTaskId(toolId)&&!customTask)return this.toast('이 커스텀 작업을 찾지 못했어요. 설정에서 다시 확인해 주세요.',true);const slotId=toolConversationSlot(toolId),conversationMode=getToolConversationMode(toolId,settings),openMode=getToolOpenMode(toolId,settings);let state=getState(),session=getSession(state,route.sessionKey),createdJobId='';
             if(toolId==='audit'){const notesEl=this.panel?.querySelector('#cgc-audit-notes');if(notesEl){session.auditNotes=cleanText(notesEl.value||'');saveState(state);}}
             if(await this.handleExistingPending(route.sessionKey))return;
             state=getState();session=getSession(state,route.sessionKey);
-            this.startingSessionKey=route.sessionKey;const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(slotId,route.sessionKey):null;this.setInlineStatus('자료 확인 중',true);
+            const startToken=this.beginStart(route.sessionKey);const reservedPopup=openMode==='popup'&&!CGC_PLATFORM.mobile?ChatGptPopup.reserve(slotId,route.sessionKey,'',{focus:false}):null;this.setInlineStatus('자료 확인 중',true);
             try{
                 const fetched=await CrackAdapter.fetchMessages();const all=fetched.messages||[];if(!all.length)throw new Error('RP 로그를 찾지 못했어요.');state=getState();session=getSession(state,route.sessionKey);let slot=ensureConversationSlot(session,slotId);
                 // A custom task can switch between persistent and fresh-session delivery. Fresh runs do not
@@ -18062,7 +19238,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const resetsBaseline=['BASELINE_REPLACE','SESSION_ROTATE'].includes(syncOp);const job={schema:12,protocol:APP.protocol,bridgeRevision:BRIDGE_REVISION,conversationSlot:slotId,scope:jobScopeOf({conversationSlot:slotId}),desiredChatTitle:`[${session.title||CrackAdapter.getTitle()}] ${ChatGptPopup.label(slotId)}`,displayLabel:customTask?.name||ChatGptPopup.label(slotId),id:jobId,batchId:uid('sync'),chainId:uid('chain'),partIndex:1,initialChain:syncOp==='BASELINE_INIT',resyncMode:resetsBaseline,resyncResetBaseline:resetsBaseline,conversationMode,openMode,syncTracking:!fresh,persistConversation:!fresh,sessionKey:route.sessionKey,storyId:route.storyId,episodeId:route.episodeId,title:session.title||CrackAdapter.getTitle(),toolId,requestedToolId:toolId,question,sessionResetAt:Number(runEpoch.sessionResetAt||0),slotResetAt:Number(runEpoch.slotResetAt||0),transportBaseRevision:Number(runEpoch.transportRevision||0),targetUrl:canonicalChatGptUrl(target)||CHATGPT_HOME,gptBaseUrl:getConfiguredGptUrl(settings),conversationUrl:(fresh||rotating)?'':(slot.url||''),messages:!fresh?batch.map(m=>({id:m.id,hash:m.hash})):[],contextHashUpdates:!fresh?compiled.refs.hashUpdates:{},contextChangedLabels:compiled.refs.changedLabels,contextInitializedAfter:!fresh,sourceCount:batch.length,sourceLabel:syncOp==='APPEND'?'신규 RP 원문':'RP 최신 기준선',sentCount:batch.length,remainingCount:0,transferMode:'txt',txtFileName,createdAt:Date.now(),syncOp,deliveryOp,branchCorrection:branchCorrection?cloneStateValue(branchCorrection):null,baselineLease:lease,rawCoverage:compiled.cov.rawCoverage,coverageQuality:compiled.cov.coverageQuality,acquisitionComplete:compiled.cov.acquisitionComplete===true,taskEvidenceComplete:compiled.cov.taskEvidenceComplete===true,sourceStatuses:compiled.refs.statuses||[],payloadChars:fullPrompt.length,appendedSourceChars,componentHashes:compiled.hashes,transportRevision:Number(transportAfter.revision||0),transportCursorAfter:{...transportAfter,lastJobId:jobId}};
                 await cgcAssertRunEpoch(route.sessionKey,slotId,runEpoch,{checkTransport:slotIsSync(slotId)&&!fresh});
                 createdJobId=jobId;setPendingJob(session,jobId,slotId);saveState(state);writeJobBundle(job,{jobId,prompt,attachment,recordPreview:makeRecordPreview(fullPrompt),createdAt:Date.now()});this.setInlineStatus('GPT 전달 중',true);this.updatePanelStatus(`TXT 1개 · ${syncOp} · ${openMode==='popup'?'팝업':'새 탭'}으로 전달 중...`);const handoff=await dispatchJobToChatGpt(job,settings,reservedPopup);this.setInlineStatus(handoff.mode==='reused'?(handoff.surfaceMode==='popup'?'기존 GPT 작은 창 전달':'기존 GPT 탭 전달'):handoff.surfaceMode==='popup'?'GPT 작은 창 열림':'GPT 새 탭 열림',true);this.watchJobProgress(jobId,route.sessionKey);
-            }catch(error){console.error(`[${APP.id}] start tool failed`,error);if(createdJobId)this.rollbackPendingJob(createdJobId,route.sessionKey,{phase:'dispatch',message:error.message||String(error),toast:false,status:'전송 실패'});ChatGptPopup.closeIfWaiting(reservedPopup);this.setInlineStatus();this.updatePanelStatus(error.message,true);this.toast(error.message,true);}finally{if(this.startingSessionKey===route.sessionKey)this.startingSessionKey='';}
+            }catch(error){console.error(`[${APP.id}] start tool failed`,error);if(createdJobId)this.rollbackPendingJob(createdJobId,route.sessionKey,{phase:'dispatch',message:error.message||String(error),toast:false,status:'전송 실패'});ChatGptPopup.closeIfWaiting(reservedPopup);this.setInlineStatus();this.updatePanelStatus(error.message,true);this.toast(error.message,true);}finally{this.endStart(startToken);}
         },
 
         watchJobProgress(jobId, sessionKey) {
@@ -18216,7 +19392,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(isCurrentSession){const next=Number(ack.partIndex||1)+1;this.setInlineStatus('자동 이어보내기',true);this.refreshPanel();setTimeout(()=>this.startTool(ack.requestedToolId||'sync',ack.question||'',{autoContinue:true,expectedSessionKey:ack.sessionKey,chainId:ack.chainId||'',partIndex:next,initialChain:!!ack.initialChain,resyncMode:!!ack.resyncMode}).catch(e=>console.error(`[${APP.id}] auto continuation failed`,e)),240);}
                 return true;
             }
-            if(isCurrentSession&&!silent){this.setInlineStatus();this.toast(`${ChatGptPopup.label(slotId)} 입력 전달됨 · GPT 답변 생성 중`);this.refreshPanel();void this.refreshHomeCounts();}
+            if(isCurrentSession&&!silent){this.setInlineStatus();this.notice('sent',ChatGptPopup.label(slotId),'입력 전달됨 · GPT 답변 생성 중',slotId);this.refreshPanel();void this.refreshHomeCounts();}
             return true;
         },
 
@@ -18231,9 +19407,17 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             let state=getState(),session=getSession(state,sessionKey),id=getPendingJobId(session);
             if(!id)return false;
             await hydrateAsyncJobStorage(id);
+            // v1.4.1: iOS delivers no change events while Crack sits suspended behind the ChatGPT tab. Read the
+            // shared records fresh so a delivered job is applied, and the same tap goes on to send.
+            const cleared=()=>getPendingJobId(getSession(getState(),sessionKey))!==id;
+            if(CGC_ASYNC_GM_STORAGE){
+                await Promise.allSettled([KEY.state,KEY.roomCheckpoints,KEY.ack,KEY.error,KEY.progress,KEY.submitted].map(refreshAsyncStorageKey));
+                this.recoverSubmittedAcks(sessionKey);
+                if(cleared())return false;
+            }
             const slotId=session.transport?.pendingSlot||'audit';
             const ack=readValue(KEY.ack,null),error=readValue(KEY.error,null);
-            if(ack?.jobId===id&&ack?.sessionKey===sessionKey){this.applyAck(ack,{allowLate:true,silent:true});return true;}
+            if(ack?.jobId===id&&ack?.sessionKey===sessionKey){this.applyAck(ack,{allowLate:true,silent:true});if(cleared())return false;}
             if(error?.jobId===id&&error?.sessionKey===sessionKey){this.rollbackPendingJob(id,sessionKey,{phase:error.phase||'error',message:error.message||'GPT 전송 실패',status:'전송 복구'});return false;}
 
             const job=readJob(id),receipt=readValue(WebDelivery.key(id),null),now=Date.now(),age=now-Number(job?.createdAt||receipt?.at||0);
@@ -18272,6 +19456,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             }
 
             if(receipt&&['submitted','result'].includes(receipt.phase)){
+                if(receipt.ack?.jobId===id){this.applyAck(receipt.ack,{allowLate:true,silent:true});if(cleared())return false;}
                 this.toast('이전 요청은 이미 GPT에 전달됐어요. 답변 확인을 이어갑니다.');
                 void this.openCurrentGpt(slotId);return true;
             }
@@ -18292,9 +19477,32 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 return false;
             }
 
+            // Mobile tabs cannot be watched for closing (no window handle), so "tap again to cancel" never
+            // fired there and the room stayed blocked for the job's full 15-minute lifetime. Ask instead.
+            if(CGC_PLATFORM.mobile&&!recentProgress&&age>=CGC_MOBILE_PENDING_GRACE_MS)return this.offerMobileResend(id,sessionKey);
             this.setInlineStatus('GPT 시작 대기',true);this.refreshPanel();
-            this.toast('GPT 창이 아직 시작 중이에요. 창을 닫았다면 다시 누르면 자동으로 취소돼요.');
+            this.toast(CGC_PLATFORM.mobile?'ChatGPT 탭이 작업을 받는 중이에요. ChatGPT 탭을 확인하거나 잠시 뒤 다시 눌러 주세요.':'GPT 창이 아직 시작 중이에요. 창을 닫았다면 다시 누르면 자동으로 취소돼요.');
             return true;
+        },
+        async offerMobileResend(id,sessionKey){
+            this.setInlineStatus('GPT 시작 대기',true);this.refreshPanel();
+            if(!confirm('ChatGPT 탭이 아직 이 작업을 받지 못했어요.\n(iPhone Safari는 뒤에 있는 탭을 멈추기 때문에 탭이 로딩 중에 멈췄거나 닫혔을 수 있어요.)\n\n확인: 이전 요청을 취소하고 지금 다시 보내기\n취소: 그대로 두고 ChatGPT 탭 확인하기'))return true;
+            // The dialog can stay open for a while; a ChatGPT tab may have taken the job meanwhile.
+            await hydrateAsyncJobStorage(id);
+            if(CGC_ASYNC_GM_STORAGE)await Promise.allSettled([KEY.state,KEY.ack,KEY.progress,KEY.submitted].map(refreshAsyncStorageKey));
+            this.recoverSubmittedAcks(sessionKey);
+            if(getPendingJobId(getSession(getState(),sessionKey))!==id)return false;
+            const receipt=readValue(WebDelivery.key(id),null),progress=readValue(KEY.progress,null);
+            if(receipt||(progress?.jobId===id&&Date.now()-Number(progress.at||0)<30000)){
+                this.toast('확인하는 동안 ChatGPT 탭이 작업을 받았어요. 중복 전송을 막기 위해 다시 보내지 않습니다.',true);this.refreshPanel();return true;
+            }
+            // A cancelled receipt is final for the ChatGPT side too: it re-reads the receipt right before
+            // clicking send, so a tab that wakes up later stands down instead of sending twice.
+            this.rollbackPendingJob(id,sessionKey,{phase:'mobile_resend',status:'다시 보내기',forceUnsubmitted:true});
+            await flushStorageWrites().catch(()=>{});
+            if(getPendingJobId(getSession(getState(),sessionKey))===id){this.toast('이전 요청 상태가 바뀌어 다시 보내지 않았어요.',true);return true;}
+            this.toast('이전 요청을 취소했어요. 지금 다시 보냅니다.');
+            return false;
         },
         async releaseUnsentDelivery(){
             const route=CrackAdapter.getRouteInfo();if(!route)return;
@@ -18354,13 +19562,16 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 ||(room?recoverSlotUrlFromHistory(room,slotId,route.sessionKey):'');
             const receiptMatches=r=>r?.job?.id===id&&r.job.sessionKey===route.sessionKey
                 &&conversationSlotOf(r.job)===slotId&&CgcJobLinks.validReceipt(r);
-            let target='',reviewId='',notice='';
+            let target='',reviewId='',notice='',resolveId='';
             if(id){
                 try{
                     // Opening a chat needs only its receipt, not the large TXT/payload chunks.
                     const r=await refreshAsyncStorageKey(WebDelivery.key(id));
                     if(receiptMatches(r))target=persistentConversationUrl(r.conversationUrl||r.ack?.conversationUrl||'');
-                    if(!target){
+                    // Saved by an older build while ChatGPT still showed the chat's client-only id. A ChatGPT page
+                    // finds the durable chat itself (read-only proof, nothing is resent) and opens it.
+                    if(!target&&receiptMatches(r)&&isTempConversationUrl(r.conversationUrl||r.ack?.conversationUrl||''))resolveId=id;
+                    if(!target&&!resolveId){
                         this.updatePanelStatus('GPT 대화 주소를 확인하는 중…');
                         const located=await CgcJobLinks.locate(id,route.sessionKey,slotId,{wait:!savedUrl(session)});
                         target=persistentConversationUrl(located?.url||'');notice=located?.message||'';
@@ -18373,12 +19584,15 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const r=await refreshAsyncStorageKey(WebDelivery.key(id));
                 if(receiptMatches(r)){
                     const actual=persistentConversationUrl(r.conversationUrl||r.ack?.conversationUrl||'');
-                    if(actual){target=actual;reviewId=id;}
+                    if(actual){target=actual;reviewId=id;resolveId='';}
+                    else if(resolveId)target='';
                     else if(!CgcJobLinks.validLink(readValue(CgcJobLinks.key(id),null),r))target='';
                     else if(target===readValue(CgcJobLinks.key(id),null)?.url)reviewId=id;
                     else target='';
-                }else target='';
+                }else{target='';resolveId='';}
             }
+            // A finished slot can also hold a client-only address; its last request proves the durable chat.
+            if(!target&&!resolveId&&slot.lastRequestId&&isTempConversationUrl(slot.url||''))resolveId=slot.lastRequestId;
             await refreshAsyncStorageKey(KEY.state);
             if(CrackAdapter.getRouteInfo()?.sessionKey!==route.sessionKey)return;
             const latestState=getState(),rawLatest=latestState.sessions?.[route.sessionKey];
@@ -18389,15 +19603,20 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 return this.toast('확인 중 이 방 또는 GPT 슬롯이 초기화됐어요. 오래된 대화는 열지 않았습니다.',true);
             if(id&&!CgcJobLinks.currentIdMatches(latest,slotId,id))
                 return this.toast('확인 중 현재 작업이 바뀌었어요. 다시 눌러 주세요.',true);
-            if(!target){
+            if(!target&&!resolveId){
                 // A saved chat may be inspected without proving it belongs to the pending job.
                 // Do not bind it, append cgc-review/cgc-job, commit cursors or resend anything.
                 target=savedUrl(latest);reviewId='';
                 if(target&&id)this.toast('저장된 GPT 대화를 확인용으로 열어요. 현재 작업의 연결 상태는 바꾸지 않습니다.');
             }
-            if(!target)return this.toast(notice||'아직 확인된 GPT 대화 주소가 없어요. 작업 중인 GPT 탭을 확인해 주세요.',true);
-            this.updatePanelStatus(reviewId?'GPT 대화 주소 확인됨':'저장된 GPT 대화 열기');
-            const url=reviewId?`${target}#cgc-review=${encodeURIComponent(reviewId)}`:target;
+            if(!target&&!resolveId)return this.toast(notice||'아직 확인된 GPT 대화 주소가 없어요. 작업 중인 GPT 탭을 확인해 주세요.',true);
+            let url=reviewId?`${target}#cgc-review=${encodeURIComponent(reviewId)}`:target;
+            if(!target&&resolveId){
+                const home=new URL(CHATGPT_HOME);home.hash='cgc-resolve='+encodeURIComponent(resolveId);
+                if(CGC_PLATFORM.mobile)home.searchParams.set('cgc_resolve',resolveId); // some mobile managers drop fragments
+                url=home.href;
+                this.updatePanelStatus('저장된 GPT 대화 주소를 ChatGPT에서 확인해 열어요');
+            }else this.updatePanelStatus(reviewId?'GPT 대화 주소 확인됨':'저장된 GPT 대화 열기');
             if(CGC_PLATFORM.mobile){
                 const marked=withSurfaceMarker(url,'tab');
                 try{if(await openPrivilegedChatGptTab(marked,'tab'))return;}catch{}
@@ -18428,23 +19647,78 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             ['corePrompt','공통 작업 규칙','cgc-core-prompt'],['sourceContractPrompt','자료 해석 규칙','cgc-source-contract-prompt'],
             ['resultGuidePrompt','완료·미완 판단 지침','cgc-result-guide-prompt'],['resultPolicyJson','결과 글자 제한 · JSON','cgc-result-policy-json']
         ]),
+        UI_ICONS: Object.freeze({
+            audit:'<path d="M12 3.2l7 2.8v5.6c0 4.3-2.9 7.9-7 9.2-4.1-1.3-7-4.9-7-9.2V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>',
+            ask:'<path d="M5.5 4.5h13a2 2 0 0 1 2 2v8.2a2 2 0 0 1-2 2H11l-4.5 3.6v-3.6h-1a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><path d="M8.6 10.6h.01M12 10.6h.01M15.4 10.6h.01"/>',
+            mem:'<path d="M12 3.8l8 4.1-8 4.1-8-4.1z"/><path d="M4 12l8 4.1 8-4.1"/><path d="M4 16.1l8 4.1 8-4.1"/>',
+            mem2:'<path d="M12 3.5v6M9 6.8l3 2.9 3-2.9"/><path d="M12 20.5v-6M9 17.2l3-2.9 3 2.9"/><path d="M4.5 12h15"/>',
+            note:'<path d="M6.5 3.5h7.5l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M13.5 3.5V8h5"/><path d="M8.5 12.5h7M8.5 16h4.5"/>',
+            lore:'<path d="M12 6.3C10.3 4.9 7.9 4.3 4.4 4.5v12.9c3.5-.2 5.9.4 7.6 1.9"/><path d="M12 6.3c1.7-1.4 4.1-2 7.6-1.8v12.9c-3.5-.2-5.9.4-7.6 1.9"/><path d="M12 6.3v12.9"/>',
+            spark:'<path d="M11 4l1.8 4.9 4.9 1.8-4.9 1.8L11 17.4l-1.8-4.9-4.9-1.8 4.9-1.8z"/><path d="M18.3 14.8l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+            data:'<ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-6"/>',
+            clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+            x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+            chev:'<path d="M9.5 5.5l6.5 6.5-6.5 6.5"/>',
+            back:'<path d="M14.5 5.5L8 12l6.5 6.5"/>',
+            copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="1.5"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>',
+            ext:'<path d="M13.5 4.5h6v6"/><path d="M19.5 4.5l-8 8"/><path d="M17.5 13.5v4a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h4"/>',
+            eye:'<path d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6z"/><circle cx="12" cy="12" r="2.6"/>',
+            refresh:'<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>',
+            check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+            send:'<path d="M20.5 3.5L10 14"/><path d="M20.5 3.5l-6.5 17-4-6.5-6.5-4z"/>',
+            unlink:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7"/><path d="M4 4l16 16"/>',
+            pencil:'<path d="M15.5 4.5l4 4L9 19H5v-4z"/><path d="M13.5 6.5l4 4"/>',
+            plus:'<path d="M12 5v14M5 12h14"/>',
+            trash:'<path d="M4.5 7h15M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5h9l1-12.5"/><path d="M10.2 11v5M13.8 11v5"/>',
+            help:'<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.4 2.4 0 1 1 3.1 2.3c-.5.2-.7.6-.7 1.1v.4"/><path d="M12 16.3v.2"/>',
+            user:'<circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.9-3.6 3.8-5.6 7.2-5.6s6.3 2 7.2 5.6"/>',
+            hourglass:'<path d="M7 3.5h10M7 20.5h10"/><path d="M8 3.5c0 4 8 4.5 8 8.5s-8 4.5-8 8.5"/><path d="M16 3.5c0 4-8 4.5-8 8.5s8 4.5 8 8.5"/>',
+            sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+            gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4L6 18M18 18l-1.6-1.6M7.6 7.6L6 6"/>',
+        }),
+        uiSprite(){return `<svg style="display:none" aria-hidden="true">${Object.entries(this.UI_ICONS).map(([name,body])=>`<symbol id="cgc-i-${name}" viewBox="0 0 24 24">${body}</symbol>`).join('')}</svg>`;},
         uiIcon(name,cls='') {return `<svg class="i ${cls}" aria-hidden="true"><use href="#cgc-i-${name}"></use></svg>`;},
+        // Animated icons from the design. Inline (not the sprite) so CSS can move their parts on hover, while
+        // running and when a tab is chosen.
+        AI_ICONS: Object.freeze({
+            audit:'<path d="M12 3.2l7 2.8v5.6c0 4.3-2.9 7.9-7 9.2-4.1-1.3-7-4.9-7-9.2V6z"/><path class="a-ck" pathLength="1" d="M8.8 12.2l2.2 2.2 4.3-4.6"/><path class="a-scan" d="M7.2 8.6h9.6"/>',
+            ask:'<path d="M5.5 4.5h13a2 2 0 0 1 2 2v8.2a2 2 0 0 1-2 2H11l-4.5 3.6v-3.6h-1a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2z"/><circle class="a-d a-d1" cx="8.6" cy="10.6" r="1"/><circle class="a-d a-d2" cx="12" cy="10.6" r="1"/><circle class="a-d a-d3" cx="15.4" cy="10.6" r="1"/>',
+            mem:'<path class="a-l1" d="M12 3.8l8 4.1-8 4.1-8-4.1z"/><path class="a-l2" d="M4 12l8 4.1 8-4.1"/><path class="a-l3" d="M4 16.1l8 4.1 8-4.1"/>',
+            mem2:'<path class="a-up" d="M12 3.5v6M9 6.8l3 2.9 3-2.9"/><path class="a-dn" d="M12 20.5v-6M9 17.2l3-2.9 3 2.9"/><path d="M4.5 12h15"/>',
+            note:'<path d="M6.5 3.5h7.5l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M13.5 3.5V8h5"/><path class="a-w a-w1" pathLength="1" d="M8.5 12.5h7"/><path class="a-w a-w2" pathLength="1" d="M8.5 16h4.5"/>',
+            lore:'<path class="bk-l" d="M12 6.3C10.3 4.9 7.9 4.3 4.4 4.5v12.9c3.5-.2 5.9.4 7.6 1.9"/><path class="bk-r" d="M12 6.3c1.7-1.4 4.1-2 7.6-1.8v12.9c-3.5-.2-5.9.4-7.6 1.9"/><path class="bk-ll" pathLength="1" d="M6.3 8.5c1.3 0 2.5.3 3.6.8M6.3 11.5c1.3 0 2.5.3 3.6.8M6.3 14.5c1 0 1.9.2 2.8.5"/><path class="bk-rl" pathLength="1" d="M14.1 9.3c1.1-.5 2.3-.8 3.6-.8M14.1 12.3c1.1-.5 2.3-.8 3.6-.8M14.1 15.3c.9-.4 1.8-.6 2.8-.7"/><path class="bk-p bk-p1" d="M12 6.3c1.7-1.4 4.1-2 7.6-1.8v12.9c-3.5-.2-5.9.4-7.6 1.9z"/><path class="bk-p bk-p2" d="M12 6.3c1.7-1.4 4.1-2 7.6-1.8v12.9c-3.5-.2-5.9.4-7.6 1.9z"/><path class="bk-p bk-p3" d="M12 6.3c1.7-1.4 4.1-2 7.6-1.8v12.9c-3.5-.2-5.9.4-7.6 1.9z"/><path class="bk-sp" d="M12 6.3v12.9"/>',
+            spark:'<path class="a-s1" d="M11 4l1.8 4.9 4.9 1.8-4.9 1.8L11 17.4l-1.8-4.9-4.9-1.8 4.9-1.8z"/><path class="a-s2" d="M18.3 14.8l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+            t_home:'<rect class="g g1" x="4" y="4" width="7" height="7" rx="2"/><rect class="g g2" x="13" y="4" width="7" height="7" rx="2"/><rect class="g g3" x="4" y="13" width="7" height="7" rx="2"/><rect class="g g4" x="13" y="13" width="7" height="7" rx="2"/>',
+            t_data:'<path class="c3" d="M5 12v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-6"/><path class="c2" d="M5 6v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><ellipse class="c1" cx="12" cy="6" rx="7" ry="2.6"/>',
+            t_history:'<circle cx="12" cy="12" r="8.5"/><path class="hand" d="M12 7.5V12l3 2"/>',
+            t_settings:'<path d="M4 7h16M4 17h16"/><circle class="k k1" cx="15" cy="7" r="2.3"/><circle class="k k2" cx="9" cy="17" r="2.3"/>',
+            trash:'<g class="lid"><path d="M4.5 7h15M9.5 7V4.5h5V7"/></g><path d="M6.5 7l1 12.5h9l1-12.5"/><path d="M10.2 11v5M13.8 11v5"/>',
+        }),
+        aIcon(name,cls=''){return `<svg class="i ai ai-${name} ${cls}" viewBox="0 0 24 24" aria-hidden="true">${this.AI_ICONS[name]||''}</svg>`;},
+        // The design's two-level preset control: 이어보내기 | 전체 보내기 (같은 대화 / 새 대화).
+        uiPresetControl(value){
+            const custom=!['recommended','full','fresh'].includes(value),r=value==='full'||value==='fresh';
+            return `<div class="nseg ${r?'r':'l'} ${value==='fresh'?'b':'a'} ${custom?'c':''}" role="group" aria-label="기본 방식"><input type="hidden" id="cgc-policy-preset" value="${escapeHtml(value||'recommended')}"><span class="nseg-ind"><span class="nseg-sub"><span class="nseg-subind"></span><button type="button" data-ui-nseg="full" aria-pressed="${value==='full'}">같은 대화</button><button type="button" data-ui-nseg="fresh" aria-pressed="${value==='fresh'}">새 대화</button></span></span><button type="button" class="nseg-a" data-ui-nseg="recommended" aria-pressed="${value==='recommended'}">이어보내기</button><button type="button" class="nseg-b" data-ui-nseg="${value==='fresh'?'fresh':'full'}" aria-pressed="${r}">전체 보내기<small>같은 대화, 새 대화</small></button></div>`;
+        },
         uiSegment(id,value,options) {
-            return `<div class="seg" role="group"><input type="hidden" id="${id}" value="${escapeHtml(value||'')}">${Object.entries(options).map(([v,label])=>`<button type="button" class="${v===value?'on':''}" data-ui-seg="${id}" data-value="${v}" aria-pressed="${v===value}">${escapeHtml(label)}</button>`).join('')}</div>`;
+            const entries=Object.entries(options),index=Math.max(0,entries.findIndex(([v])=>v===value));
+            return `<div class="seg" role="group" style="--n:${entries.length};--si:${index}"><span class="seg-ind"></span><input type="hidden" id="${id}" value="${escapeHtml(value||'')}">${entries.map(([v,label])=>`<button type="button" class="${v===value?'on':''}" data-ui-seg="${id}" data-value="${v}" aria-pressed="${v===value}">${escapeHtml(label)}</button>`).join('')}</div>`;
         },
         uiSwitch(id,checked,label,source='') {
             return `<label class="switch-control" title="${escapeHtml(label)}"><input type="checkbox" role="switch" ${id?`id="${id}"`:''} ${source?`data-source-toggle="${source}"`:''} aria-label="${escapeHtml(label)}" ${checked?'checked':''}><span class="sw ${checked?'':'off'}" aria-hidden="true"></span></label>`;
         },
         uiStep(id,label,value,min,step,max='',description='') {
-            return `<div class="r"><div class="tt"><div class="a">${label}</div>${description?`<div class="b">${escapeHtml(description)}</div>`:''}</div><div class="step"><button type="button" data-ui-step="${id}" data-delta="-${step}" aria-label="${label} 줄이기">−</button><input id="${id}" type="number" value="${value}" min="${min}" step="${step}" ${max?`max="${max}"`:''} aria-label="${label}"><button type="button" data-ui-step="${id}" data-delta="${step}" aria-label="${label} 늘리기">+</button></div></div>`;
+            return `<div class="srow"><span class="stx"><b>${label}</b>${description?`<span>${escapeHtml(description)}</span>`:''}</span><div class="step"><button type="button" data-ui-step="${id}" data-delta="-${step}" aria-label="${label} 줄이기">−</button><input id="${id}" type="number" value="${value}" min="${min}" step="${step}" ${max?`max="${max}"`:''} aria-label="${label}"><button type="button" data-ui-step="${id}" data-delta="${step}" aria-label="${label} 늘리기">+</button></div></div>`;
         },
         openSettingsView(view='',promptKey='') {
             if(this.settingsDirty&&!confirm('저장하지 않은 변경을 버리고 이동할까요?'))return;
-            this.settingsView=['policy','prompts','promptEdit','customTasks','customEdit','advanced','troubleshooting'].includes(view)?view:'';
+            this.settingsView=['policy','prompts','promptEdit','customTasks','customEdit','advanced','troubleshooting','storage'].includes(view)?view:'';
             this.editingPromptKey=this.settingsView==='promptEdit'&&this.UI_PROMPTS.some(p=>p[0]===promptKey)?promptKey:'';
             if(this.settingsView==='promptEdit'&&!this.editingPromptKey)this.settingsView='prompts';
             if(this.settingsView!=='customEdit')this.editingCustomTaskId='';
-            this.settingsDirty=false;this.uiPresetDraft='';this.settingsRenderedKey=null;this.selectTab('settings');this.refreshPanel();
+            if(this.settingsView!=='storage')this.storageSel=new Set();
+            this.closeSheet();this.settingsDirty=false;this.uiPresetDraft='';this.settingsRenderedKey=null;this.selectTab('settings');this.refreshPanel();
+            const sc=this.panel?.querySelector('.sc');if(sc)sc.scrollTop=0;
         },
         openCustomTaskEditor(taskId=''){
             if(this.settingsDirty&&!confirm('저장하지 않은 변경을 버리고 이동할까요?'))return;
@@ -18452,50 +19726,68 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             this.settingsView='customEdit';this.editingPromptKey='';this.editingCustomTaskId=taskId||'';this.settingsDirty=false;this.uiPresetDraft='';this.settingsRenderedKey=null;this.selectTab('settings');this.refreshPanel();
         },
         handleUiClick(e) {
-            const button=e.target.closest('[data-ui-action],[data-ui-seg],[data-ui-step]');if(!button)return false;
+            const button=e.target.closest('[data-ui-action],[data-ui-seg],[data-ui-step],[data-ui-nseg]');if(!button)return false;
             if(button.disabled)return true;
-            if(button.dataset.uiSeg==='cgc-preview-slot'){const value=button.dataset.value;this.referenceStatusSlot=['qa','advisor'].includes(value)?value:'qa';const input=this.panel.querySelector('#cgc-preview-slot');if(input)input.value=this.referenceStatusSlot;button.parentElement.querySelectorAll('[data-ui-seg]').forEach(b=>{b.classList.toggle('on',b===button);b.setAttribute('aria-pressed',String(b===button));});this.renderReferenceCards();return true;}
-            if(button.dataset.uiSeg){
-                const input=this.panel.querySelector(`#${button.dataset.uiSeg}`);if(!input)return true;input.value=button.dataset.value;
-                input.parentElement.querySelectorAll('[data-ui-seg]').forEach(b=>{b.classList.toggle('on',b===button);b.setAttribute('aria-pressed',String(b===button));});
+            if(button.dataset.uiNseg){
+                const group=button.closest('.nseg'),value=button.dataset.uiNseg,wide=value!=='recommended';
+                group.classList.remove('c');group.classList.toggle('r',wide);group.classList.toggle('l',!wide);group.classList.toggle('a',value!=='fresh');group.classList.toggle('b',value==='fresh');
+                group.querySelectorAll('[data-ui-nseg]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.uiNseg===value&&!(b.classList.contains('nseg-b')&&!wide))));
+                const wideButton=group.querySelector('.nseg-b');if(wideButton){wideButton.dataset.uiNseg=value==='fresh'?'fresh':'full';wideButton.setAttribute('aria-pressed',String(wide));}
+                const input=group.querySelector('#cgc-policy-preset');if(input)input.value=value;
+                this.settingsDirty=true;this.uiPresetDraft=value;return true;
+            }
+            const seg=button.dataset.uiSeg;
+            if(seg){
+                const group=button.parentElement,buttons=[...group.querySelectorAll('[data-ui-seg]')];
+                buttons.forEach(b=>{b.classList.toggle('on',b===button);b.setAttribute('aria-pressed',String(b===button));});
+                group.style.setProperty('--si',String(Math.max(0,buttons.indexOf(button))));
+                const input=group.querySelector(`#${seg}`);if(input)input.value=button.dataset.value;
+                // View-only segments change what is shown, never a setting.
+                if(seg==='cgc-preview-slot'){this.referenceStatusSlot=['qa','advisor'].includes(button.dataset.value)?button.dataset.value:'qa';this.renderReferenceCards();return true;}
+                if(seg==='cgc-storage-sort'){this.storageSort=button.dataset.value;this.renderSettingsView(true);return true;}
                 this.settingsDirty=true;
-                if(input.id!=='cgc-policy-preset'&&input.id.startsWith('cgc-policy-'))this.uiPresetDraft='custom';
-                if(input.id==='cgc-policy-preset')this.uiPresetDraft=input.value;
+                if(seg!=='cgc-policy-preset'&&seg.startsWith('cgc-policy-'))this.uiPresetDraft='custom';
+                if(seg==='cgc-policy-preset')this.uiPresetDraft=button.dataset.value;
                 return true;
             }
             if(button.dataset.uiStep){const input=this.panel.querySelector(`#${button.dataset.uiStep}`);if(input){const n=Number(input.value),min=Number(input.min||0),max=input.max?Number(input.max):Infinity;input.value=String(Math.min(max,Math.max(min,(Number.isFinite(n)?n:min)+Number(button.dataset.delta))));this.settingsDirty=true;}return true;}
             const action=button.dataset.uiAction;
             if(['help-copy-settings','help-backup','help-cleanup'].includes(action)){e.preventDefault();void CgcTroubleshooting.run(action,button);return true;}
             if(action==='data-open'){e.preventDefault();this.selectTab('data');}
+            if(action==='row')this.toggleWorkRow(button.dataset.row||'');
             if(action==='settings-view')this.openSettingsView(button.dataset.view||'',button.dataset.prompt||'');
             if(action==='custom-new')this.openCustomTaskEditor('');
             if(action==='custom-edit')this.openCustomTaskEditor(button.dataset.customId||'');
             if(action==='custom-save')this.saveCustomTaskEditor();
             if(action==='custom-delete')this.deleteCustomTask(button.dataset.customId||this.editingCustomTaskId||'');
-            if(action==='back'){if(this.activeTab==='settings'){if(this.settingsView==='customEdit')this.openSettingsView('customTasks');else this.openSettingsView('');}else{this.dataPreviewOpen=false;this.renderDataView();this.refreshHeader();}}
-            if(action==='question'){const el=this.panel.querySelector('#cgc-question-area');el.hidden=!el.hidden;if(!el.hidden)this.panel.querySelector('#cgc-question')?.focus();}
-            if(action==='advisor-toggle'){const el=this.panel.querySelector('#cgc-advisor-area');el.hidden=!el.hidden;if(!el.hidden)this.panel.querySelector('#cgc-advisor-question')?.focus();}
-            if(action==='lore'){const el=this.panel.querySelector('#cgc-lore-area');el.hidden=!el.hidden;if(!el.hidden)this.renderLoreBatch();}
+            if(action==='back'){if(this.activeTab==='settings'){if(this.settingsView==='customEdit')this.openSettingsView('customTasks');else if(this.settingsView==='promptEdit')this.openSettingsView('prompts');else this.openSettingsView('');}else{this.dataPreviewOpen=false;this.renderDataView();this.refreshHeader();}}
+            if(action==='question'){this.selectTab('work');this.toggleWorkRow('qa',true);setTimeout(()=>this.panel?.querySelector('#cgc-question')?.focus({preventScroll:true}),80);}
+            if(action==='lore'){this.selectTab('work');this.toggleWorkRow('lore',true);}
             if(action==='preview'){this.dataPreviewOpen=true;this.renderDataView();this.refreshHeader();void this.previewSource(button.dataset.source||this.selectedSourceKey||'profile');}
             if(action==='source-select')void this.previewSource(button.dataset.source);
-            if(action==='issues'){this.selectTab('work');this.panel.querySelector('#cgc-todo-list')?.scrollIntoView({block:'start'});}
             if(action==='result-full')void this.showResultDetail(button.dataset.resultKey).catch(error=>this.toast(error.message,true));
-            if(action==='result-close')this.panel.querySelector('#cgc-result-detail')?.remove();
-            if(action==='recover-job')void this.openRecoveryJob(button.dataset.jobId).catch(error=>this.toast(error.message));
-            if(action==='prompt-default'){const def=this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey);const input=def&&this.panel.querySelector(`#${def[2]}`);if(input){input.value=DEFAULT_SETTINGS[def[0]]||'';this.settingsDirty=true;this.updatePromptCount();}}
+            if(action==='result-close'||action==='sheet-close')this.closeSheet();
+            if(action==='prompt-default'){const def=this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey);const input=def&&this.panel.querySelector(`#${def[2]}`);if(input){input.value=DEFAULT_SETTINGS[def[0]]||'';this.settingsDirty=true;this.updatePromptCount();this.toast('기본값을 불러왔어요. 저장해야 반영돼요.');}}
             if(action==='prompt-save'){if(this.saveTaskPrompts())this.openSettingsView('prompts');}
+            if(['room-sel','room-all','room-del','rooms-del-sel','rooms-clean','rooms-del-all'].includes(action))this.handleStorageAction(action,button);
+            if(action==='rooms-yes')void this.runRoomWipe(button);
+            if(action==='temp-sweep')void this.runTempSweep(button);
             return true;
         },
         refreshHeader(session=undefined) {
             if(!this.panel)return;
             const route=CrackAdapter.getRouteInfo();if(session===undefined)session=route?cgcUiSession(route.sessionKey):null;
-            const names={policy:'작업마다 따로 정하기',prompts:'지침',promptEdit:this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey)?.[1]||'지침 편집',customTasks:'커스텀 작업',customEdit:customTaskDefinition(this.editingCustomTaskId,getSettings())?.name||'커스텀 작업 만들기',advanced:'고급 설정',troubleshooting:'문제 해결'};
-            const sub=this.activeTab==='settings'&&this.settingsView||this.activeTab==='data'&&this.dataPreviewOpen;
+            const names={policy:'작업마다 따로 정하기',prompts:'지침',promptEdit:this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey)?.[1]||'지침 고치기',customTasks:'커스텀 작업',customEdit:customTaskDefinition(this.editingCustomTaskId,getSettings())?.name||'커스텀 작업 만들기',advanced:'고급 설정',troubleshooting:'문제 해결',storage:'저장된 데이터'};
+            const sub=Boolean(this.activeTab==='settings'&&this.settingsView||this.activeTab==='data'&&this.dataPreviewOpen);
+            this.panel.querySelector('.hd')?.classList.toggle('sub',sub);
             const title=this.panel.querySelector('#cgc-ui-title'),room=this.panel.querySelector('#cgc-ui-room'),back=this.panel.querySelector('#cgc-ui-back');
-            if(title)title.textContent=this.activeTab==='settings'&&this.settingsView?names[this.settingsView]:this.activeTab==='data'&&this.dataPreviewOpen?'보낼 내용 미리 보기':session?.title||CrackAdapter.getTitle()||'현재 대화';
+            const text=this.activeTab==='settings'&&this.settingsView?names[this.settingsView]:this.activeTab==='data'&&this.dataPreviewOpen?'보낼 내용 미리 보기':session?.title||CrackAdapter.getTitle()||'현재 대화';
+            if(title&&title.textContent!==text)title.textContent=text;if(back)back.hidden=!sub;
             const settings=getSettings(),linked=[...this.UI_SLOTS.map(([id])=>id),...(settings.customTasks||[]).map(task=>task.id)].filter(id=>session?.conversations?.[id]?.url).length;
-            if(room)room.textContent=linked?`ChatGPT 연결됨 · 대화 ${linked}개`:'ChatGPT 연결 없음';if(back)back.hidden=!sub;
-            const dot=this.panel.querySelector('#cgc-ui-connected');if(dot)dot.classList.toggle('no',!linked);
+            const total=Number(this.roomTurnTotal||0),line=total?`이 방 전체 ${total.toLocaleString()}턴`:'이 방 대화를 확인하는 중';
+            if(room&&room.textContent!==line)room.textContent=line;
+            const tag=this.panel.querySelector('#cgc-ui-connected');
+            if(tag){tag.classList.toggle('on',linked>0);tag.title=linked?`GPT 대화 ${linked}개 연결됨`:'GPT 연결 전';const b=tag.querySelector('b');if(b)b.textContent=String(linked).padStart(2,'0');}
         },
         selectTab(tab='work') {
             if(!this.panel)return;
@@ -18504,36 +19796,63 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             const previousTab=this.activeTab;
             tab=['home','tasks'].includes(tab)?'work':tab;
             if(!['work','data','history','settings'].includes(tab))tab='work';
-            this.activeTab=tab;
+            this.activeTab=tab;if(this.panelOpen)(tab==='work'?CgcEcho.start():CgcEcho.stop());
             this.panel.querySelectorAll('.cgc-tab').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('on',active);b.setAttribute('aria-selected',String(active));});
             this.panel.querySelectorAll('.cgc-view').forEach(v=>{const active=v.dataset.view===tab;v.classList.toggle('active',active);v.hidden=!active;});
+            // The footer keeps its buttons between visits; renderSettingsView may skip an unchanged view, so show it here.
+            const footer=this.panel.querySelector('#cgc-settings-footer');if(footer)footer.hidden=tab!=='settings'||['prompts','customTasks','troubleshooting','storage'].includes(this.settingsView);
+            if(previousTab!==tab)this.closeSheet();
             if(tab==='settings')this.renderSettingsView();
             if(tab==='data'){this.renderDataView();if(!this.referenceSnapshot)void this.refreshReferencePanel(false);}
-            if(previousTab!==tab){const panel=this.panel.querySelector('.cgc-panel');panel.classList.remove('anim');void panel.offsetWidth;panel.classList.add('anim');}
-            if(tab==='history'){this.dashSeenResults=new Set((getSession(getState(),CrackAdapter.getRouteInfo()?.sessionKey||'').results||[]).map(r=>r.jobId));this.panel.querySelector('#cgc-history-dot')?.setAttribute('hidden','');}
+            if(tab==='history'){
+                const results=getSession(getState(),CrackAdapter.getRouteInfo()?.sessionKey||'').results||[];
+                this.historyFresh=new Set(results.filter(r=>!this.dashSeenResults?.has(r.jobId)).map(r=>r.jobId));
+                this.dashSeenResults=new Set(results.map(r=>r.jobId));this.panel.querySelector('#cgc-history-dot')?.setAttribute('hidden','');
+            }
+            if(previousTab!==tab){
+                const view=this.panel.querySelector(`.cgc-view[data-view="${tab}"]`);
+                if(view&&previousTab){view.classList.remove('in');void view.offsetWidth;view.classList.add('in');clearTimeout(this.viewFxTimer);this.viewFxTimer=setTimeout(()=>view.classList.remove('in'),600);}
+                const sc=this.panel.querySelector('.sc');if(sc)sc.scrollTop=0;
+                this.placeTabIndicator(Boolean(previousTab));
+            }
             this.lastPanelStamp='';this.refreshPanel();
+        },
+        placeTabIndicator(animate=true){
+            const nav=this.panel?.querySelector('.tabs'),ind=nav?.querySelector('.x-ind'),tab=nav?.querySelector('.cgc-tab.on');if(!ind||!tab)return;
+            const n=nav.getBoundingClientRect(),r=tab.getBoundingClientRect();if(!r.width)return;
+            if(!animate)ind.style.transition='none';
+            ind.style.width=`${Math.round(r.width)}px`;ind.style.transform=`translateX(${Math.round(r.left-n.left)}px)`;
+            if(!animate){void ind.offsetWidth;ind.style.transition='';}
+        },
+        // Rows stay in the DOM across rooms and wipes, so close them on screen too, not just in expandedRow.
+        collapseWorkRows(){this.panel?.querySelectorAll('.job.open').forEach(r=>this.toggleWorkRow(r.dataset.workRow||r.dataset.customRow,false));this.expandedRow='';},
+        toggleWorkRow(id,force){
+            if(!this.panel||!id)return;
+            const safe=CSS.escape(id),row=this.panel.querySelector(`[data-work-row="${safe}"],[data-custom-row="${safe}"]`);if(!row)return;
+            const open=force===undefined?!row.classList.contains('open'):Boolean(force);
+            if(open&&this.expandedRow&&this.expandedRow!==id)this.toggleWorkRow(this.expandedRow,false);
+            row.classList.toggle('open',open);
+            const body=row.querySelector('.row-bd');if(body)body.hidden=!open;
+            row.querySelector('.job-main')?.setAttribute('aria-expanded',String(open));
+            if(open)this.expandedRow=id;else if(this.expandedRow===id)this.expandedRow='';
+            if(id==='lore'){const area=this.panel.querySelector('#cgc-lore-area');if(area)area.hidden=!open;if(open)this.renderLoreBatch();}
+            if(open)requestAnimationFrame(()=>row.scrollIntoView({block:'nearest',behavior:'smooth'}));
+        },
+        openSheet(title,html,id='cgc-sheet'){
+            this.closeSheet();const col=this.panel?.querySelector('.cgp .col');if(!col)return null;
+            const el=document.createElement('section');el.className='x-over';el.id=id;el.setAttribute('role','dialog');el.setAttribute('aria-label',title);
+            el.innerHTML=`<header class="x-over-hd"><button class="icon-btn" data-ui-action="sheet-close" aria-label="뒤로">${this.uiIcon('back')}</button><b>${escapeHtml(title)}</b></header><div class="x-over-bd">${html}</div>`;
+            col.appendChild(el);el.querySelector('button')?.focus({preventScroll:true});return el;
+        },
+        closeSheet(){
+            const sheets=[...(this.panel?.querySelectorAll('.x-over')||[])],had=sheets.some(el=>el.contains(document.activeElement));
+            sheets.forEach(el=>el.remove());if(had&&this.panelOpen)this.panel.querySelector('.cgp')?.focus({preventScroll:true});
         },
         updatePanelStatus(text,error=false) {
             const el=this.panel?.querySelector('#cgc-session-status');if(!el)return;
             el.hidden=!text;el.textContent=text;el.classList.toggle('error',error);
         },
-        async openRecoveryJob(jobId) {
-            const receipt=await refreshAsyncStorageKey(WebDelivery.key(jobId));
-            const route=CrackAdapter.getRouteInfo();
-            if(!route||receipt?.job?.sessionKey!==route.sessionKey)return this.toast('현재 방의 작업 기록을 찾지 못했어요.');
-            const url=persistentConversationUrl(receipt.conversationUrl||'');
-            if(!url)return this.toast('저장된 GPT 대화 주소가 없어요. 기존 GPT 대화를 직접 확인해 주세요.');
-            const target=`${url}#cgc-review=${encodeURIComponent(jobId)}`;
-            const settings=getSettings(),slotId=conversationSlotOf(receipt.job||{}),mode=CGC_PLATFORM.mobile?'tab':getToolOpenMode(slotId,settings);
-            if(CGC_PLATFORM.mobile){
-                const marked=withSurfaceMarker(target,'tab');
-                try{if(await openPrivilegedChatGptTab(marked,'tab'))return;}catch{}
-                try{await waitForManualChatGptOpen(marked);return;}catch(error){return this.toast(error?.message||'ChatGPT 새 탭 열기를 취소했어요.',true);}
-            }
-            const popup=mode==='popup'?ChatGptPopup.reserve(slotId,route.sessionKey,`recovery-${slotId}`):null;
-            try{await focusOrOpenChatGpt(target,settings,popup,mode);return;}catch(error){ChatGptPopup.closeIfWaiting(popup);return this.toast(error?.message||'GPT 복구 대화를 열 수 없어요.',true);}
-        },
-        WORK_LABEL: Object.freeze({advisor:['RP 조언','다음 장면을 어떻게 이어갈지 GPT에게 조언 받기'],ask:['로그에 질문','지난 대화 내용을 GPT에게 물어보기'],memory1:['장기기억 1차','RP 로그에서 장기기억 슬롯 생성'],memory2:['장기기억 2차','기존 장기기억 슬롯 압축'],usernote:['유저노트 줄이기','RP 로그만 2000자 이내 줄거리로 정리'],lore:['로어 만들기','로그를 로어 JSON으로 변환']}),
+        WORK_LABEL: Object.freeze({audit:['찐빠 검사','최근 답변에 설정 오류가 없는지 확인'],ask:['로그에 질문','지난 대화 내용을 GPT에게 물어보기'],memory1:['장기기억 1차','RP 로그에서 장기기억 슬롯 생성'],memory2:['장기기억 2차','기존 장기기억 슬롯 압축'],usernote:['유저노트 줄이기','RP 로그만 2000자 이내 줄거리로 정리'],lore:['로어 만들기','로그를 로어 JSON으로 변환']}),
         workStatusOf(session,slotId) {
             if(slotId==='lore'){
                 const pending=getPendingJobId(session),here=pending&&session.transport?.pendingSlot==='lore';
@@ -18547,92 +19866,158 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(here)return {kind:'run',group:'todo',chip:'GPT 입력 전달 중'};
             if(slot.lastRequestId&&slot.lastAnswerJobId!==slot.lastRequestId){
                 const tx=(session.transmissions||[]).find(row=>row?.jobId===slot.lastRequestId),age=Date.now()-Number(tx?.createdAt||slot.lastSyncAt||Date.now());
-                return age>10*60*1000?{kind:'att',group:'todo',chip:'GPT 답변 확인 필요'}:{kind:'run',group:'todo',chip:'GPT 답변 생성 중'};
+                // A suspended iOS ChatGPT tab cannot report its finished answer, so on mobile an old unanswered
+                // request is the normal state until that tab is opened again, not something that needs attention.
+                if(age>10*60*1000)return CGC_PLATFORM.mobile?{kind:'run',group:'todo',chip:'GPT 탭에서 답변 확인'}:{kind:'att',group:'todo',chip:'GPT 답변 확인 필요'};
+                return {kind:'run',group:'todo',chip:'GPT 답변 생성 중'};
             }
             if(slot.lastRequestId&&slot.lastAnswerJobId===slot.lastRequestId)return {kind:'done',group:'ready',chip:'GPT 답변 완료 ✓'};
             return {kind:'',group:'ready',chip:slot.url?'전용 대화 연결됨':'처음 실행 전'};
         },
-        renderCustomWorkRows(session){
-            const host=this.panel?.querySelector('#cgc-custom-list'),heading=this.panel?.querySelector('#cgc-custom-heading'),countEl=this.panel?.querySelector('#cgc-custom-count');if(!host||!heading)return;
-            const settings=getSettings(),tasks=settings.customTasks||[],pending=getPendingJobId(session);heading.hidden=!tasks.length;if(countEl)countEl.textContent=String(tasks.length);
-            if(!tasks.length){host.innerHTML='';return;}
-            const html=tasks.map((task,index)=>{const slot=ensureConversationSlot(session,task.id),here=pending&&session.transport?.pendingSlot===task.id,receipt=here?readValue(WebDelivery.key(pending),null):null,answered=!here&&slot.lastRequestId&&slot.lastAnswerJobId===slot.lastRequestId,awaiting=!here&&slot.lastRequestId&&slot.lastAnswerJobId!==slot.lastRequestId,tx=awaiting?(session.transmissions||[]).find(row=>row?.jobId===slot.lastRequestId):null,answerStale=awaiting&&Date.now()-Number(tx?.createdAt||slot.lastSyncAt||Date.now())>10*60*1000,status=here?(receipt?.phase==='uncertain'?'제출 여부 확인 필요':receipt?.phase==='submitting'?'전송 확인 중':'GPT 입력 전달 중'):awaiting?(answerStale?'GPT 답변 확인 필요':'GPT 답변 생성 중'):answered?'GPT 답변 완료 ✓':(task.conversationMode==='fresh_full'?'매번 새 GPT 대화':slot.url?'전용 대화 연결됨':'처음 실행 전'),mode=this.MODE_LABEL[task.conversationMode]||'이어보내기',sourceCount=(task.sources||[]).filter(key=>isSourceGloballyEnabled(key,settings)).length,openOnly=here||awaiting;return `<article class="job st ${openOnly?'run':''}" data-custom-row="${escapeHtml(task.id)}" style="--i:${index+8}"><button class="job-main" ${openOnly?`data-action="open-slot" data-slot="${escapeHtml(task.id)}"`:`data-action="custom-run" data-custom-id="${escapeHtml(task.id)}"`}><span class="ic">${this.uiIcon('note')}</span><span class="tx"><span class="a">${escapeHtml(task.name)}</span><span class="desc">내 지침 + RP 로그${sourceCount?` · 참고자료 ${sourceCount}개`:''}</span><span class="meta"><span class="chip ${openOnly||answered?'on':''}" data-custom-status="${escapeHtml(task.id)}">${escapeHtml(status)}</span><span class="chip ${this.uiCustomCounts?.[task.id]?.on?'on':''}" data-custom-count="${escapeHtml(task.id)}">${escapeHtml(this.uiCustomCounts?.[task.id]?.label||'로그 확인 중')}</span><span class="chip">${escapeHtml(mode)}</span></span></span><span class="right">${this.uiIcon('chev','sm')}</span></button>${openOnly?`<div class="job-extra"><button class="mn" data-action="open-slot" data-slot="${escapeHtml(task.id)}">GPT에서 확인</button>${here&&(!receipt||receipt?.phase==='uncertain')?'<button class="mn" data-action="release-unsent">미전송 확정</button>':''}</div>`:''}</article>`;}).join('');
+        renderCustomWorkRows(session,statuses={}){
+            const host=this.panel?.querySelector('#cgc-custom-list'),heading=this.panel?.querySelector('#cgc-custom-heading');if(!host)return;
+            const settings=getSettings(),tasks=settings.customTasks||[],pending=getPendingJobId(session),base=this.WORK_ROWS.length;
+            if(heading)heading.hidden=false;
+            const fresh=new Set((session.results||[]).filter(r=>!this.dashSeenResults?.has(r.jobId)).map(r=>r.kind));
+            const html=tasks.map((task,index)=>{
+                const status=statuses[task.id]||this.workStatusOf(session,task.id),here=Boolean(pending)&&session.transport?.pendingSlot===task.id,open=this.expandedRow===task.id,id=escapeHtml(task.id);
+                const mode=this.MODE_LABEL[task.conversationMode]||'이어보내기',sourceCount=(task.sources||[]).filter(key=>isSourceGloballyEnabled(key,settings)).length,count=this.uiCustomCounts?.[task.id];
+                const kind=status.kind==='att'?'st-att':status.kind==='run'||here?'st-run':status.kind==='done'?'st-done':'';
+                const quick=status.kind==='att'?`<button class="btn sm key row-q" data-ui-action="row" data-row="${id}">확인</button>`:here||status.kind==='run'?`<button class="btn sm row-q" data-action="open-slot" data-slot="${id}">GPT</button>`:`<button class="btn sm row-q" data-action="custom-run" data-custom-id="${id}">실행</button>`;
+                const acts=status.kind==='att'?`<div class="notice att"><p>${escapeHtml(this.attentionNote(status))}</p></div><div class="btns">${this.attentionActs(task.id,status)}</div>`:'';
+                return `<article class="job ${kind} ${open?'open':''} ${fresh.has(task.id)?'fresh':''}" data-custom-row="${id}" style="--i:${base+index}"><div class="row-hd"><button class="job-main" data-ui-action="row" data-row="${id}" aria-expanded="${open}"><span class="p-idx">${String(base+index+1).padStart(2,'0')}</span><span class="ic">${this.aIcon('spark')}</span><b class="a">${escapeHtml(task.name)}</b><span class="chip" data-custom-status="${id}">${escapeHtml(status.chip)}</span>${this.uiIcon('chev','caret')}</button>${quick}</div><div class="row-bd" ${open?'':'hidden'}><p class="desc">내 지침 + RP 로그${sourceCount?`, 참고자료 ${sourceCount}개`:''} · ${escapeHtml(mode)}</p><p class="hint" data-custom-count="${id}">${escapeHtml(count?.label||'새 대화를 확인하는 중')}</p>${acts}<div class="btns"><button class="btn" data-ui-action="custom-edit" data-custom-id="${id}">${this.uiIcon('pencil')}<span>수정</span></button><button class="btn" data-action="open-slot" data-slot="${id}">${this.uiIcon('ext')}<span>GPT 보기</span></button><button class="btn key" data-action="custom-run" data-custom-id="${id}" ${here?'disabled':''}>실행</button></div></div></article>`;
+            }).join('');
             cgcSetUiHtml(host,html);
+        },
+        WORK_ROWS: Object.freeze(['audit','qa','memory1','memory2','usernote','lore']),
+        WORK_ICON: Object.freeze({audit:'audit',qa:'ask',memory1:'mem',memory2:'mem2',usernote:'note',lore:'lore'}),
+        attentionNote(status={}){
+            if(status.act==='release-unsent')return status.chip==='GPT 시작 대기'?'ChatGPT 탭이 아직 작업을 받지 못했어요. GPT 탭을 확인하고, 받지 못했다면 미전송 확정 후 다시 보내세요.':'GPT에 실제로 보내졌는지 확실하지 않아요. GPT에서 확인하고, 안 보냈다면 미전송으로 확정해 주세요.';
+            if(status.act==='continue-memory1')return status.chip==='중간에 끊김'?'답변이 중간에 끊겼어요. 남은 범위를 이어서 받을 수 있어요.':'결과를 다시 확인해야 해요. 이어서 확인을 눌러 주세요.';
+            if(status.act==='approve-no-memory')return '이번 범위에는 새로 남길 기억이 없다고 나왔어요. 맞으면 승인하고, 아니면 다시 실행하세요.';
+            if(status.act==='usernote')return status.chip==='전체 재구축 필요'?'유저노트를 처음부터 다시 만들어야 해요.':'같은 범위를 다시 확인해야 해요.';
+            if(status.chip==='구버전 상태 재검증 필요')return '예전 버전에서 남은 상태예요. 한 번 다시 실행해 주세요.';
+            return '답변이 오래 확인되지 않았어요. GPT에서 답변이 끝났는지 확인해 주세요.';
+        },
+        attentionActs(id,status={}){
+            const out=[];
+            if(id!=='lore')out.push(`<button class="btn" data-action="open-slot" data-slot="${escapeHtml(id)}">${this.uiIcon('ext')}<span>GPT 보기</span></button>`);
+            if(status.act==='release-unsent')out.push('<button class="btn key" data-action="release-unsent">미전송 확정</button>');
+            else if(status.act==='approve-no-memory')out.push('<button class="btn" data-action="continue-memory1">다시 실행</button><button class="btn key" data-action="approve-no-memory">0슬롯 승인</button>');
+            else if(status.act==='continue-memory1')out.push('<button class="btn key" data-action="continue-memory1">이어서 확인</button>');
+            else if(status.act==='usernote')out.push('<button class="btn key" data-action="usernote">다시 만들기</button>');
+            return out.join('');
+        },
+        setQuickAction(button,id,status,pending){
+            let label='실행',action=id,ui='',slot='';
+            if(status.kind==='att'){label='확인';action='';ui='row';}
+            else if(pending||status.kind==='run'){if(id==='lore'){label='열기';action='';ui='row';}else{label='GPT';action='open-slot';slot=id;}}
+            else if(id==='qa'||id==='lore'){label='열기';action='';ui='row';}
+            const sig=[label,action,ui,slot].join('|');if(button.dataset.sig===sig)return;button.dataset.sig=sig;
+            button.textContent=label;button.classList.toggle('key',status.kind==='att');
+            if(action)button.dataset.action=action;else button.removeAttribute('data-action');
+            if(ui){button.dataset.uiAction=ui;button.dataset.row=id;}else{button.removeAttribute('data-ui-action');button.removeAttribute('data-row');}
+            if(slot)button.dataset.slot=slot;else button.removeAttribute('data-slot');
         },
         renderWorkStatusAndResults(session) {
             if(!this.panel)return;
-            let todo=0,ready=0,attention=0;
-            for(const id of ['qa','advisor','usernote','lore']){
-                const status=this.workStatusOf(session,id),row=this.panel.querySelector(`[data-work-row="${id}"]`);if(!row)continue;
-                const label=this.WORK_LABEL[id==='qa'?'ask':id];row.querySelector('.a').textContent=label[0];row.querySelector('[data-work-desc]').textContent=label[1];
-                status.group==='todo'?todo++:ready++;if(status.kind==='att')attention++;
-                row.classList.toggle('att',status.kind==='att');row.classList.toggle('run',status.kind==='run');
-                const parent=this.panel.querySelector(status.group==='todo'?'#cgc-todo-list':'#cgc-ready-list');if(parent&&row.parentElement!==parent)parent.appendChild(row);
-                const chip=row.querySelector('[data-work-tag]');chip.className=`chip ${status.kind==='att'?'hot':status.kind==='run'||status.kind==='done'?'on':''}`;chip.textContent=status.chip;
-                // Prevent starting the same task from a row that is already awaiting an answer.
-                const main=row.querySelector('.job-main');
-                main.disabled=id==='lore'&&(status.kind==='run'||status.kind==='att');
-                if(id!=='lore'){
-                    if(status.group==='todo'){main.dataset.action='open-slot';main.dataset.slot=id;main.removeAttribute('data-ui-action');}
-                    else if(id==='qa'){main.removeAttribute('data-action');main.dataset.uiAction='question';main.removeAttribute('data-slot');}
-                    else if(id==='advisor'){main.removeAttribute('data-action');main.dataset.uiAction='advisor-toggle';main.removeAttribute('data-slot');}
-                    else{main.dataset.action=id;main.removeAttribute('data-slot');}
-                }
-                const actions=row.querySelector('[data-work-actions]');let html='';
-                if(status.group==='todo'){
-                    if(id!=='lore')html+=`<button class="mn" data-action="open-slot" data-slot="${id}">GPT에서 확인</button>`;
-                    if(status.act==='release-unsent')html+='<button class="mn" data-action="release-unsent">미전송 확정</button>';
-                    else if(status.act==='approve-no-memory')html+='<button class="mn" data-action="continue-memory1">범위 재실행</button><button class="mn key" data-action="approve-no-memory">0슬롯 승인</button>';
-                    else if(status.act)html+=`<button class="mn key" data-action="${status.act}">${status.act==='continue-memory1'?'이어서 확인':'다시 만들기'}</button>`;
-                }
-                actions.hidden=!html;cgcSetUiHtml(actions,html);
+            const statuses={},settings=getSettings(),pending=getPendingJobId(session),pendingSlot=pending?session.transport?.pendingSlot||'':'';
+            // A result that arrives while 기록 is open is seen there, and keeps its 새 결과 tag for this visit.
+            if(this.activeTab==='history'){let added=false;for(const r of session.results||[])if(!this.dashSeenResults?.has(r.jobId)){(this.historyFresh||(this.historyFresh=new Set())).add(r.jobId);(this.dashSeenResults||(this.dashSeenResults=new Set())).add(r.jobId);added=true;}if(added){this.launcherSig='';this.syncLauncherState(true);}}
+            const fresh=new Set((session.results||[]).filter(r=>!this.dashSeenResults?.has(r.jobId)).map(r=>r.kind));
+            let attention=0;
+            for(const id of this.WORK_ROWS){
+                const status=statuses[id]=this.workStatusOf(session,id);if(status.kind==='att')attention++;
+                const row=this.panel.querySelector(`[data-work-row="${id}"]`);if(!row)continue;
+                const label=this.WORK_LABEL[id==='qa'?'ask':id];
+                const name=row.querySelector('.a');if(name&&name.textContent!==label[0])name.textContent=label[0];
+                const desc=row.querySelector('[data-work-desc]');if(desc&&desc.textContent!==label[1])desc.textContent=label[1];
+                row.classList.toggle('st-att',status.kind==='att');row.classList.toggle('st-run',status.kind==='run');row.classList.toggle('st-done',status.kind==='done');row.classList.toggle('fresh',fresh.has(id));
+                const chip=row.querySelector('[data-work-tag]');if(chip&&chip.textContent!==status.chip)chip.textContent=status.chip;
+                const quick=row.querySelector('[data-work-quick]');if(quick)this.setQuickAction(quick,id,status,pendingSlot===id);
+                const actions=row.querySelector('[data-work-actions]');
+                if(actions)cgcSetUiHtml(actions,status.kind==='att'?`<div class="notice att"><p>${escapeHtml(this.attentionNote(status))}</p></div><div class="btns">${this.attentionActs(id,status)}</div>`:'');
+                const run=row.querySelector('[data-work-run]');if(run)run.disabled=pendingSlot===id;
             }
-            if(this.activeTab==='work')this.renderCustomWorkRows(session);
-            for(const task of getSettings().customTasks||[])if(this.workStatusOf(session,task.id).kind==='att')attention++;
+            const list=this.panel.querySelector('#cgc-task-list');
+            if(list){
+                const rank=s=>s.kind==='att'?0:s.kind==='run'?1:2;
+                const order=[...this.WORK_ROWS].sort((a,b)=>rank(statuses[a])-rank(statuses[b])||this.WORK_ROWS.indexOf(a)-this.WORK_ROWS.indexOf(b));
+                // Rows move around the one holding focus, so a field being typed in is never detached.
+                if([...list.children].map(el=>el.dataset.workRow).join()!==order.join()){const keep=[...list.children].find(el=>el.contains(document.activeElement)),k=keep?order.indexOf(keep.dataset.workRow):-1;order.forEach((id,i)=>{const row=list.querySelector(`[data-work-row="${id}"]`);if(!row||row===keep)return;if(i<k)list.insertBefore(row,keep);else list.appendChild(row);});}
+                order.forEach((id,i)=>{const row=list.querySelector(`[data-work-row="${id}"]`);if(!row)return;const idx=row.querySelector('.p-idx'),n=String(i+1).padStart(2,'0');if(idx&&idx.textContent!==n)idx.textContent=n;row.style.setProperty('--i',String(i));});
+            }
+            for(const task of settings.customTasks||[]){const status=statuses[task.id]=this.workStatusOf(session,task.id);if(status.kind==='att')attention++;}
+            if(this.activeTab==='work')this.renderCustomWorkRows(session,statuses);
             this.dashAttention=attention;
-            for(const [id,count] of [['todo',todo],['ready',ready]]){this.panel.querySelector(`#cgc-${id}-count`).textContent=String(count);this.panel.querySelector(`#cgc-${id}-heading`).hidden=!count;}
-            this.panel.querySelector('#cgc-todo-count').classList.toggle('w',!!attention);
-            const alert=this.panel.querySelector('#cgc-ui-alert');alert.hidden=!attention;alert.querySelector('p').textContent=`확인이 필요한 작업 ${attention}개`;
+            const badge=this.panel.querySelector('#cgc-work-badge');if(badge){badge.hidden=!attention;badge.textContent=String(attention);}
+            this.renderHero(session,statuses);
             this.refreshDashSummary(session);
-            const rows=(session.results||[]).filter(r=>r?.kind!=='audit');
-            const historyDot=this.panel.querySelector('#cgc-history-dot');if(historyDot)historyDot.hidden=this.activeTab==='history'||!rows.some(r=>!this.dashSeenResults?.has(r.jobId));
-            if(this.activeTab!=='history')return;
-            const history=this.panel.querySelector('#cgc-result-history');
-            const historyHtml=rows.length?rows.slice(0,CGC_HISTORY_LIMIT).map((r,index)=>{
-                const managed=['memory1','usernote'].includes(r.kind),label=r.displayLabel||this.UI_SLOTS.find(v=>v[0]===r.kind)?.[1]||conversationSlotLabel(r.kind)||'결과',url=persistentConversationUrl(r.conversationUrl||''),chips=[];
-                if(r.kind==='usernote'){
-                    const n=Number(r.fullTextLength||String(r.text||'').length),limit=r.resultContract?.maxChars||2000;chips.push(`${n.toLocaleString()}자`);if(r.transportStatus==='ok'&&r.status==='complete'&&n<=limit)chips.push(`${limit.toLocaleString()}자 제한 안`);
-                }else if(r.kind==='memory1'){
-                    // Custom formats may not contain slots. Never invent a turn range or slot count.
-                    if(!r.resultContract){const count=r.memorySlotCount||cgcValidateMemory1Output(r.text||'').slotCount;if(count)chips.push(`${count}칸`);}
-                    if(r.status==='incomplete')chips.push('미완');else if(r.status==='complete')chips.push('완료');
-                }
-                return `<article class="ev st" style="--i:${index}"><div class="h"><div class="d">${this.uiIcon(r.kind==='usernote'?'note':'mem','sm')}</div><b>${escapeHtml(label)}</b><span>${r.at?new Date(r.at).toLocaleString():'시각 없음'}</span></div><div class="bd">${escapeHtml((r.text||'(본문 없음)').slice(0,CGC_HISTORY_PREVIEW_CHARS))}${Number(r.fullTextLength||String(r.text||'').length)>CGC_HISTORY_PREVIEW_CHARS?' …':''}</div><div class="ac"><button class="mn" data-ui-action="result-full" data-result-key="${escapeHtml(cgcHistoryRowId(r))}">결과 보기</button><button class="mn" data-action="copy-result" data-result-key="${escapeHtml(cgcHistoryRowId(r))}" data-result-session="${escapeHtml(CrackAdapter.getRouteInfo()?.sessionKey||'')}">복사</button>${url?`<a class="mn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">GPT에서 보기</a>`:''}</div><div class="meta">${chips.map(v=>`<span class="chip">${escapeHtml(v)}</span>`).join('')}</div></article>`;
-            }).join(''):'<div class="empty"><b>아직 받은 결과가 없어요</b><span>작업 결과가 도착하면 여기에 모여요.</span></div>';
-            cgcSetUiHtml(history,historyHtml);
-            if(this.activeTab==='history')this.dashSeenResults=new Set(rows.map(r=>r.jobId));
-            const dot=this.panel.querySelector('#cgc-history-dot');if(dot)dot.hidden=!rows.some(r=>!this.dashSeenResults?.has(r.jobId));
-            const sent=this.panel.querySelector('#cgc-transmission-history');if(sent)cgcSetUiHtml(sent,(session.transmissions||[]).filter(r=>r?.toolId!=='audit').slice(0,8).map(r=>{const url=persistentConversationUrl(r.conversationUrl||'');return `<article class="ev"><div class="h"><b>${escapeHtml(r.displayLabel||toolDisplayLabel(r.toolId)||r.toolId||'전송')}</b><span>${r.createdAt?new Date(r.createdAt).toLocaleString():''}</span></div>${url?`<a class="mn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">GPT에서 보기</a>`:''}</article>`;}).join(''));
+            const historyDot=this.panel.querySelector('#cgc-history-dot');if(historyDot)historyDot.hidden=this.activeTab==='history'||!(session.results||[]).some(r=>!this.dashSeenResults?.has(r.jobId));
+            if(this.activeTab==='history')this.renderHistory(session);
+        },
+        renderHero(session,statuses={}){
+            const hero=this.panel?.querySelector('#cgc-work-hero');if(!hero)return;
+            const settings=getSettings(),ids=[...this.WORK_ROWS,...(settings.customTasks||[]).map(task=>task.id)];
+            const att=ids.filter(id=>statuses[id]?.kind==='att'),pending=getPendingJobId(session),pendingSlot=pending?session.transport?.pendingSlot||'':'';
+            const mode=att.length?'att':pendingSlot?'run':this.dashUnsentCount===0?'calm':'new',focus=mode==='att'?att[0]:mode==='run'?pendingSlot:'';
+            const label=id=>customTaskDefinition(id,settings)?.name||this.WORK_LABEL[id==='qa'?'ask':id]?.[0]||conversationSlotLabel(id);
+            const q=sel=>hero.querySelector(sel);
+            for(const name of ['att','run','new','calm'])hero.classList.toggle(name,name===mode);
+            const k=q('#cgc-hero-k'),kText=mode==='att'?`확인할 작업 ${att.length}개`:mode==='run'?'보내는 중':mode==='calm'?'새 대화 없음':'안 보낸 새 대화';
+            if(k&&k.textContent!==kText)k.textContent=kText;
+            const num=q('#cgc-hero-numbox');if(num)num.hidden=mode!=='new';
+            const task=q('#cgc-hero-task');if(task){task.hidden=mode==='new';const t=mode==='att'||mode==='run'?label(focus):'모두 보냈어요';if(task.textContent!==t)task.textContent=t;}
+            const sub=q('#cgc-hero-sub');if(sub){const t=mode==='att'?this.attentionNote(statuses[focus]):mode==='run'?(statuses[focus]?.chip||'GPT로 보내는 중'):(this.heroSubText||'새 대화를 확인하고 있어요');if(sub.textContent!==t)sub.textContent=t;}
+            const last=q('#cgc-hero-last');if(last)last.hidden=mode==='att'||mode==='run';
+            const btns=q('#cgc-hero-btns');if(btns)btns.hidden=mode==='att'||mode==='run';
+            const acts=q('#cgc-hero-acts');
+            if(acts){acts.hidden=!(mode==='att'||mode==='run');const html=mode==='att'?this.attentionActs(focus,statuses[focus]):mode==='run'?`<button class="btn" data-action="open-slot" data-slot="${escapeHtml(focus)}">${this.uiIcon('ext')}<span>GPT 보기</span></button>`:'';if(acts.dataset.sig!==html){acts.dataset.sig=html;acts.innerHTML=html;}}
+            const key=`${mode}:${focus}`;
+            if(this.heroKey!==key){
+                const first=!this.heroKey;this.heroKey=key;const echo=q('#cgc-hero-echo');
+                if(echo){echo.innerHTML='<canvas></canvas><span class="echo-ro">ROT <b>000</b>°</span><i class="h-glitch"><b></b><b></b><b></b></i>';CgcEcho.mount(echo,mode,!first);}
+                if(!first){hero.classList.remove('in');void hero.offsetWidth;hero.classList.add('in');clearTimeout(this.heroFxTimer);this.heroFxTimer=setTimeout(()=>hero.classList.remove('in'),900);}
+            }
+        },
+        renderHistory(session){
+            const host=this.panel?.querySelector('#cgc-result-history');if(!host)return;
+            const settings=getSettings(),items=[];
+            const label=kind=>customTaskDefinition(kind,settings)?.name||this.UI_SLOTS.find(v=>v[0]===kind)?.[1]||conversationSlotLabel(kind)||'결과';
+            for(const r of (session.results||[]).slice(0,CGC_HISTORY_LIMIT))items.push({type:'res',at:Number(r.at||0),r});
+            for(const t of session.transmissions||[])items.push({type:'sent',at:Number(t.submittedAt||t.createdAt||0),t});
+            items.sort((a,b)=>b.at-a.at);
+            let day='';
+            const html=items.map((it,i)=>{
+                const d=it.at?cgcDayLabel(it.at):'시간 모름',head=d!==day?(day=d,`<div class="x-day">${d}</div>`):'',time=it.at?cgcHm(it.at):'--:--',full=it.at?new Date(it.at).toLocaleString():'';
+                if(it.type==='sent'){const t=it.t;return `${head}<div class="x-ev sent" style="--i:${i}"><time title="${escapeHtml(full)}">${time}</time><i class="x-dot"></i><div class="x-ev-sent">${this.uiIcon('send')}<span>${escapeHtml(t.displayLabel||toolDisplayLabel(t.toolId)||t.toolId||'작업')} 보냄</span></div></div>`;}
+                const r=it.r,url=persistentConversationUrl(r.conversationUrl||''),key=escapeHtml(cgcHistoryRowId(r)),chips=[];
+                if(r.kind==='usernote'){const n=Number(r.fullTextLength||String(r.text||'').length),limit=r.resultContract?.maxChars||2000;chips.push(`${n.toLocaleString()}자`);if(r.transportStatus==='ok'&&r.status==='complete'&&n<=limit)chips.push(`${limit.toLocaleString()}자 안`);}
+                else if(r.kind==='memory1'){if(!r.resultContract){const count=r.memorySlotCount||cgcValidateMemory1Output(r.text||'').slotCount;if(count)chips.push(`${count}칸`);}if(r.status==='incomplete')chips.push('미완');else if(r.status==='complete')chips.push('완료');}
+                const fresh=this.historyFresh?.has(r.jobId);
+                return `${head}<div class="x-ev res ${fresh?'fresh':''}" style="--i:${i}"><time title="${escapeHtml(full)}">${time}</time><i class="x-dot"></i><div class="x-ev-b"><header><b>${escapeHtml(r.displayLabel||label(r.kind))}</b>${fresh?'<span class="p-new">새 결과</span>':''}<span class="p-chips">${chips.map(escapeHtml).join(', ')}</span></header><p>${escapeHtml(String(r.text||'(본문 없음)').replace(/\s*\n+\s*/g,' ').slice(0,280))}</p><div class="btns"><button class="btn sm" data-ui-action="result-full" data-result-key="${key}">${this.uiIcon('eye')}<span>보기</span></button><button class="btn sm" data-action="copy-result" data-result-key="${key}" data-result-session="${escapeHtml(CrackAdapter.getRouteInfo()?.sessionKey||'')}">${this.uiIcon('copy')}<span>복사</span></button>${url?`<a class="btn sm" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${this.uiIcon('ext')}<span>GPT</span></a>`:''}</div></div></div>`;
+            }).join('');
+            cgcSetUiHtml(host,html||'<div class="empty"><b>아직 기록이 없어요</b><span>작업을 실행하면 여기에 쌓여요.</span></div>');
         },
         refreshDashSummary(session=null) {
             if(!this.panel)return;
             const route=CrackAdapter.getRouteInfo();session=session||(route?cgcUiSession(route.sessionKey):null);
             const cta=this.panel.querySelector('#cgc-audit-cta'),count=this.dashUnsentCount;
-            if(cta){const blocked=!!this.dashAttention;cta.disabled=blocked;cta.classList.toggle('calm',blocked||count===0);cta.querySelector('span').textContent=blocked?'확인 후 진행할 수 있어요':count===0?'그래도 검사하기':'찐빠 검사 시작';}
-            const latest=(session?.transmissions||[]).find(r=>r.toolId==='audit'),time=Number(latest?.submittedAt||latest?.createdAt||0),last=this.panel.querySelector('#cgc-last-audit-time');if(last)last.textContent=time?new Date(time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'아직 없음';
+            // v1.4.1: the CTA is never disabled; the start path explains or resolves whatever is pending.
+            if(cta){cta.disabled=false;const pending=Boolean(session&&getPendingJobId(session)),text=pending?'이전 요청 확인':count===0?'그래도 검사하기':'찐빠 검사',span=cta.querySelector('span');if(span&&span.textContent!==text)span.textContent=text;}
+            const latest=(session?.transmissions||[]).find(r=>r.toolId==='audit'),time=Number(latest?.submittedAt||latest?.createdAt||0),last=this.panel.querySelector('#cgc-last-audit-time');
+            if(last){const text=time?`${cgcHm(time)}, ${cgcAgo(time)}`:'아직 없음';if(last.textContent!==text)last.textContent=text;}
             const sources=this.referenceSnapshot?.sources||{},memory=sources.longMemory,note=sources.userNote,lore=sources.lore;
-            const values={memory:memory?.available&&Number.isFinite(memory.count)?`${memory.count.toLocaleString()}칸`:'—',usernote:note?.available?`${String(note.text||'').length.toLocaleString()}자`:'—',lore:lore?.available&&Number.isFinite(lore.packCount)&&Number.isFinite(lore.count)?`${lore.packCount}팩 · ${lore.count}개`:'—'};
-            for(const [key,value] of Object.entries(values)){const el=this.panel.querySelector(`[data-stat="${key}"]`);if(el)el.textContent=value;}
-            for(const id of ['memory1','memory2']){const el=this.panel.querySelector(`[data-work-count="${id}"]`);if(!el)continue;const has=values.memory!=='—';el.hidden=!has;el.textContent=has?`기억 ${values.memory}`:'';}
+            const values={memory:memory?.available&&Number.isFinite(memory.count)?`${memory.count.toLocaleString()}칸`:'—',usernote:note?.available?`${String(note.text||'').length.toLocaleString()}자`:'—',lore:lore?.available&&Number.isFinite(lore.packCount)?`${lore.packCount}팩`:'—'};
+            for(const [key,value] of Object.entries(values)){const el=this.panel.querySelector(`[data-stat="${key}"]`);if(el&&el.textContent!==value)el.textContent=value;}
         },
         async showResultDetail(resultKey) {
             const room=CrackAdapter.getRouteInfo()?.sessionKey,session=readValue(KEY.state,null)?.sessions?.[room];
             const row=session?.results?.find(r=>cgcHistoryRowId(r)===resultKey);if(!row)return;
-            const snapshot={...row};this.panel.querySelector('#cgc-result-detail')?.remove();
-            const el=document.createElement('section');el.id='cgc-result-detail';el.className='detail-layer';
-            el.setAttribute('role','dialog');el.setAttribute('aria-label','결과 전체 보기');
-            el.innerHTML='<header class="hd"><b>결과 전체 보기</b><button data-ui-action="result-close" aria-label="닫기">'+this.uiIcon('x')+'</button></header><pre class="sc result-full">결과 원문을 읽는 중…</pre><div class="foot"><button class="mn" data-action="copy-result" data-result-key="'+escapeHtml(resultKey)+'" data-result-session="'+escapeHtml(room)+'" disabled>복사</button><button class="mn" data-ui-action="result-close">닫기</button></div>';
-            this.panel.querySelector('.cgc-panel').appendChild(el);el.querySelector('button')?.focus();
+            const snapshot={...row},url=persistentConversationUrl(row.conversationUrl||''),settings=getSettings();
+            const title=row.displayLabel||customTaskDefinition(row.kind,settings)?.name||this.UI_SLOTS.find(v=>v[0]===row.kind)?.[1]||'결과 전체 보기';
+            const el=this.openSheet(title,`<div class="qchips" style="margin:0 0 10px"><span class="tag">${escapeHtml(row.at?`${cgcDayLabel(row.at)} ${cgcHm(row.at)}`:'시간 모름')}</span></div><pre class="pre result-full">결과 원문을 읽는 중…</pre><div class="btns"><button class="btn" data-action="copy-result" data-result-key="${escapeHtml(resultKey)}" data-result-session="${escapeHtml(room)}" disabled>${this.uiIcon('copy')}<span>복사</span></button>${url?`<a class="btn" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${this.uiIcon('ext')}<span>GPT에서 보기</span></a>`:''}</div>`,'cgc-result-detail');
+            if(!el)return;
             try{
                 const text=await cgcReadHistoryBody(snapshot);if(!el.isConnected)return;
                 this.openResultSnapshot={room,key:resultKey,text};
@@ -18652,23 +20037,26 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         resetUiRoom(room){
             if(this.dashReferenceRoom===room)return;
-            this.referenceSnapshot=null;this.dashReferenceRoom=room;this.dashSeenResults=new Set();this.dashUnsentCount=null;this.uiCustomCounts={};
-            this.uiCountRoom='';this.uiCountSeq=Number(this.uiCountSeq||0)+1;this.settingsRenderedKey=null;
-            this.openResultSnapshot=null;this.panel?.querySelector('#cgc-result-detail')?.remove();
+            this.referenceSnapshot=null;this.dashReferenceRoom=room;this.dashSeenResults=new Set();this.historyFresh=new Set();this.dashUnsentCount=null;this.uiCustomCounts={};
+            this.uiCountRoom='';this.uiCountSeq=Number(this.uiCountSeq||0)+1;this.settingsRenderedKey=null;this.heroSubText='';this.roomTurnTotal=0;this.collapseWorkRows();this.storageSel=new Set();
+            this.openResultSnapshot=null;this.closeSheet();
         },
         refreshSettingsLinks(session){
             for(const el of this.panel.querySelectorAll('[data-ui-link]')){
                 const id=el.dataset.uiLink,slot=session?.conversations?.[id],has=Boolean(slot?.url)||(slot?cgcHasPriorSlotHistory(session,id,slot):false);
-                el.querySelector('.dot')?.classList.toggle('no',!slot?.url);
-                const desc=el.querySelector('.b'),text=(id.startsWith('custom-')?'커스텀 · ':'')+(slot?.url?'연결됨 · '+this.slotLedgerSummary(id,slot):has?'주소 없음 · 복구/초기화 가능':'처음 실행하면 연결돼요');
+                el.querySelector('.ldot')?.classList.toggle('on',Boolean(slot?.url));
+                const desc=el.querySelector('.b'),text=slot?.url?'연결됨':has?'주소 없음 · 끊고 새로 시작할 수 있어요':'처음 실행하면 연결돼요';
                 if(desc&&desc.textContent!==text)desc.textContent=text;
                 const button=el.querySelector('[data-action="disconnect-slot"]');if(button)button.disabled=!has;
             }
         },
-        refreshPanel() {
-            if(!this.panel||this.panel.style.display==='none'||!CH.shell.isTabVisible('helper'))return;
+        refreshPanel(known=null) {
+            let raw=known&&typeof known==='object'&&known.sessions?known:readValue(KEY.state,null);
+            this.syncLauncherState(false,raw);
+            const here=CrackAdapter.getRouteInfo();if(here&&this.rememberRoomTitle(here.sessionKey,raw))raw=readValue(KEY.state,null);
+            if(!this.panel||this.panel.style.display==='none')return;
             if(this.panelGestureCleanup){this.panelRefreshDeferred=true;return;}
-            const route=CrackAdapter.getRouteInfo(),room=route?.sessionKey||'',raw=readValue(KEY.state,null),rawSession=raw?.sessions?.[room],settings=getSettings();
+            const route=CrackAdapter.getRouteInfo(),room=route?.sessionKey||'',rawSession=raw?.sessions?.[room],settings=getSettings();
             this.resetUiRoom(room);
             const pending=getPendingJobId(rawSession||{}),receipt=pending?readValue(WebDelivery.key(pending),null):null;
             const waiting=Object.values(rawSession?.conversations||{}).some(slot=>slot?.lastRequestId&&slot.lastAnswerJobId!==slot.lastRequestId);
@@ -18692,7 +20080,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
         async refreshHomeCounts() {
             if(!this.panel)return;const route=CrackAdapter.getRouteInfo();if(!route)return;
-            const seq=this.uiCountSeq=(this.uiCountSeq||0)+1,hero=this.panel.querySelector('#cgc-work-hero'),title=this.panel.querySelector('#cgc-hero-title'),sub=this.panel.querySelector('#cgc-hero-sub');
+            const seq=this.uiCountSeq=(this.uiCountSeq||0)+1,title=this.panel.querySelector('#cgc-hero-title');
             this.dashUnsentCount=null;if(title)title.textContent='—';
             try{
                 const state=getState(),session=getSession(state,route.sessionKey),result=await CrackAdapter.fetchPreviewMessages();
@@ -18702,7 +20090,14 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                     const recovery=cgcRecoverLedgersFromCheckpoint(route.sessionKey,session,slotId,result.messages);if(recovery.changed)recoveredAny=true;
                 }
                 if(recoveredAny)saveState(state);
-                const settings=getSettings(),total=cgcRpTurnCount(result.messages)||result.messages.length;
+                const settings=getSettings(),total=cgcRpTurnCount(result.messages)||result.messages.length,auditSlot=ensureConversationSlot(session,'audit'),auditMode=getToolConversationMode('audit',settings);
+                this.roomTurnTotal=total;
+                let auditPreview;
+                if(auditMode==='fresh_full')auditPreview={ok:true,mode:'fresh_full',turnCount:total,messageCount:result.messages.length,changedCount:0,messages:result.messages};
+                else if(auditMode==='persistent_full')auditPreview={ok:true,mode:'persistent_full',turnCount:total,messageCount:result.messages.length,changedCount:cgcDiffAgainstHashes(result.messages,auditSlot.sent||{},result.complete).changed.length+cgcDiffAgainstHashes(result.messages,auditSlot.sent||{},result.complete).deleted.length,messages:result.messages};
+                else auditPreview=cgcPreviewDeliveryPlan(result.messages,auditSlot,result.complete);
+
+                this.dashUnsentCount=auditPreview.ok?auditPreview.turnCount:null;
                 for(const task of settings.customTasks||[]){
                     const slot=ensureConversationSlot(session,task.id),el=this.panel.querySelector(`[data-custom-count="${task.id}"]`);
                     const mode=getToolConversationMode(task.id,settings);
@@ -18725,105 +20120,85 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                     if(el){el.textContent=label;el.classList.toggle('on',this.uiCustomCounts[task.id].on);}
                 }
 
+                if(title)title.textContent=auditPreview.ok?String(auditPreview.turnCount):'!';
+                {
+                    const sub={set textContent(v){CrackUI.heroSubText=v;}};
+                    if(!auditPreview.ok)sub.textContent=`이어보내기 위치 복구 필요 · 자동 전체 재전송 안 함${auditPreview.changedCount?` · 과거 변경 ${auditPreview.changedCount}건`:''}`;
+                    else if(auditPreview.mode==='fresh_full')sub.textContent=`검사 실행 시 현재 전체 ${total}턴을 새 GPT 대화에 전달해요`;
+                    else if(auditPreview.mode==='persistent_full')sub.textContent=`검사 실행 시 현재 전체 ${total}턴으로 같은 GPT 대화의 기준선을 교체해요`;
+                    else if(auditPreview.mode==='initial')sub.textContent=`첫 검사라 현재 전체 ${auditPreview.turnCount}턴을 기준선으로 전달해요`;
+                    else if(auditPreview.mode==='branch_repair')sub.textContent=`최근 리롤 분기 ${auditPreview.turnCount}턴을 교정 전달해요${auditPreview.changedCount?` · 과거 변경 ${auditPreview.changedCount}건`:''}`;
+                    else if(auditPreview.mode==='tail_repair')sub.textContent=auditPreview.turnCount?`안전한 최근 앵커 뒤 신규 ${auditPreview.turnCount}턴을 전달해요`:'전달 위치를 복구했고 새 로그는 없어요';
+                    else if(auditPreview.turnCount)sub.textContent=`검사를 시작하면 신규 ${auditPreview.turnCount}턴이 전달돼요${auditPreview.changedCount?` · 과거 변경 ${auditPreview.changedCount}건은 별도 정합성 경고`:''}`;
+                    else sub.textContent=auditPreview.changedCount?`새 로그는 없고 과거 변경 ${auditPreview.changedCount}건이 감지됐어요. 자동 전체 재전송은 하지 않아요.`:'전부 전달됐어요. 새 대화가 쌓이면 알려드릴게요';
+                }
                 this.uiCountVersion=Number(this.uiCountVersion||0)+1;
-                this.refreshDashSummary(session);this.refreshPanel();
+                this.renderAuditTargetOptions(result.messages);this.refreshDashSummary(session);this.refreshPanel();
             }catch{
-                if(seq===this.uiCountSeq){if(title)title.textContent='—';if(sub)sub.textContent='대화를 확인하지 못했어요. 로그인과 연결 상태를 확인해 주세요.';}
+                if(seq===this.uiCountSeq){if(title)title.textContent='—';this.heroSubText='대화를 확인하지 못했어요. 크랙 로그인과 연결 상태를 확인해 주세요.';this.lastPanelStamp='';this.refreshPanel();}
             }
-        },
-        inspectorDiagnostics(session){
-            const rows=[];
-            for(const [id,slot] of Object.entries(session?.conversations||{})){
-                if(!slot?.lastInspector)continue;
-                const x=slot.lastInspector;
-                rows.push([
-                    `[${conversationSlotLabel(id)}] ${new Date(Number(x.at||Date.now())).toLocaleString()}`,
-                    `mode=${x.conversationMode||'-'} sync=${x.syncOp||'-'} run=${x.runMode||'-'} sent=${Number(x.sentMessages||0)} payload=${Number(x.payloadChars||0)}`,
-                    `coverage=${x.rawCoverage||'-'}/${x.coverageQuality||'-'} acquisition=${x.acquisitionComplete?'yes':'no'} evidence=${x.taskEvidenceComplete?'yes':'no'}`,
-                    `target=${shortConversationId(x.targetUrl||'')||x.targetUrl||'-'}`,
-                    x.note?`note=${x.note}`:'',
-                ].filter(Boolean).join('\n'));
-            }
-            return rows.join('\n\n')||'아직 기록된 전송 진단이 없어요.';
-        },
-
-        slotLedgerSummary(slotId,slot){
-            if(!slot)return '저장 기준 없음';
-            const sent=Object.keys(slot.sent||{}).length;
-            if(slotId==='memory1'){
-                const done=Object.keys(slot.memory1State?.processedHashes||{}).length;
-                const cp=cgcReadRoomCheckpoint(CrackAdapter.getRouteInfo()?.sessionKey||'')?.slots?.[slotId];
-                const cpDone=Number(cp?.memory1?.processed?.count||0),cpSent=Number(cp?.sent?.count||0);
-                const ts=cgcNormalizeTransportState(slot.transportState),ig=slot.integrityState||{};return `GPT 전달 ${sent}메시지 · 커서 ${ts.deliveredCount} · r${ts.revision}${ts.initialized?'':'(미초기화)'} · 결과 반영 ${done}메시지${ig.status==='stale'?` · 과거변경 ${Number(ig.changedCount||0)+Number(ig.deletedCount||0)}건`:''}`;
-            }
-            if(slotId==='usernote'){
-                const done=Object.keys(slot.usernoteState?.processedHashes||{}).length;
-                const cp=cgcReadRoomCheckpoint(CrackAdapter.getRouteInfo()?.sessionKey||'')?.slots?.[slotId];
-                const cpDone=Number(cp?.usernote?.processed?.count||0),cpSent=Number(cp?.sent?.count||0);
-                const ts=cgcNormalizeTransportState(slot.transportState),ig=slot.integrityState||{};return `GPT 전달 ${sent}메시지 · 커서 ${ts.deliveredCount} · r${ts.revision}${ts.initialized?'':'(미초기화)'} · 줄거리 반영 ${done}메시지${ig.status==='stale'?` · 과거변경 ${Number(ig.changedCount||0)+Number(ig.deletedCount||0)}건`:''}`;
-            }
-            const cp=cgcReadRoomCheckpoint(CrackAdapter.getRouteInfo()?.sessionKey||'')?.slots?.[slotId];
-            const ts=cgcNormalizeTransportState(slot.transportState),ig=slot.integrityState||{};return `GPT 전달 ${sent}메시지 · 커서 ${ts.deliveredCount} · r${ts.revision} · ${ts.cursorStatus}${ig.status==='stale'?` · 과거변경 ${Number(ig.changedCount||0)+Number(ig.deletedCount||0)}건`:''}`;
         },
 
         renderDataView() {
             const main=this.panel?.querySelector('#cgc-data-main'),preview=this.panel?.querySelector('#cgc-data-preview');if(main)main.hidden=this.dataPreviewOpen;if(preview)preview.hidden=!this.dataPreviewOpen;
-            const select=this.panel?.querySelector('#cgc-preview-slot');if(select)select.value=['qa','advisor'].includes(this.referenceStatusSlot)?this.referenceStatusSlot:'qa';
+            const select=this.panel?.querySelector('#cgc-preview-slot');if(select)select.value=['audit','qa'].includes(this.referenceStatusSlot)?this.referenceStatusSlot:'audit';
             this.renderReferenceCards();
         },
+        SOURCE_ICON: Object.freeze({profile:'user',userNote:'note',shortMemory:'hourglass',longMemory:'mem',lore:'lore'}),
         renderReferenceCards(session=undefined) {
-            const grid=this.panel?.querySelector('#cgc-source-grid');if(!grid||this.activeTab!=='data')return;const settings=getSettings(),route=CrackAdapter.getRouteInfo(),viewSession=session===undefined?(route?cgcUiSession(route.sessionKey):null):session,slot=viewSession?ensureConversationSlot(viewSession,['qa','advisor'].includes(this.referenceStatusSlot)?this.referenceStatusSlot:'qa'):null;
-            cgcSetUiHtml(grid,Object.entries(SOURCE_META).map(([key,meta])=>{const src=this.referenceSnapshot?.sources?.[key],enabled=settings[meta.setting]!==false;
-                let detail=!src?'아직 확인 전':!src.available?'읽기 실패':key==='lore'&&src.packCount!=null?`${src.packCount}팩 · ${src.count||0}개`:key==='longMemory'||key==='shortMemory'?`${src.count||0}개`:`${(src.text||'').length.toLocaleString()}자`;
+            const grid=this.panel?.querySelector('#cgc-source-grid');if(!grid||this.activeTab!=='data')return;const settings=getSettings(),route=CrackAdapter.getRouteInfo(),viewSession=session===undefined?(route?cgcUiSession(route.sessionKey):null):session,slot=viewSession?ensureConversationSlot(viewSession,['audit','qa'].includes(this.referenceStatusSlot)?this.referenceStatusSlot:'audit'):null;
+            const entries=Object.entries(SOURCE_META);let on=0;
+            cgcSetUiHtml(grid,entries.map(([key,meta],i)=>{const src=this.referenceSnapshot?.sources?.[key],enabled=settings[meta.setting]!==false;if(enabled)on++;
+                const detail=!src?'아직 확인 전':!src.available?'읽기 실패':key==='lore'&&src.packCount!=null?`${src.packCount}팩, ${src.count||0}개`:key==='longMemory'||key==='shortMemory'?`${src.count||0}개`:`${(src.text||'').length.toLocaleString()}자`;
                 const changed=src?.available&&slot?.contextHashes?.[key]&&slot.contextHashes[key]!==src.hash;
-                return `<div class="src"><div class="tx"><button class="plain a" data-ui-action="preview" data-source="${key}">${escapeHtml(meta.label)}</button><div class="b"><span class="chip">${escapeHtml(detail)}</span>${changed?'<span class="chip on">전송 이후 바뀜</span>':''}${!enabled?'<span class="chip">보내지 않음</span>':''}</div></div>${this.uiSwitch('',enabled,`${meta.label} 포함`,key)}</div>`;
-            }).join(''));this.refreshDashSummary(viewSession);
+                return `<div class="x-tr ${enabled?'on':''}" style="--i:${i}"><button class="x-tr-m" data-ui-action="preview" data-source="${key}"><span class="ic">${this.AI_ICONS[this.SOURCE_ICON[key]]?this.aIcon(this.SOURCE_ICON[key]):this.uiIcon(this.SOURCE_ICON[key]||'note')}<svg class="slash" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5 5l14 14"/></svg><svg class="okb" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path d="M4.8 8.3l2.1 2.1 4.3-4.6"/></svg></span><span class="x-rt"><b>${escapeHtml(meta.label)}</b><span>${escapeHtml(detail)}${changed?', 보낸 뒤 바뀜':''}</span></span></button>${this.uiSwitch('',enabled,`${meta.label} 보내기`,key)}</div>`;
+            }).join(''));
+            const count=this.panel.querySelector('#cgc-source-count');if(count)count.textContent=`${on}/${entries.length}개 켜짐`;
+            this.refreshDashSummary(viewSession);
         },
+        storageSummaryLabel(){const u=cgcStorageUsage(),rooms=u.rooms.filter(r=>r.hasData).length;return `방 ${rooms}개, ${cgcSizeLabel(u.total)}`;},
         renderSettingsView(force=false) {
             const host=this.panel?.querySelector('#cgc-settings-content');if(!host)return;
             const key=(CrackAdapter.getRouteInfo()?.sessionKey||'')+':'+this.settingsView+':'+this.editingPromptKey;if(!force&&this.settingsRenderedKey===key)return;
             this.settingsRenderedKey=key;const s=getSettings(),route=CrackAdapter.getRouteInfo(),session=route?getSession(getState(),route.sessionKey):null;
-            const seg=(id,value,labels)=>this.uiSegment(id,value,labels),nav=(label,view)=>`<button class="r navrow" data-ui-action="settings-view" data-view="${view}"><span class="tt a">${label}</span>${this.uiIcon('chev','sm')}</button>`;
+            const ic=name=>this.uiIcon(name),seg=(id,value,labels)=>this.uiSegment(id,value,labels);
+            const nav=(view,label,icon,sub='')=>`<button class="srow navrow" data-ui-action="settings-view" data-view="${view}"><span class="s-ic">${ic(icon)}</span><span class="stx"><b>${label}</b>${sub?`<span>${escapeHtml(sub)}</span>`:''}</span>${this.uiIcon('chev','chev')}</button>`;
+            const row=(title,desc,control)=>`<div class="srow"><span class="stx"><b>${title}</b>${desc?`<span>${desc}</span>`:''}</span>${control}</div>`;
+            const group=(title,inner,i=0)=>`<section class="sgroup" style="--i:${i}"><h4>${title}</h4><div class="sbox">${inner}</div></section>`;
             let html='';
             if(!this.settingsView){
-                html=`<div class="pane-t">설정</div><p class="pane-s">보내는 방법과 지침을 내 방식대로</p><div class="gt"><b>보내는 방식</b></div><div class="grp"><div class="r col2"><div class="tt"><div class="a">기본 방식</div><div class="b">${s.policyPreset==='custom'?'작업별로 따로 정해져 있어요':'작업별 대화 방식에 함께 적용합니다'}</div></div>${seg('cgc-policy-preset',s.policyPreset||'recommended',{recommended:'이어보내기',full:'전체 다시',fresh:'매번 새 세션'})}</div><div class="r col2"><div class="a">GPT 창 여는 법</div>${seg('cgc-open-mode',s.openMode||'popup',{popup:'작은 창',tab:'새 탭'})}${CGC_PLATFORM.mobile?'<div class="b">모바일에서는 새 탭으로 엽니다.</div>':''}</div>${nav('작업마다 따로 정하기','policy')}</div><div class="gt"><b>편의</b></div><div class="grp"><div class="r"><div class="tt a">GPT 대화 이름 자동 정리</div>${this.uiSwitch('cgc-auto-rename-chat',s.autoRenameChatTitles!==false,'대화 이름 자동 정리')}</div><div class="r"><div class="tt"><div class="a">열린 GPT 창 재사용</div><div class="b">같은 대화 확인 또는 같은 방·작업의 전송에만 재사용해요</div></div>${this.uiSwitch('cgc-background-relay',s.backgroundRelay!==false,'열린 GPT 창 재사용')}</div></div><div class="gt"><b>연결된 GPT 대화</b></div>${this.UI_SLOTS.map(([id,label])=>{const slot=session?.conversations?.[id],hasHistory=Boolean(slot?.url)||(slot?cgcHasPriorSlotHistory(session,id,slot):false);return `<div class="link" data-ui-link="${id}"><span class="dot ${slot?.url?'':'no'}"></span><div class="tt"><div class="a">${label}</div><div class="b">${slot?.url?`연결됨 · ${escapeHtml(this.slotLedgerSummary(id,slot))}`:hasHistory?'주소 없음 · 복구/초기화 가능':'처음 실행하면 연결돼요'}</div></div><button class="mn" data-action="open-slot" data-slot="${id}">열기</button><button class="x" data-action="disconnect-slot" data-slot="${id}" aria-label="${label} 연결 끊기" ${hasHistory?'':'disabled'}>${this.uiIcon('x','sm')}</button></div>`;}).join('')}${(s.customTasks||[]).map(task=>{const slot=session?.conversations?.[task.id],hasHistory=Boolean(slot?.url)||(slot?cgcHasPriorSlotHistory(session,task.id,slot):false);return `<div class="link" data-ui-link="${escapeHtml(task.id)}"><span class="dot ${slot?.url?'':'no'}"></span><div class="tt"><div class="a">${escapeHtml(task.name)}</div><div class="b">커스텀 · ${slot?.url?`연결됨 · ${escapeHtml(this.slotLedgerSummary(task.id,slot))}`:hasHistory?'주소 없음 · 복구/초기화 가능':'처음 실행하면 연결돼요'}</div></div><button class="mn" data-action="open-slot" data-slot="${escapeHtml(task.id)}">열기</button><button class="x" data-action="disconnect-slot" data-slot="${escapeHtml(task.id)}" aria-label="${escapeHtml(task.name)} 연결 끊기" ${hasHistory?'':'disabled'}>${this.uiIcon('x','sm')}</button></div>`;}).join('')}<div class="gt"><b>더 보기</b></div><div class="grp">${nav('지침','prompts')}${nav('커스텀 작업','customTasks')}${nav('고급 설정','advanced')}${nav('문제 해결 · Q&A','troubleshooting')}</div><button class="plain danger" data-action="resync">${this.uiIcon('alert','sm')}<span>현재 방 CGC 기록 완전 초기화</span></button><p class="hint-text">AI 컴패니언 v${APP.version} · 크랙 도우미 v${CH.VERSION}</p>`;
+                const link=(id,label)=>{const slot=session?.conversations?.[id],has=Boolean(slot?.url)||(slot?cgcHasPriorSlotHistory(session,id,slot):false),eid=escapeHtml(id);return `<div class="srow link" data-ui-link="${eid}"><span class="ldot ${slot?.url?'on':''}"></span><span class="stx"><b>${escapeHtml(label)}</b><span class="b">${slot?.url?'연결됨':has?'주소 없음 · 끊고 새로 시작할 수 있어요':'처음 실행하면 연결돼요'}</span></span><button class="btn sm" data-action="open-slot" data-slot="${eid}">열기</button><button class="icon-btn" data-action="disconnect-slot" data-slot="${eid}" aria-label="${escapeHtml(label)} 연결 끊기" ${has?'':'disabled'}>${ic('unlink')}</button></div>`;};
+                const edited=this.UI_PROMPTS.filter(([k])=>s[k]!==DEFAULT_SETTINGS[k]).length;
+                html=group('보내는 방식',row('기본 방식',s.policyPreset==='custom'?'작업마다 따로 정해져 있어요':'매번 새로 온 부분만, 또는 전체를',this.uiPresetControl(s.policyPreset||'recommended'))+row('GPT 창',CGC_PLATFORM.mobile?'모바일은 항상 새 탭':'작은 창 또는 새 탭',seg('cgc-open-mode',s.openMode||'popup',{popup:'작은 창',tab:'새 탭'}))+nav('policy','작업마다 따로 정하기','sliders','5개 작업과 로어'),0)
+                    +group('편의',row('대화 이름 자동 정리','GPT 대화 제목을 방 이름에 맞춰요',this.uiSwitch('cgc-auto-rename-chat',s.autoRenameChatTitles!==false,'대화 이름 자동 정리'))+row('열린 GPT 창 다시 쓰기','같은 방, 같은 작업이면 새로 열지 않아요',this.uiSwitch('cgc-background-relay',s.backgroundRelay!==false,'열린 GPT 창 다시 쓰기'))+row('위쪽 알림 팝업','끄면 입력창 버튼에만 표시돼요',this.uiSwitch('cgc-island-notices',s.islandNotices!==false,'위쪽 알림 팝업')),1)
+                    +group('연결된 GPT 대화',[...this.UI_SLOTS.map(([id,label])=>link(id,label)),...(s.customTasks||[]).map(task=>link(task.id,task.name))].join(''),2)
+                    +group('더 보기',nav('prompts','지침','note',edited?`${edited}개 직접 고침`:'모두 기본값')+nav('customTasks','커스텀 작업','spark',`${(s.customTasks||[]).length}개`)+nav('advanced','고급 설정','gear','대화 갱신, 로어 나누기 기준')+nav('storage','저장된 데이터','data',this.storageSummaryLabel())+nav('troubleshooting','문제 해결','help','자주 막히는 상황'),3)
+                    +`<div class="s-end"><button class="link-btn danger" data-action="resync">${this.aIcon('trash')}<span>이 방 기록 초기화</span></button><span class="ver">v${APP.version}</span></div>`;
             }else if(this.settingsView==='troubleshooting'){
                 html=CgcTroubleshooting.html();
+            }else if(this.settingsView==='storage'){
+                html=this.storageView();
             }else if(this.settingsView==='policy'){
-                html='<p class="pane-s">작업별로 대화와 창을 여는 방식을 정해요.</p>'+this.UI_SLOTS.map(([id,label])=>`<div class="gt"><b>${label}</b></div><div class="grp"><div class="r col2">${seg(`cgc-policy-${id}-conversation`,s[`${id}ConversationMode`],id==='memory2'?{persistent_full:'전체 다시',fresh_full:'매번 새 세션'}:this.MODE_LABEL)}${seg(`cgc-policy-${id}-open`,s[`${id}OpenMode`]||'inherit',this.OPEN_LABEL)}</div></div>`).join('')+`<div class="gt"><b>로어 만들기</b></div><div class="grp"><div class="r col2"><div class="b">조각마다 새 GPT 대화를 사용합니다.</div>${seg('cgc-policy-lore-open',s.loreOpenMode||'inherit',this.OPEN_LABEL)}</div></div>`;
+                html='<p class="lead">작업마다 보내는 범위와 GPT 창 여는 방법을 정해요.</p>'+this.UI_SLOTS.map(([id,label],i)=>`<section class="sgroup" style="--i:${i}"><h4>${label}</h4><div class="sbox"><div class="srow">${seg(`cgc-policy-${id}-conversation`,s[`${id}ConversationMode`],id==='memory2'?{persistent_full:'전체 다시',fresh_full:'매번 새로'}:this.MODE_LABEL)}${seg(`cgc-policy-${id}-open`,s[`${id}OpenMode`]||'inherit',this.OPEN_LABEL)}</div></div></section>`).join('')+`<section class="sgroup"><h4>로어 만들기</h4><div class="sbox"><div class="srow"><span class="stx"><span>조각마다 새 GPT 대화를 써요</span></span>${seg('cgc-policy-lore-open',s.loreOpenMode||'inherit',this.OPEN_LABEL)}</div></div></section>`;
             }else if(this.settingsView==='prompts'){
-                html='<p class="pane-s">수정할 지침을 선택하세요.</p><div class="grp">'+this.UI_PROMPTS.map(([k,label])=>`<button class="r navrow" data-ui-action="settings-view" data-view="promptEdit" data-prompt="${k}"><span class="tt"><span class="a">${label}</span><span class="b">${s[k]===DEFAULT_SETTINGS[k]?'기본값 그대로':'직접 고침'}</span></span>${this.uiIcon('chev','sm')}</button>`).join('')+'</div>';
+                html='<p class="lead">고칠 지침을 골라요. 직접 고친 지침에는 표시가 붙어요.</p><div class="sbox">'+this.UI_PROMPTS.map(([k,label])=>`<button class="srow navrow" data-ui-action="settings-view" data-view="promptEdit" data-prompt="${k}"><span class="stx"><b>${label}</b></span><span class="tag ${s[k]===DEFAULT_SETTINGS[k]?'':'on'}">${s[k]===DEFAULT_SETTINGS[k]?'기본값':'직접 고침'}</span>${this.uiIcon('chev','chev')}</button>`).join('')+'</div>';
             }else if(this.settingsView==='promptEdit'){
                 const [k,label,id]=this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey);
                 // Keep large prompt bodies out of innerHTML parsing; assign textarea.value after the DOM exists.
-                html=`<label class="pane-s" for="${id}">${label}에만 사용하는 지침</label><textarea class="ta" id="${id}" spellcheck="false"></textarea><div class="tarow"><small id="cgc-prompt-count"></small><button class="mn" data-ui-action="prompt-default">기본값으로</button></div>${['askPrompt','advisorPrompt'].includes(k)?`<div class="gt"><b>사용할 참고자료</b></div><div class="cgc-task-sources" data-task-source-list="${k==='advisorPrompt'?'advisor':'ask'}"></div>`:''}`;
+                html=`<div class="fld"><label for="${id}">${label}에만 쓰는 지침</label><textarea class="ta" id="${id}" spellcheck="false"></textarea></div><div class="tarow"><small id="cgc-prompt-count"></small><button class="btn sm" data-ui-action="prompt-default">기본값으로</button></div>${['auditPrompt','askPrompt'].includes(k)?`<section class="sgroup"><h4>함께 보낼 참고자료</h4><div class="cgc-task-sources" data-task-source-list="${k==='auditPrompt'?'audit':'ask'}"></div></section>`:''}`;
             }else if(this.settingsView==='customTasks'){
-                const tasks=s.customTasks||[];html=`<div class="pane-head"><div class="head-tx"><p class="pane-s">원하는 지침을 직접 만들면 작업 홈에 전용 슬롯으로 추가돼요.</p></div><button class="mn sm key" data-ui-action="custom-new">+ 새 작업</button></div>${tasks.length?`<div class="grp">${tasks.map(task=>{const slot=session?.conversations?.[task.id],mode=this.MODE_LABEL[task.conversationMode]||'이어보내기';return `<div class="r"><div class="tt"><div class="a">${escapeHtml(task.name)}</div><div class="b">${escapeHtml(mode)} · 참고자료 ${(task.sources||[]).length}개${slot?.url?' · 현재 방 GPT 연결됨':''}</div></div><button class="mn" data-ui-action="custom-edit" data-custom-id="${escapeHtml(task.id)}">수정</button>${slot?.url?`<button class="mn" data-action="open-slot" data-slot="${escapeHtml(task.id)}">GPT</button>`:''}</div>`;}).join('')}</div>`:'<div class="empty"><b>아직 커스텀 작업이 없어요</b><span>지침 하나만 만들어도 홈에서 바로 실행할 수 있어요.</span></div>'}`;
+                const tasks=s.customTasks||[];
+                html=`<div class="lead-row"><p class="lead">지침을 직접 만들면 작업 목록에 전용 칸이 생겨요.</p><button class="btn sm key" data-ui-action="custom-new">${ic('plus')}<span>새 작업</span></button></div>${tasks.length?`<div class="sbox">${tasks.map(task=>{const slot=session?.conversations?.[task.id],mode=this.MODE_LABEL[task.conversationMode]||'이어보내기';return `<div class="srow"><span class="s-ic">${ic('spark')}</span><span class="stx"><b>${escapeHtml(task.name)}</b><span>${escapeHtml(mode)}, 참고자료 ${(task.sources||[]).length}개${slot?.url?', GPT 연결됨':''}</span></span><button class="btn sm" data-ui-action="custom-edit" data-custom-id="${escapeHtml(task.id)}">${ic('pencil')}<span>수정</span></button></div>`;}).join('')}</div>`:'<div class="empty"><b>아직 커스텀 작업이 없어요</b><span>지침 하나만 만들어도 바로 실행할 수 있어요.</span></div>'}`;
             }else if(this.settingsView==='customEdit'){
                 const task=customTaskDefinition(this.editingCustomTaskId,s),isNew=!task,name=task?.name||'',sources=new Set(task?.sources||[]),conversationMode=task?.conversationMode||'persistent_incremental',openMode=task?.openMode||'inherit';
-                html=`<label class="urlfield"><span>작업 이름</span><input class="ui-input" id="cgc-custom-name" maxlength="48" value="${escapeHtml(name)}" placeholder="예: 관계성 분석"></label><label class="pane-s" for="cgc-custom-prompt">이 작업에만 사용할 지침</label><textarea class="ta" id="cgc-custom-prompt" spellcheck="false"></textarea><div class="gt"><b>보낼 자료</b></div><p class="hint-text">RP 로그는 항상 포함돼요. 아래 참고자료만 추가로 고릅니다.</p><div class="cgc-task-sources">${REFERENCE_SOURCE_KEYS.map(key=>{const enabled=isSourceGloballyEnabled(key,s),label=SOURCE_LABEL[key]||key;return `<label class="cgc-task-source" title="${enabled?'이 작업에 추가':'자료 탭에서 전체 제외됨'}"><input type="checkbox" data-custom-source="${key}" ${sources.has(key)?'checked':''} ${enabled?'':'disabled'}>${escapeHtml(label)}</label>`;}).join('')}</div><div class="gt"><b>대화 방식</b></div>${seg('cgc-custom-conversation',conversationMode,this.MODE_LABEL)}<div class="gt"><b>GPT 창</b></div>${seg('cgc-custom-open',openMode,this.OPEN_LABEL)}${!isNew?`<button class="plain danger" data-ui-action="custom-delete" data-custom-id="${escapeHtml(task.id)}">${this.uiIcon('alert','sm')}<span>이 커스텀 작업 삭제</span></button>`:''}`;
+                html=`<label class="fld"><span>작업 이름</span><input id="cgc-custom-name" maxlength="48" value="${escapeHtml(name)}" placeholder="예: 관계성 분석"></label><div class="fld"><label for="cgc-custom-prompt">이 작업에만 쓰는 지침</label><textarea class="ta" id="cgc-custom-prompt" spellcheck="false" placeholder="GPT에게 시킬 일을 적어요"></textarea></div><div class="fld"><span>함께 보낼 자료</span><small>RP 로그는 항상 들어가요. 참고자료만 더 고를 수 있어요.</small><div class="cgc-task-sources">${REFERENCE_SOURCE_KEYS.map(key=>{const enabled=isSourceGloballyEnabled(key,s),label=SOURCE_LABEL[key]||key;return `<label class="cgc-task-source" title="${enabled?'이 작업에 넣기':'자료 탭에서 꺼져 있어요'}"><input type="checkbox" data-custom-source="${key}" ${sources.has(key)?'checked':''} ${enabled?'':'disabled'}>${escapeHtml(label)}</label>`;}).join('')}</div></div><div class="fld"><span>보내는 방식</span>${seg('cgc-custom-conversation',conversationMode,this.MODE_LABEL)}</div><div class="fld"><span>GPT 창</span>${seg('cgc-custom-open',openMode,this.OPEN_LABEL)}</div>${!isNew?`<button class="link-btn danger" data-ui-action="custom-delete" data-custom-id="${escapeHtml(task.id)}">${this.aIcon('trash')}<span>이 작업 삭제</span></button>`:''}`;
             }else if(this.settingsView==='advanced'){
-                html=`<p class="pane-s">대부분 기본값 그대로 쓰면 됩니다. 오래 이어지는 GPT 작업을 안전하게 갱신하거나 큰 로그를 나누는 기준이에요.</p>
-                <div class="gt"><b>대화 갱신 기준</b></div>
-                <p class="settings-help">이어보내기는 <b>실제로 GPT에 전달 완료된 커서 이후의 RP만</b> 보냅니다. 과거 RP 수정/삭제나 lease 만료는 자동 전체 재전송 사유가 아니라 정합성 상태로만 기록합니다. 커서를 안전하게 찾지 못하면 0턴부터 보내지 않고 중단합니다. 전송 위치는 방 ID별 영구 상태와 체크포인트에 기록됩니다.</p>
-                <div class="grp">
-                    ${this.uiStep('cgc-lease-requests','요청 횟수',s.leaseMaxRequests,5,5,'','기준선을 만든 뒤 이어서 보낸 작업 횟수')}
-                    ${this.uiStep('cgc-lease-chars','누적 글자수',s.leaseMaxAppendedChars,20000,20000,'','기준선 이후 새로 보낸 RP 원문의 누적 길이')}
-                    ${this.uiStep('cgc-lease-hours','경과 시간',s.leaseMaxHours,1,6,'','현재 기준선을 만든 뒤 지난 시간')}
-                </div>
-                <div class="gt"><b>로그 확인 안전 기준</b></div>
-                <div class="grp">${this.uiStep('cgc-scan-safe-chars','안전 확인 글자수',s.scanSafeChars,4000,2000,'','전체 현재 로그가 이 길이 이하일 때 부재 판정을 더 신뢰합니다')}</div>
-                <div class="gt"><b>로어 분할</b></div>
-                <div class="grp">${this.uiStep('cgc-lore-target-chars','로어 조각 RP 목표 글자수',s.loreTargetChars,30000,10000,220000,'USER→ASSISTANT 턴 경계를 유지하며 한 조각의 RP 원문을 약 20만자로 맞춥니다')}</div>
-                <div class="gt"><b>유저노트 사용 방식</b></div>
-                <p class="settings-help">Crack 유저노트는 <b>로그 질문·RP 조언</b>에서 사용자 작성 혼합 참고자료로 통째로 읽습니다. 설정·금지·AI 지침·줄거리 메모의 성격을 구분해 사용하며, 실제 RP 사건은 원문 로그를 우선합니다. <b>장기기억 1차·2차와 유저노트 줄이기에는 현재 Crack 유저노트를 보내지 않습니다.</b> 포함 여부는 참고자료 탭의 유저노트 스위치로 정합니다.</p>
-                <div class="gt"><b>새 대화에 사용할 GPT</b></div>
-                <label class="urlfield"><span>공통 시작 주소 · 연결된 대화 주소와 별개</span><input class="ui-input" type="url" id="cgc-gpt-url" value="${escapeHtml(getConfiguredGptUrl(s)||'')}" placeholder="https://chatgpt.com/"></label>
-                <div class="gt"><b>연결된 대화 주소 직접 입력</b></div>
-                ${this.UI_SLOTS.map(([id,label])=>{const value=session?.conversations?.[id]?.url||'';return `<label class="urlfield"><span>${label}</span><input class="ui-input" type="url" id="cgc-slot-${id}-url" value="${escapeHtml(value||'')}" placeholder="https://chatgpt.com/c/..."></label>`;}).join('')}
-                ${(s.customTasks||[]).map(task=>{const value=session?.conversations?.[task.id]?.url||'';return `<label class="urlfield"><span>${escapeHtml(task.name)} · 커스텀</span><input class="ui-input" type="url" data-custom-slot-url="${escapeHtml(task.id)}" value="${escapeHtml(value||'')}" placeholder="https://chatgpt.com/c/..."></label>`;}).join('')}
-                <p class="hint-text">주소를 비워도 기존 연결은 끊지 않아요. 기존 전달 기록이 있는 슬롯의 /c/... 주소를 다른 대화로 바꾸면, 그 새 대화가 기존 기준선을 이미 가진 대화인지 명시 확인을 요구합니다. 완전히 새 대화로 시작하려면 설정 메인의 연결 끊기를 먼저 사용하세요.</p>
-                <details class="more"><summary>최근 전송 진단</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.5">${escapeHtml(this.inspectorDiagnostics(session))}</pre></details>`;
+                html=`<p class="lead">대부분 기본값 그대로 두면 돼요. 오래 이어진 GPT 대화를 새로 시작하는 기준과 큰 로그를 나누는 기준이에요.</p>
+                <section class="sgroup"><h4>대화 갱신 기준</h4><p class="help">이어보내기는 GPT에 실제로 전달된 곳 다음부터만 보내요. 보낼 위치를 못 찾으면 처음부터 다시 보내지 않고 멈춰요.</p><div class="sbox">${this.uiStep('cgc-lease-requests','보낸 횟수',s.leaseMaxRequests,5,5,'','이만큼 이어 보내면 기준을 새로 만들어요')}${this.uiStep('cgc-lease-chars','누적 글자 수',s.leaseMaxAppendedChars,20000,20000,'','기준을 만든 뒤 보낸 RP 길이')}${this.uiStep('cgc-lease-hours','지난 시간',s.leaseMaxHours,1,6,'','기준을 만든 뒤 지난 시간')}</div></section>
+                <section class="sgroup"><h4>검사와 로어</h4><div class="sbox">${this.uiStep('cgc-scan-safe-chars','안전 확인 글자 수',s.scanSafeChars,4000,2000,'','로그가 이보다 짧으면 판정을 더 믿어요')}${this.uiStep('cgc-lore-target-chars','로어 조각 크기',s.loreTargetChars,30000,10000,220000,'한 조각에 담는 RP 글자 수')}</div></section>
+                <section class="sgroup"><h4>유저노트 쓰는 곳</h4><p class="help">크랙 유저노트는 <b>검사·질문</b>에서만 참고자료로 써요. 장기기억과 유저노트 줄이기에는 보내지 않아요. 넣을지는 자료 탭에서 정해요.</p></section>
+                <section class="sgroup"><h4>새 대화에 쓸 GPT</h4><label class="urlfield"><span>시작 주소</span><input type="url" id="cgc-gpt-url" value="${escapeHtml(getConfiguredGptUrl(s)||'')}" placeholder="https://chatgpt.com/"></label></section>
+                <section class="sgroup"><h4>연결된 대화 주소 직접 넣기</h4>${this.UI_SLOTS.map(([id,label])=>{const value=session?.conversations?.[id]?.url||'';return `<label class="urlfield"><span>${label}</span><input type="url" id="cgc-slot-${id}-url" value="${escapeHtml(value||'')}" placeholder="https://chatgpt.com/c/..."></label>`;}).join('')}${(s.customTasks||[]).map(task=>{const value=session?.conversations?.[task.id]?.url||'';return `<label class="urlfield"><span>${escapeHtml(task.name)} (커스텀)</span><input type="url" data-custom-slot-url="${escapeHtml(task.id)}" value="${escapeHtml(value||'')}" placeholder="https://chatgpt.com/c/..."></label>`;}).join('')}<p class="hint">비워 두면 지금 연결은 그대로예요. 전달 기록이 있는 작업의 주소를 바꾸면 한 번 더 확인해요. 완전히 새로 시작하려면 설정에서 연결을 먼저 끊으세요.</p></section>`;
             }
             host.innerHTML=html;
             if(this.settingsView==='promptEdit'){
@@ -18834,9 +20209,86 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const task=customTaskDefinition(this.editingCustomTaskId,s),input=host.querySelector('#cgc-custom-prompt');if(input)input.value=String(task?.prompt||'');
             }
             const footer=this.panel.querySelector('#cgc-settings-footer');
-            footer.hidden=['prompts','customTasks','troubleshooting'].includes(this.settingsView);
-            footer.innerHTML=this.settingsView==='promptEdit'?'<button class="mn" data-ui-action="settings-view" data-view="prompts">취소</button><button class="mn key" data-ui-action="prompt-save">저장</button>':this.settingsView==='customEdit'?'<button class="mn" data-ui-action="settings-view" data-view="customTasks">취소</button><button class="mn key" data-ui-action="custom-save">저장</button>':'<button class="mn key" data-action="save-settings">설정 저장</button>';
+            if(footer){
+                footer.hidden=this.activeTab!=='settings'||['prompts','customTasks','troubleshooting','storage'].includes(this.settingsView);
+                footer.innerHTML=this.settingsView==='promptEdit'?'<button class="btn" data-ui-action="settings-view" data-view="prompts">취소</button><button class="btn key" data-ui-action="prompt-save">저장</button>':this.settingsView==='customEdit'?'<button class="btn" data-ui-action="settings-view" data-view="customTasks">취소</button><button class="btn key" data-ui-action="custom-save">저장</button>':'<button class="btn key" data-action="save-settings">설정 저장</button>';
+            }
             this.renderTaskSourceSettings();this.updatePromptCount();this.refreshHeader();
+        },
+        storageView(){
+            const u=cgcStorageUsage(),sel=this.storageSel||(this.storageSel=new Set()),sort=this.storageSort||'recent',now=Date.now(),DAY=864e5;
+            const rooms=u.rooms.filter(r=>r.hasData||r.current);
+            for(const key of [...sel])if(!rooms.some(r=>r.key===key&&r.hasData))sel.delete(key);
+            const isOld=r=>!r.current&&r.last&&now-r.last>30*DAY,old=rooms.filter(isOld);
+            const list=[...rooms].sort((a,b)=>Number(b.current)-Number(a.current)||(sort==='size'?b.size-a.size:b.last-a.last));
+            const pct=x=>u.total?Math.max(1.5,x/u.total*100).toFixed(1):'0',pickable=list.filter(r=>r.hasData),picked=pickable.filter(r=>sel.has(r.key)).length,all=picked&&picked===pickable.length;
+            const ck=(on,mid=false)=>`<svg viewBox="0 0 16 16" aria-hidden="true"><path class="ck-v" pathLength="1" d="M4 8.4l2.6 2.6L12 5.4"/>${mid?'<path class="ck-m" d="M4.5 8h7"/>':''}</svg>`;
+            const rows=list.map((r,i)=>{const on=sel.has(r.key),key=escapeHtml(r.key),title=escapeHtml(r.title),pick=r.hasData?`data-ui-action="room-sel" data-room="${key}"`:'disabled';return `<div class="st-row ${on?'picked':''}" data-room="${key}" ${r.hasData?'data-pick':''} style="--i:${i}"><button class="ck ${on?'on':''}" role="checkbox" aria-checked="${on}" ${pick} aria-label="${title} 고르기">${ck(on)}</button><button class="st-t" ${pick}><b><span>${title}</span>${r.current?'<em class="st-cur">지금 방</em>':''}</b><span class="${isOld(r)?'old':''}">${r.last?`${cgcAgo(r.last)} 사용`:'사용 기록 없음'}, 결과 ${r.results}개</span></button>${r.href?`<a class="st-open" href="${escapeHtml(r.href)}" target="_blank" rel="noopener" title="새 탭에서 이 방 열기">열기</a>`:''}<span class="st-size">${r.hasData?cgcSizeLabel(r.size):'—'}</span><button class="icon-btn st-del" data-ui-action="room-del" data-room="${key}" aria-label="${title} 기록 지우기" ${r.hasData?'':'disabled'}>${this.aIcon('trash')}</button></div>`;}).join('');
+            return `<p class="lead">도우미가 이 브라우저에 저장해 둔 방별 기록이에요. 지워도 크랙 대화와 GPT 대화는 그대로 남아요.</p>
+            <div class="st-sum"><div><b>${cgcSizeLabel(u.total)}</b><span>전체 사용량</span></div><div><b>${rooms.filter(r=>r.hasData).length}<small>개</small></b><span>저장된 방</span></div><div class="${old.length?'warn':''}"><b>${old.length}<small>개</small></b><span>30일 넘게 안 씀</span></div></div>
+            <div class="st-bar" role="img" aria-label="방 기록 ${cgcSizeLabel(u.roomTotal)}, 지침 ${cgcSizeLabel(u.prompts)}, 설정 ${cgcSizeLabel(u.settings)}"><i class="b-room" style="width:${pct(u.roomTotal)}%"></i><i class="b-prompt" style="width:${pct(u.prompts)}%"></i><i class="b-set" style="width:${pct(u.settings)}%"></i></div>
+            <div class="st-legend"><span><i class="b-room"></i>방 기록 ${cgcSizeLabel(u.roomTotal)}</span><span><i class="b-prompt"></i>지침 ${cgcSizeLabel(u.prompts)}</span><span><i class="b-set"></i>설정 ${cgcSizeLabel(u.settings)}</span></div>
+            ${pickable.length?`<div class="st-tools"><button class="ck ${all?'on':picked?'mid':''}" role="checkbox" aria-checked="${all?'true':picked?'mixed':'false'}" data-ui-action="room-all" aria-label="전부 고르기">${ck(all,true)}</button><span>${picked?`${picked}개 고름`:'방 고르기'}</span>${this.uiSegment('cgc-storage-sort',sort,{recent:'최근순',size:'용량순'})}</div>
+            <div class="st-list">${rows}</div>
+            <div class="st-foot"><button class="btn" data-ui-action="rooms-clean" ${old.length?'':'disabled'}>${this.uiIcon('clock')}<span>오래된 방 정리${old.length?` ${old.length}`:''}</span></button><button class="btn danger" data-ui-action="rooms-del-sel" ${picked?'':'disabled'}>${this.aIcon('trash')}<span>고른 방 지우기${picked?` ${picked}`:''}</span></button></div>
+            <button class="link-btn danger" data-ui-action="rooms-del-all">${this.aIcon('trash')}<span>모든 방 기록 지우기</span></button>`:'<div class="empty"><b>저장된 방 기록이 없어요</b><span>작업을 실행하면 방마다 기록이 생겨요.</span></div>'}
+            <p class="hint">지침과 설정은 지우지 않아요. 지금 방을 지우면 이 방의 연결과 기록만 처음 상태로 돌아가요.</p>
+            <section class="sgroup"><h4>정리 도구</h4><div class="sbox"><div class="srow"><span class="stx"><b>남은 임시 자료 정리</b><span>보내고 하루 넘게 남은 임시 파일만 지워요</span></span><button class="btn sm" data-ui-action="temp-sweep">정리</button></div><div class="srow"><span class="stx"><b>백업 받기</b><span>설정·지침·방 기록을 파일로 내려받아요</span></span><button class="btn sm" data-ui-action="help-backup">받기</button></div></div></section>`;
+        },
+        handleStorageAction(action,button){
+            const sel=this.storageSel||(this.storageSel=new Set()),key=button.dataset.room||'';
+            if(action==='room-sel'||action==='room-all'){
+                // Selection changes in place: no storage scan, no rebuild, focus and the check animation stay.
+                const host=this.panel.querySelector('#cgc-settings-content'),rows=[...host.querySelectorAll('.st-row[data-pick]')],keys=rows.map(r=>r.dataset.room);
+                if(action==='room-sel'){if(!keys.includes(key))return;if(sel.has(key))sel.delete(key);else sel.add(key);}
+                else if(sel.size&&keys.every(k=>sel.has(k)))sel.clear();else keys.forEach(k=>sel.add(k));
+                let picked=0;
+                for(const r of rows){const on=sel.has(r.dataset.room);if(on)picked++;r.classList.toggle('picked',on);const c=r.querySelector('.ck');c?.classList.toggle('on',on);c?.setAttribute('aria-checked',String(on));}
+                const all=picked>0&&picked===rows.length,hc=host.querySelector('[data-ui-action="room-all"]');
+                if(hc){hc.classList.toggle('on',all);hc.classList.toggle('mid',!all&&picked>0);hc.setAttribute('aria-checked',all?'true':picked?'mixed':'false');const t=hc.nextElementSibling;if(t)t.textContent=picked?`${picked}개 고름`:'방 고르기';}
+                const del=host.querySelector('[data-ui-action="rooms-del-sel"]');if(del){del.disabled=!picked;const s=del.querySelector('span');if(s)s.textContent=`고른 방 지우기${picked?` ${picked}`:''}`;}
+                return;
+            }
+            const u=cgcStorageUsage(),rooms=u.rooms.filter(r=>r.hasData||r.current),now=Date.now();
+            const keys=action==='room-del'?[key]:action==='rooms-del-sel'?[...sel]:action==='rooms-clean'?rooms.filter(r=>!r.current&&r.last&&now-r.last>30*864e5).map(r=>r.key):rooms.filter(r=>r.hasData).map(r=>r.key);
+            this.confirmRoomWipe(keys);
+        },
+        confirmRoomWipe(keys){
+            const rooms=cgcStorageUsage().rooms.filter(r=>keys.includes(r.key)&&r.hasData);
+            if(!rooms.length)return this.toast('지울 방 기록이 없어요.');
+            this.pendingWipe=rooms.map(r=>r.key);
+            const current=rooms.some(r=>r.current),size=rooms.reduce((a,r)=>a+r.size,0);
+            const names=rooms.slice(0,4).map(r=>`<li>${escapeHtml(r.title)}<span>${cgcSizeLabel(r.size)}</span></li>`).join('')+(rooms.length>4?`<li class="more">외 ${rooms.length-4}개</li>`:'');
+            this.openSheet('방 기록 지우기',`<p class="lead">방 ${rooms.length}개의 도우미 기록(연결 주소, 결과, 보낸 기록)을 지워요.${current?' 지금 방도 들어 있어요.':''} 크랙 대화와 GPT 대화는 그대로예요. 지운 뒤에는 되돌릴 수 없어요.</p>${CGC_PLATFORM.mobile?'<p class="hint" style="margin:0 0 10px">다른 크랙·GPT 탭은 닫고 지워 주세요.</p>':''}<ul class="cf-list">${names}</ul><div class="btns"><button class="btn" data-ui-action="sheet-close">취소</button><button class="btn danger key" data-ui-action="rooms-yes">${this.aIcon('trash')}<span>${cgcSizeLabel(size)} 지우기</span></button></div>`,'cgc-wipe-sheet');
+        },
+        async runRoomWipe(button){
+            const keys=this.pendingWipe||[];if(!keys.length||this.wipeRunning)return;
+            this.wipeRunning=true;button.disabled=true;const label=button.querySelector('span');if(label)label.textContent='지우는 중…';
+            try{
+                const result=await cgcWipeRooms(keys);
+                this.closeSheet();this.storageSel=new Set();this.pendingWipe=[];
+                if(result.wiped)this.toast(`방 ${result.wiped}개 기록을 지웠어요.${result.kept?` 작업 중인 방 ${result.kept}개는 남겨 뒀어요.`:''}`);
+                else this.toast(result.kept?'작업 중인 방은 지금 지울 수 없어요. 작업이 끝난 뒤 다시 눌러 주세요.':'지울 기록이 없어요.',Boolean(result.kept));
+                this.afterDataWipe();
+            }catch(error){this.toast(error?.message||'일부만 지워졌어요. 다시 눌러 주세요.',true);if(label)label.textContent='다시 지우기';button.disabled=false;}
+            finally{this.wipeRunning=false;}
+        },
+        async runTempSweep(button){
+            if(this.wipeRunning)return;this.wipeRunning=true;button.disabled=true;const label=button.textContent;button.textContent='정리 중…';
+            try{
+                if(!cgcStorageReady)throw new Error('저장소 준비가 끝난 뒤 다시 눌러 주세요.');
+                if(transportGcRunning)throw new Error('다른 정리가 진행 중이에요. 잠시 후 다시 눌러 주세요.');
+                const removed=await pruneExpiredTransportKeys({limit:400,loreLimit:200});
+                this.toast(removed?`임시 자료 ${removed}개를 지웠어요.`:'지울 임시 자료가 없어요. 진행 중이거나 최근 자료는 남겨 둬요.');
+                this.settingsRenderedKey=null;this.renderSettingsView(true);
+            }catch(error){this.toast(error?.message||'정리하지 못했어요.',true);}
+            finally{this.wipeRunning=false;button.disabled=false;button.textContent=label;}
+        },
+        afterDataWipe(){
+            clearTimeout(this.auditNotesTimer);this.auditNotesTimer=0;this.auditTargetId='';
+            this.referenceSnapshot=null;this.openResultSnapshot=null;this.closeSheet();this.heroKey='';this.collapseWorkRows();
+            this.lastPanelStamp='';this.settingsRenderedKey=null;this.dashReferenceRoom=null;this.setInlineStatus();
+            this.refreshPanel();void this.refreshHomeCounts();void this.refreshReferencePanel(false);
         },
         updatePromptCount(){const row=this.UI_PROMPTS.find(p=>p[0]===this.editingPromptKey),input=row&&this.panel?.querySelector(`#${row[2]}`),count=this.panel?.querySelector('#cgc-prompt-count');if(input&&count)count.textContent=`${input.value.length.toLocaleString()}자`;},
         saveTaskPrompts() {
@@ -18865,7 +20317,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(get('cgc-open-mode'))patch.openMode=normalizeOpenMode(get('cgc-open-mode').value,'popup');
             for(const id of ['audit','qa','advisor','memory1','memory2','usernote']){const el=get(`cgc-policy-${id}-conversation`);if(el)patch[`${id}ConversationMode`]=normalizeConversationMode(el.value,settings[`${id}ConversationMode`],id!=='memory2');}
             for(const id of ['audit','qa','advisor','memory1','memory2','usernote','lore']){const el=get(`cgc-policy-${id}-open`);if(el)patch[`${id}OpenMode`]=normalizeToolOpenMode(el.value);}
-            for(const [id,key] of [['cgc-auto-rename-chat','autoRenameChatTitles'],['cgc-background-relay','backgroundRelay']])if(get(id))patch[key]=get(id).checked;
+            for(const [id,key] of [['cgc-auto-rename-chat','autoRenameChatTitles'],['cgc-background-relay','backgroundRelay'],['cgc-island-notices','islandNotices']])if(get(id))patch[key]=get(id).checked;
             for(const [id,key,min,def] of [['cgc-lease-requests','leaseMaxRequests',5,20],['cgc-lease-chars','leaseMaxAppendedChars',20000,120000],['cgc-lease-hours','leaseMaxHours',1,168],['cgc-scan-safe-chars','scanSafeChars',4000,18000]])if(get(id)){const n=Number(get(id).value);if(!Number.isFinite(n)||get(id).value===''){this.toast('숫자 설정을 확인해 주세요.',true);return false;}patch[key]=Math.max(min,n);}
             if(get('cgc-lore-target-chars'))patch.loreTargetChars=normalizeLoreTargetChars(get('cgc-lore-target-chars').value);
             if(get('cgc-incremental-prompt'))patch.incrementalSyncPrompt=get('cgc-incremental-prompt').value||DEFAULT_SETTINGS.incrementalSyncPrompt;
@@ -18917,128 +20369,237 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
 
         desktopPanelEnabled() {
-            return false;
+            return !CGC_PLATFORM.mobile && !window.matchMedia('(max-width:720px), (pointer:coarse) and (max-width:900px)').matches;
         },
-        fitPanelGeometry(geometry, vp=cgcViewportBox()) {
-            const maxW=Math.max(1,vp.width-24),maxH=Math.max(1,vp.height-24);
-            const width=clamp(geometry?.width||620,Math.min(420,maxW),maxW);
-            const height=clamp(geometry?.height||780,Math.min(360,maxH),maxH);
-            return {width,height,left:clamp(geometry?.left??(vp.left+vp.width-width-20),vp.left+12,vp.left+vp.width-width-12),top:clamp(geometry?.top??(vp.top+24),vp.top+12,vp.top+vp.height-height-12)};
+        // v1.5.2: PC panel size. 400x710 by default; the bottom-right grip resizes it within these limits and the size
+        // is kept per browser in its own small key (not the large settings blob). Phones keep the CSS bottom sheet.
+        PANEL_SIZE: Object.freeze({width:400,height:710,minWidth:360,minHeight:520,maxWidth:640}),
+        PANEL_SIZE_KEY: 'CGC_PANEL_SIZE_V1',
+        savedPanelSize(){
+            if(this.panelSizeCache!==undefined)return this.panelSizeCache;
+            const v=readValue(this.PANEL_SIZE_KEY,null),width=Number(v?.width),height=Number(v?.height);
+            return this.panelSizeCache=width>0&&height>0?{width,height}:null;
+        },
+        savePanelSize(size){
+            this.panelSizeCache=size?{width:Math.round(size.width),height:Math.round(size.height)}:null;
+            if(this.panelSizeCache)writeValue(this.PANEL_SIZE_KEY,{...this.panelSizeCache,at:Date.now()});else deleteValue(this.PANEL_SIZE_KEY);
+        },
+        panelLimits(){
+            const vw=window.innerWidth||document.documentElement.clientWidth||1024,vh=window.innerHeight||document.documentElement.clientHeight||768,S=this.PANEL_SIZE;
+            return {vw,vh,maxW:Math.max(280,Math.min(S.maxWidth,vw-24)),maxH:Math.max(320,vh-24)};
+        },
+        // Saves what the user changed. An axis they did not touch keeps the saved value, and a size held at the screen
+        // limit while they asked for more never replaces a larger saved size (a short laptop must not shrink it).
+        commitPanelSize(asked,start){
+            const g=this.panelGeometry;if(!g)return;
+            const base=this.savedPanelSize()||this.PANEL_SIZE,{maxW,maxH}=this.panelLimits();
+            const pick=(axis,max)=>{
+                const want=Number(asked?.[axis]),from=Number(start?.[axis]),shown=g[axis];
+                if(!Number.isFinite(want)||Math.abs(want-from)<2)return base[axis];
+                return shown>=max&&want>=shown?Math.max(base[axis],shown):shown;
+            };
+            this.savePanelSize({width:pick('width',maxW),height:pick('height',maxH)});
+        },
+        fitPanelGeometry() {
+            // PC: the chosen (or default) size, shrunk to fit small screens without changing the saved size. It opens on
+            // Crack's chat column under the room header, can be moved by its header for the rest of the page's life,
+            // and is always kept on screen.
+            const {vw,vh,maxW,maxH}=this.panelLimits(),S=this.PANEL_SIZE,want=this.panelSizeDraft||this.savedPanelSize()||S;
+            const num=(v,d)=>Number.isFinite(Number(v))?Math.round(Number(v)):d; // a drag past zero still clamps to the minimum
+            const width=clamp(num(want.width,S.width),Math.min(S.minWidth,maxW),maxW),height=clamp(num(want.height,S.height),Math.min(S.minHeight,maxH),maxH);
+            let left,top;
+            if(this.panelPos){left=this.panelPos.left;top=this.panelPos.top;}
+            else{
+                const anchor=(this.launcherComposer?.isConnected?this.launcherComposer:null)?.getBoundingClientRect?.();
+                const cx=anchor&&anchor.width?anchor.left+anchor.width/2:vw/2;
+                // Opens just under Crack's room header when it fits, otherwise as high as the screen allows.
+                const bars=cgcCrackBarsBottom();left=cx-width/2;top=bars?bars+8:Math.min(66,Math.max(12,(vh-height)/2));
+            }
+            return {width,height,left:clamp(left,12,Math.max(12,vw-width-12)),top:clamp(top,12,Math.max(12,vh-height-12))};
         },
         applyPanelGeometry() {
             const box=this.panel?.querySelector('.cgc-panel');if(!box)return;
-            const floating=this.desktopPanelEnabled();this.panel.dataset.panelMode=floating?'floating':'sheet';
-            box.setAttribute('aria-modal',floating?'false':'true');
-            const header=box.querySelector('.hd');if(header)header.title=floating?'상단을 끌어 이동 · 오른쪽 아래 모서리로 크기 조절':'';
-            if(floating){this.panelGeometry=this.fitPanelGeometry(this.panelGeometry);for(const key of ['left','top','width','height'])box.style[key]=`${this.panelGeometry[key]}px`;}
-            else {for(const key of ['left','top','width','height'])box.style[key]='';}
+            const pc=this.desktopPanelEnabled();this.panel.dataset.form=pc?'pc':'m';box.setAttribute('aria-modal',String(!pc));
+            if(pc){
+                const g=this.panelGeometry=this.fitPanelGeometry();for(const key of ['left','top','width','height'])box.style[key]=`${Math.round(g[key])}px`;
+                const size=box.querySelector('.cgc-size');if(size)size.textContent=`${Math.round(g.width)} × ${Math.round(g.height)}`;
+            }
+            else for(const key of ['left','top','width','height'])box.style[key]='';
+            requestAnimationFrame(()=>this.placeTabIndicator(false));
         },
         installPanelMovement() {
-            const box=this.panel.querySelector('.cgc-panel'),header=box.querySelector('.hd');
-            const grip=document.createElement('button');grip.type='button';grip.className='cgc-resize-grip';grip.setAttribute('aria-label','패널 크기 조절');grip.title='끌어서 크기 조절 · 방향키로 조절';grip.innerHTML='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 16 16 6M11 16l5-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';box.appendChild(grip);
-            const begin=(event,resize)=>{
-                if(!this.desktopPanelEnabled()||event.button!==0||(!resize&&event.target.closest('button,input,textarea,select,a')))return;
+            const box=this.panel.querySelector('.cgc-panel'),header=box.querySelector('.hd'),grip=box.querySelector('.cgc-grip');if(!header)return;
+            // One pointer gesture at a time: the header moves the panel, the grip resizes it from its top-left corner.
+            const gesture=(handle,event,resize)=>{
                 this.panelGestureCleanup?.();event.preventDefault();
-                const original={...this.panelGeometry},x=event.clientX,y=event.clientY,pointer=event.pointerId;let frame=0;
-                const move=e=>{if(e.pointerId!==pointer)return;const dx=e.clientX-x,dy=e.clientY-y;this.panelGeometry=resize?{...original,width:original.width+dx,height:original.height+dy}:{...original,left:original.left+dx,top:original.top+dy};if(!frame)frame=requestAnimationFrame(()=>{frame=0;this.applyPanelGeometry();});};
-                const finish=e=>{if(e&&e.pointerId!==undefined&&e.pointerId!==pointer)return;window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',finish);window.removeEventListener('pointercancel',finish);window.removeEventListener('blur',finish);this.panelGestureCleanup=null;if(frame){cancelAnimationFrame(frame);frame=0;this.applyPanelGeometry();}if(this.panelRefreshDeferred){this.panelRefreshDeferred=false;this.lastPanelStamp='';this.refreshPanel();}};
-                this.panelGestureCleanup=finish;window.addEventListener('pointermove',move);window.addEventListener('pointerup',finish);window.addEventListener('pointercancel',finish);window.addEventListener('blur',finish);
+                const start=this.panelGeometry||this.fitPanelGeometry(),x=event.clientX,y=event.clientY,pointer=event.pointerId,wasPinned=Boolean(this.panelPos);let frame=0,moved=false;
+                if(resize)this.panelPos={left:start.left,top:start.top};
+                try{handle.setPointerCapture(pointer);}catch{}
+                box.classList.add(resize?'resizing':'dragging');
+                const move=e=>{
+                    if(e.pointerId!==pointer)return;if(!(e.buttons&1))return finish(e);
+                    if(resize)this.panelSizeDraft={width:start.width+(e.clientX-x),height:start.height+(e.clientY-y)};
+                    else{this.panelPos={left:start.left+(e.clientX-x),top:start.top+(e.clientY-y)};moved=true;}
+                    if(!frame)frame=requestAnimationFrame(()=>{frame=0;this.applyPanelGeometry();});
+                };
+                const finish=e=>{
+                    if(e&&e.pointerId!==undefined&&e.pointerId!==pointer)return;
+                    handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',finish);handle.removeEventListener('pointercancel',finish);handle.removeEventListener('lostpointercapture',finish);window.removeEventListener('blur',finish);
+                    this.panelGestureCleanup=null;box.classList.remove('dragging','resizing');if(frame){cancelAnimationFrame(frame);frame=0;}
+                    const asked=resize?this.panelSizeDraft:null;
+                    // A plain click on the header or the grip keeps the panel anchored to the chat column; only a real
+                    // move or resize pins it.
+                    if(!moved&&!asked&&!wasPinned)this.panelPos=null;
+                    this.applyPanelGeometry();const g=this.panelGeometry;
+                    if(g&&(moved||asked||wasPinned))this.panelPos={left:g.left,top:g.top};
+                    if(asked){this.commitPanelSize(asked,start);this.panelSizeDraft=null;this.applyPanelGeometry();}
+                    if(this.panelRefreshDeferred){this.panelRefreshDeferred=false;this.lastPanelStamp='';this.refreshPanel();}
+                };
+                this.panelGestureCleanup=finish;
+                handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',finish);handle.addEventListener('pointercancel',finish);handle.addEventListener('lostpointercapture',finish);window.addEventListener('blur',finish);
             };
-            header.addEventListener('pointerdown',e=>begin(e,false));grip.addEventListener('pointerdown',e=>begin(e,true));
-            grip.addEventListener('keydown',e=>{if(!this.desktopPanelEnabled()||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const delta=e.shiftKey?40:20;this.panelGeometry={...this.panelGeometry,width:this.panelGeometry.width+(e.key==='ArrowRight'?delta:e.key==='ArrowLeft'?-delta:0),height:this.panelGeometry.height+(e.key==='ArrowDown'?delta:e.key==='ArrowUp'?-delta:0)};this.applyPanelGeometry();});
-            window.addEventListener('resize',()=>{this.panelGestureCleanup?.();this.applyPanelGeometry();});
+            header.addEventListener('pointerdown',event=>{
+                if(!this.desktopPanelEnabled()||event.button!==0||event.target.closest('button,a,input,textarea,select'))return;
+                gesture(header,event,false);
+            });
+            if(grip){
+                grip.addEventListener('pointerdown',event=>{if(!this.desktopPanelEnabled()||event.button!==0)return;event.stopPropagation();gesture(grip,event,true);});
+                grip.addEventListener('dblclick',event=>{event.preventDefault();this.savePanelSize(null);this.applyPanelGeometry();this.toast('처음 크기(400 × 710)로 돌렸어요.');});
+                grip.addEventListener('keydown',event=>{
+                    const dx={ArrowLeft:-1,ArrowRight:1}[event.key]||0,dy={ArrowUp:-1,ArrowDown:1}[event.key]||0;if(!this.desktopPanelEnabled()||!dx&&!dy)return;
+                    event.preventDefault();const step=event.shiftKey?40:20,g=this.panelGeometry||this.fitPanelGeometry();
+                    const asked={width:g.width+dx*step,height:g.height+dy*step};
+                    this.panelPos={left:g.left,top:g.top};this.panelSizeDraft=asked;this.applyPanelGeometry();
+                    this.commitPanelSize(asked,g);this.panelSizeDraft=null;this.applyPanelGeometry();
+                });
+            }
+            window.addEventListener('resize',()=>{if(this.panelOpen){this.panelGestureCleanup?.();this.applyPanelGeometry();}},{passive:true});
+        },
+        buildPanel(){
+            const overlay=document.createElement('div');overlay.className='cgc cgc-overlay';overlay.style.display='none';
+            const ic=name=>this.uiIcon(name);
+            const row=(id,index,extra,runLabel,runAttrs)=>{const label=this.WORK_LABEL[id==='qa'?'ask':id];return `<article class="job" data-work-row="${id}" style="--i:${index}"><div class="row-hd"><button class="job-main" data-ui-action="row" data-row="${id}" aria-expanded="false"><span class="p-idx">${String(index+1).padStart(2,'0')}</span><span class="ic">${this.aIcon(this.WORK_ICON[id])}</span><b class="a">${label[0]}</b><span class="chip" data-work-tag="${id}">처음 실행 전</span>${this.uiIcon('chev','caret')}</button><button class="btn sm row-q" data-work-quick="${id}">실행</button></div><div class="row-bd" hidden><p class="desc" data-work-desc="${id}">${label[1]}</p><div class="job-extra" data-work-actions="${id}"></div>${extra}${runLabel?`<div class="btns"><button class="btn" data-action="open-slot" data-slot="${id}">${ic('ext')}<span>GPT 보기</span></button><button class="btn key" ${runAttrs} data-work-run="${id}">${runLabel}</button></div>`:''}</div></article>`;};
+            const auditExtra=`<label class="fld"><span>검사 대상</span><select id="cgc-audit-target" aria-label="검사 대상"><option value="">검사 대상: 최신 답변</option></select></label><label class="fld"><span>오탐 메모</span><textarea id="cgc-audit-notes" rows="2" placeholder="예: 이 판정은 설정상 정상이야. 같은 이유로 다시 지적하지 마."></textarea><small>검사 때 함께 보내서 같은 지적이 반복되지 않게 해요</small></label>`;
+            const qaExtra=`<div id="cgc-question-area" class="fld"><label for="cgc-question">궁금한 점</label><textarea id="cgc-question" rows="3" placeholder="예: 둘이 처음 만난 곳이 어디였지?"></textarea></div>`;
+            const loreExtra=`<div id="cgc-lore-area" class="inline-area" hidden><p class="hint-text">로그를 나눠 조각마다 GPT에서 변환한 뒤 JSON을 합쳐요. 조각 크기는 고급 설정에서 바꿀 수 있어요.</p><button class="btn key" data-action="lore-plan">${ic('plus')}<span>나누기 계획 만들기</span></button><div id="cgc-lore-batch-view"></div><input id="cgc-lore-json-files" class="cgc-file-hidden" type="file" accept=".json,.txt,application/json,text/plain" multiple><input id="cgc-lore-final-json" class="cgc-file-hidden" type="file" accept=".json,application/json,text/plain"><div class="ac grid2"><button class="btn" data-action="lore-open-next">다음 조각 열기</button><button class="btn" data-action="lore-clear-batch">계획 지우기</button><button class="btn" data-action="lore-pick-json">JSON 고르기</button><button class="btn key" data-action="lore-merge">JSON 합치기</button></div><p id="cgc-lore-json-status" class="hint-text">고른 JSON 없음</p><div class="ac"><button class="btn" data-action="lore-pick-final">최종 JSON 검사</button><span id="cgc-lore-final-status" class="hint-text">최종 JSON 없음</span></div></div>`;
+            const tabs=[['work','작업','t_home'],['data','자료','t_data'],['history','기록','t_history'],['settings','설정','t_settings']].map(([id,label,icon],i)=>`<button class="cgc-tab" role="tab" data-tab="${id}"><em class="t-no">0${i+1}</em>${this.aIcon(icon)}<span>${label}</span>${id==='work'?'<em class="x-badge" id="cgc-work-badge" hidden>0</em>':''}${id==='history'?'<i class="x-bdot" id="cgc-history-dot" hidden></i>':''}</button>`).join('');
+            overlay.innerHTML=`${this.uiSprite()}<div class="cgc-back" data-action="close"></div><section class="cgc-panel cgp" role="dialog" aria-modal="true" aria-label="크랙 AI 도우미" tabindex="-1"><div class="col"><i class="dx-wash"></i><i class="dx-grain"></i><i class="dx-scan"></i>
+<header class="hd"><button class="icon-btn" id="cgc-ui-back" hidden data-ui-action="back" aria-label="뒤로">${ic('back')}</button><div class="t"><span class="p-micro">AI COMPANION<i></i><time id="cgc-ui-clock"></time></span><b id="cgc-ui-title">현재 대화</b><span id="cgc-ui-room"></span></div><span class="p-gptag" id="cgc-ui-connected"><i></i>GPT<b>00</b></span><button class="icon-btn" data-action="close" aria-label="닫기">${ic('x')}</button></header>
+<div class="sc">
+<div class="cgc-view active" data-view="work"><section class="p-hero new" id="cgc-work-hero"><div class="p-k" id="cgc-hero-k">안 보낸 새 대화</div><b class="p-num" id="cgc-hero-numbox"><span id="cgc-hero-title">—</span><small>턴</small></b><b class="p-hero-t" id="cgc-hero-task" hidden></b><p id="cgc-hero-sub">새 대화를 확인하고 있어요</p><p id="cgc-hero-last">마지막 검사 <span id="cgc-last-audit-time">—</span></p><div class="echo" id="cgc-hero-echo" aria-hidden="true"></div><div class="btns" id="cgc-hero-btns"><button class="btn" data-ui-action="question">${this.aIcon('ask')}<span>질문</span></button><button class="btn key" id="cgc-audit-cta" data-action="audit">${this.aIcon('audit')}<span>찐빠 검사</span></button></div><div class="btns" id="cgc-hero-acts" hidden></div></section><div id="cgc-session-status" class="progress-note" role="status" hidden></div><div class="p-meta">${[['memory','기억'],['usernote','유노'],['lore','로어']].map(([id,label])=>`<button data-ui-action="data-open">${label} <b data-stat="${id}">—</b></button>`).join('<i></i>')}</div><div class="p-list" id="cgc-task-list">${row('audit',0,auditExtra,'검사 시작','data-action="audit"')}${row('qa',1,qaExtra,'질문 보내기','data-action="ask"')}${row('memory1',2,'','기억 만들기','data-action="memory1"')}${row('memory2',3,'','압축 시작','data-action="memory2"')}${row('usernote',4,'','줄이기 시작','data-action="usernote"')}${row('lore',5,loreExtra,'','')}</div><div class="p-mine" id="cgc-custom-heading"><span>내 작업</span><i></i><button class="link-btn" data-ui-action="custom-new">${ic('plus')}<span>추가</span></button></div><div class="p-list" id="cgc-custom-list"></div></div>
+<div class="cgc-view" data-view="data" hidden><div id="cgc-data-main"><div class="x-h2"><div><b>함께 보낼 자료</b><span id="cgc-source-count"></span></div><button class="btn sm" data-action="refresh-sources">${ic('refresh')}<span>다시 읽기</span></button></div><div class="x-list" id="cgc-source-grid"></div><button class="x-tr x-tr-link" data-ui-action="preview"><span class="x-tr-m"><span class="ic">${ic('eye')}</span><span class="x-rt"><b>보낼 내용 미리 보기</b><span>켜 둔 자료가 실제로 들어가는 모습</span></span>${this.uiIcon('chev','chev')}</span></button><p class="hint">스위치는 누르는 즉시 저장돼요. 장기기억·유저노트 작업은 각 지침에 정해진 자료만 써요.</p></div><div id="cgc-data-preview" hidden><div class="pv-top"><span>기준 작업</span>${this.uiSegment('cgc-preview-slot',this.referenceStatusSlot||'audit',{audit:'찐빠 검사',qa:'로그에 질문'})}</div><div class="qchips">${Object.entries(SOURCE_META).map(([key,meta])=>`<button class="qchip" data-ui-action="source-select" data-source="${key}">${meta.label}</button>`).join('')}</div><div class="x-h2"><div><b id="cgc-source-preview-title">자료 미리 보기</b></div></div><pre id="cgc-source-preview" class="pre">자료를 골라 주세요.</pre></div></div>
+<div class="cgc-view" data-view="history" hidden><div class="x-h2"><div><b>기록</b><span>결과와 보낸 작업, 시간순</span></div></div><div class="x-tl" id="cgc-result-history"></div></div>
+<div class="cgc-view" data-view="settings" hidden><div id="cgc-settings-content"></div></div>
+</div>
+<div class="foot" id="cgc-settings-footer" hidden></div>
+<nav class="tabs" role="tablist" aria-label="도우미 메뉴"><span class="x-ind"></span>${tabs}</nav>
+</div><button type="button" class="cgc-grip" aria-label="패널 크기 조절" title="끌어서 크기 조절 · 두 번 누르면 처음 크기 · 방향키로도 조절"><i></i></button><span class="cgc-size" aria-hidden="true"></span></section>`;
+            overlay.addEventListener('click',e=>{
+                if(this.handleUiClick(e))return;
+                if(e.target.closest('[data-action="close"]')){this.hidePanel();return;}
+                const tab=e.target.closest('[data-tab]');if(tab){this.selectTab(tab.dataset.tab);return;}
+                const action=e.target.closest('[data-action]')?.dataset.action;if(!action)return;
+                if(['audit','memory1','memory2','usernote'].includes(action))this.startTool(action);
+                if(action==='custom-run')this.startTool(e.target.closest('[data-custom-id]')?.dataset.customId||'');
+                if(action==='lore-plan')this.createLoreBatchPlan();
+                if(action==='lore-open-next')this.openNextLorePart();
+                if(action==='lore-clear-batch')this.clearCurrentLoreBatch();
+                if(action==='lore-open-part')this.openLorePart(Number(e.target.closest('[data-part-index]')?.dataset.partIndex||0));
+                if(action==='lore-open-result'){const el=e.target.closest('[data-part-index]');this.openLoreResult(Number(el?.dataset.partIndex||0),el?.dataset.batchId||'');}
+                if(action==='lore-open-merge-result')this.openLoreMergeResult(e.target.closest('[data-merge-id]')?.dataset.mergeId||'');
+                if(action==='lore-pick-json')overlay.querySelector('#cgc-lore-json-files')?.click();
+                if(action==='lore-pick-final')overlay.querySelector('#cgc-lore-final-json')?.click();
+                if(action==='lore-merge')this.startLoreMerge();
+                if(action==='open-slot'){
+                    let slot=e.target.closest('[data-slot]')?.dataset.slot||'audit';
+                    if(slot==='pending'){const r=CrackAdapter.getRouteInfo(),s=r?getSession(getState(),r.sessionKey):null;slot=(getPendingJobId(s)&&s?.transport?.pendingSlot)||'audit';if(slot==='lore'){this.openNextLorePart();return;}}
+                    void this.openCurrentGpt(slot).catch(error=>this.toast(`GPT 대화를 열지 못했어요: ${error.message}`,true));
+                }
+                if(action==='continue-memory1')this.startTool('memory1');
+                if(action==='approve-no-memory')this.approveNoMemoryRange();
+                if(action==='release-unsent')void this.releaseUnsentDelivery().catch(error=>this.toast(error.message,true));
+                if(action==='copy-result'){const button=e.target.closest('[data-result-key]');if(button)void this.copyResult(button.dataset.resultKey,button.dataset.resultSession||CrackAdapter.getRouteInfo()?.sessionKey||'').catch(error=>this.toast(error.message,true));}
+                if(action==='ask'){const q=cleanText(overlay.querySelector('#cgc-question')?.value);if(!q){this.toast('질문을 먼저 적어 주세요.',true);overlay.querySelector('#cgc-question')?.focus();return;}this.startTool('ask',q);}
+                if(action==='refresh-sources')this.refreshReferencePanel(true);
+                if(action==='save-settings')this.savePanelSettings();
+                if(action==='disconnect-slot')this.disconnectConversationSlot(e.target.closest('[data-slot]')?.dataset.slot||'');
+                if(action==='resync')this.resetCurrentSession();
+            });
+            overlay.addEventListener('change',e=>{
+                const input=e.target.closest('[data-source-toggle]');
+                if(input){input.parentElement.querySelector('.sw')?.classList.toggle('off',!input.checked);input.closest('.x-tr')?.classList.toggle('on',input.checked);this.saveSourceToggle(input.dataset.sourceToggle,input.checked);}
+                if(e.target.id==='cgc-audit-target')this.auditTargetId=e.target.value||'';
+                if(e.target.id==='cgc-audit-notes')this.saveAuditNotes(e.target.value);
+                if(e.target.id==='cgc-lore-json-files')this.handleLoreJsonFiles(e.target.files);
+                if(e.target.id==='cgc-lore-final-json')this.handleLoreFinalJson(e.target.files?.[0]||null);
+                if(e.target.closest('#cgc-settings-content')){this.settingsDirty=true;e.target.parentElement?.querySelector('.sw')?.classList.toggle('off',!e.target.checked);}
+            });
+            overlay.addEventListener('input',e=>{
+                if(e.target.closest('#cgc-settings-content')){this.settingsDirty=true;this.updatePromptCount();return;}
+                if(e.target.id!=='cgc-audit-notes')return;
+                clearTimeout(this.auditNotesTimer);
+                const value=e.target.value,sessionKey=CrackAdapter.getRouteInfo()?.sessionKey||'';
+                this.auditNotesTimer=setTimeout(()=>{this.auditNotesTimer=0;this.saveAuditNotes(value,sessionKey);},350);
+            });
+            // Escape works wherever focus ended up (a rebuilt view drops it to <body>), but not while typing in Crack.
+            document.addEventListener('keydown',e=>{
+                if(e.key!=='Escape'||!this.panelOpen)return;const a=document.activeElement;if(a&&a!==document.body&&!overlay.contains(a))return;
+                e.stopPropagation();
+                if(overlay.querySelector('.x-over'))this.closeSheet();
+                else if(this.activeTab==='settings'&&this.settingsView||this.activeTab==='data'&&this.dataPreviewOpen)this.handleUiClick({target:overlay.querySelector('#cgc-ui-back')});
+                else this.hidePanel();
+            },true);
+            document.body.appendChild(overlay);this.panel=overlay;this.installPanelMovement();
         },
         showPanel(tab='work') {
-            this.miniMenuClose?.();
-            document.querySelector('.cgc-mini-popover')?.remove();
-            if(!this.panel){
-                const overlay=document.createElement('div');overlay.className='cgc-overlay cgc-embedded';
-                overlay.innerHTML=`<svg style="display:none">
-  <symbol id="cgc-i-check" viewBox="0 0 24 24"><path d="M12 3l7.5 3v6c0 4.4-3 8.3-7.5 9.5C7.5 20.3 4.5 16.4 4.5 12V6L12 3z"/><path d="M9 12l2.2 2.2L15.5 10"/></symbol>
-  <symbol id="cgc-i-ask" viewBox="0 0 24 24"><path d="M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/><path d="M9.7 9.2a2.4 2.4 0 1 1 2.9 2.5v1.1"/><circle cx="12.6" cy="15.4" r=".6" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="cgc-i-mem" viewBox="0 0 24 24"><path d="M12 3.5l8 4.2-8 4.2-8-4.2 8-4.2z"/><path d="M4 12.2l8 4.2 8-4.2"/><path d="M4 16.4l8 4.2 8-4.2"/></symbol>
-  <symbol id="cgc-i-note" viewBox="0 0 24 24"><path d="M5 4.5h9l5 5V19a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 19V6a1.5 1.5 0 0 1 1-1.5z"/><path d="M13.5 4.5v5H19"/><path d="M8 13.5h7M8 16.8h4.5"/></symbol>
-  <symbol id="cgc-i-lore" viewBox="0 0 24 24"><path d="M4 5.2A2 2 0 0 1 6 3.5h5.5v17H6a2 2 0 0 0-2 1.7z"/><path d="M20 5.2a2 2 0 0 0-2-1.7h-5.5v17H18a2 2 0 0 1 2 1.7z"/></symbol>
-  <symbol id="cgc-i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
-  <symbol id="cgc-i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M12.5 6l6 6-6 6"/></symbol>
-  <symbol id="cgc-i-chev" viewBox="0 0 24 24"><path d="M9.5 5.5l6.5 6.5-6.5 6.5"/></symbol>
-  <symbol id="cgc-i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.6M12 15.8v.2"/></symbol>
-  <symbol id="cgc-i-tab1" viewBox="0 0 24 24"><path d="M4.5 7h15M4.5 12h15M4.5 17h9"/></symbol>
-  <symbol id="cgc-i-tab2" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17"/></symbol>
-  <symbol id="cgc-i-tab3" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
-  <symbol id="cgc-i-tab4" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.6 1.6M7.6 16.4L6 18M18 18l-1.6-1.6M7.6 7.6L6 6"/></symbol>
-</svg><section class="cgc-panel anim" role="dialog" aria-modal="true" aria-label="크랙 AI 도우미" tabindex="-1">
-<header class="hd"><button class="x" id="cgc-ui-back" hidden data-ui-action="back" aria-label="뒤로">‹</button><div class="t"><b id="cgc-ui-title">현재 대화</b><s><i class="live" id="cgc-ui-connected"></i><span id="cgc-ui-room">ChatGPT 연결 없음</span></s></div></header>
-<div class="alert" id="cgc-ui-alert" hidden>${this.uiIcon('alert')}<p></p><button data-ui-action="issues">확인</button></div>
-<div class="sc">
-<div class="cgc-view active" data-view="work"><div id="cgc-session-status" class="progress-note" role="status" hidden></div><div class="ch-cgc-note st" style="--i:0"><span>장기기억 1차·2차는 장기기억 탭에서 실행해요.</span><button type="button" class="mn sm" data-ch-open-tab="memory">장기기억 탭</button></div><div class="grp" id="cgc-todo-heading" hidden><b>확인·진행 중</b><span class="cnt" id="cgc-todo-count">0</span><i></i></div><div class="list" id="cgc-todo-list"></div><div id="cgc-work-issues" hidden></div><div class="grp" id="cgc-ready-heading"><b>실행할 수 있어요</b><span class="cnt" id="cgc-ready-count">4</span><i></i></div><div class="list" id="cgc-ready-list"><article class="job st" data-work-row="qa" style="--i:3"><button class="job-main" data-ui-action="question"><span class="ic">${this.uiIcon('ask')}</span><span class="tx"><span class="a">로그에 질문</span><span class="desc" data-work-desc="qa">지난 대화 내용을 GPT에게 물어보기</span><span class="meta"><span class="chip" data-work-tag="qa">처음 실행 전</span></span></span><span class="right" data-work-number="qa">${this.uiIcon('chev','sm')}</span></button><div data-work-actions="qa" class="job-extra" hidden></div><div class="job-extra"><div id="cgc-question-area" class="inline-area" hidden><label class="hint-text" for="cgc-question">지난 대화에서 궁금한 점</label><textarea id="cgc-question" class="ta small" placeholder="언제 처음 만났는지 알려줘"></textarea><button class="mn key" data-action="ask">질문 보내기</button></div></div></article><article class="job st" data-work-row="advisor" style="--i:4"><button class="job-main" data-ui-action="advisor-toggle"><span class="ic">${this.uiIcon('ask')}</span><span class="tx"><span class="a">RP 조언</span><span class="desc" data-work-desc="advisor">다음 장면을 어떻게 이어갈지 GPT에게 조언 받기</span><span class="meta"><span class="chip" data-work-tag="advisor">처음 실행 전</span></span></span><span class="right" data-work-number="advisor">${this.uiIcon('chev','sm')}</span></button><div data-work-actions="advisor" class="job-extra" hidden></div><div class="job-extra"><div id="cgc-advisor-area" class="inline-area" hidden><label class="hint-text" for="cgc-advisor-question">조언받고 싶은 내용</label><textarea id="cgc-advisor-question" class="ta small" placeholder="예: 다음 장면에서 캐릭터와 화해하려면 어떻게 행동하면 좋을까?"></textarea><button class="mn key" data-action="advisor">조언 받기</button></div></div></article><article class="job st" data-work-row="usernote" style="--i:6"><button class="job-main" data-action="usernote"><span class="ic">${this.uiIcon('note')}</span><span class="tx"><span class="a">유저노트 줄이기</span><span class="desc" data-work-desc="usernote">RP 로그만 유저노트용 줄거리로 정리</span><span class="meta"><span class="chip" data-work-tag="usernote">처음 실행 전</span></span></span><span class="right" data-work-number="usernote">${this.uiIcon('chev','sm')}</span></button><div data-work-actions="usernote" class="job-extra" hidden></div></article><article class="job st" data-work-row="lore" style="--i:7"><button class="job-main" data-ui-action="lore"><span class="ic">${this.uiIcon('lore')}</span><span class="tx"><span class="a">로어 만들기</span><span class="desc" data-work-desc="lore">로그를 로어 JSON으로 변환</span><span class="meta"><span class="chip" data-work-tag="lore">처음 실행 전</span></span></span><span class="right" data-work-number="lore">${this.uiIcon('chev','sm')}</span></button><div data-work-actions="lore" class="job-extra" hidden></div><div class="job-extra"><div id="cgc-lore-area" class="inline-area" hidden><p class="hint-text">로그를 나눠서 각 GPT에서 변환한 뒤 JSON을 합쳐요. 조각 크기는 고급 설정에서 바꿀 수 있어요.</p><button class="mn key" data-action="lore-plan">분할 계획 만들기</button><div id="cgc-lore-batch-view"></div><input id="cgc-lore-json-files" class="cgc-file-hidden" type="file" accept=".json,.txt,application/json,text/plain" multiple><input id="cgc-lore-final-json" class="cgc-file-hidden" type="file" accept=".json,application/json,text/plain"><div class="ac grid2"><button class="mn" data-action="lore-open-next">다음 조각 열기</button><button class="mn" data-action="lore-clear-batch">계획 지우기</button><button class="mn" data-action="lore-pick-json">JSON 선택</button><button class="mn key" data-action="lore-merge">JSON 합치기</button></div><p id="cgc-lore-json-status" class="hint-text">선택된 JSON 없음</p><div class="ac"><button class="mn" data-action="lore-pick-final">최종 JSON 검증</button><span id="cgc-lore-final-status" class="hint-text">최종 JSON 선택 없음</span></div></div></div></article></div><div class="grp" id="cgc-custom-heading" hidden><b>내 커스텀 작업</b><span class="cnt" id="cgc-custom-count">0</span><i></i></div><div class="list" id="cgc-custom-list"></div></div>
-<div class="cgc-view" data-view="data" hidden><div id="cgc-data-main" class="pane"><div class="pane-head"><div class="head-tx"><h2 class="pane-t">참고자료</h2><p class="pane-s">질문·조언에 함께 보낼 자료를 골라요.</p></div><button class="mn sm" data-action="refresh-sources">다시 확인</button></div><div id="cgc-source-grid"></div><button class="navrow card" data-ui-action="preview"><span class="tt"><span class="a">보낼 내용 미리 보기</span><span class="b">켜 둔 자료가 실제로 어떻게 전달되는지 확인</span></span>${this.uiIcon('chev','sm')}</button><p class="hint-text">자료 스위치는 즉시 저장돼요. 장기기억 작업의 입력 범위는 각 작업 지침을 따릅니다.</p></div><div id="cgc-data-preview" class="pane" hidden><label class="hint-text" for="cgc-preview-slot">전송 상태 기준</label>${this.uiSegment('cgc-preview-slot',['qa','advisor'].includes(this.referenceStatusSlot)?this.referenceStatusSlot:'qa',{qa:'질문',advisor:'조언'})}<div class="source-picks">${Object.entries(SOURCE_META).map(([key,meta])=>`<button class="mn" data-ui-action="source-select" data-source="${key}">${meta.label}</button>`).join('')}</div><h3 id="cgc-source-preview-title">자료 미리보기</h3><pre id="cgc-source-preview" class="source-preview">자료를 선택해 주세요.</pre></div></div>
-<div class="cgc-view pane" data-view="history" hidden><h2 class="pane-t">기록</h2><p class="pane-s">받아온 결과와 보낸 작업을 모아봤어요.</p><div id="cgc-result-history"></div><details class="more"><summary>최근 보낸 작업</summary><div id="cgc-transmission-history"></div></details></div>
-<div class="cgc-view settings-page" data-view="settings" hidden><div id="cgc-settings-content" class="pane settings-content"></div><div id="cgc-settings-footer" class="foot"></div></div>
-</div><nav class="tabs" role="tablist" aria-label="도우미 메뉴">${[['work','작업','tab1'],['data','자료','tab2'],['history','기록','tab3'],['settings','GPT 설정','tab4']].map(([id,label,icon])=>`<button class="cgc-tab" role="tab" data-tab="${id}">${this.uiIcon(icon,'tab')}<span>${label}</span>${id==='history'?'<i class="dotmark" id="cgc-history-dot" hidden></i>':''}</button>`).join('')}</nav></section>`;
-                overlay.addEventListener('click',e=>{
-                    if(this.handleUiClick(e))return;
-                    if(e.target.closest('[data-action="close"]'))this.hidePanel();
-                    const tab=e.target.closest('[data-tab]'); if(tab)this.selectTab(tab.dataset.tab);
-                    const sourceCard=e.target.closest('[data-source-key]'); if(sourceCard&&!e.target.matches('input'))this.previewSource(sourceCard.dataset.sourceKey);
-                    const action=e.target.closest('[data-action]')?.dataset.action;
-                    if(['memory1','memory2','usernote'].includes(action))this.startTool(action);
-                    if(action==='custom-run')this.startTool(e.target.closest('[data-custom-id]')?.dataset.customId||'');
-                    if(action==='lore-plan')this.createLoreBatchPlan();
-                    if(action==='lore-open-next')this.openNextLorePart();
-                    if(action==='lore-clear-batch')this.clearCurrentLoreBatch();
-                    if(action==='lore-open-part')this.openLorePart(Number(e.target.closest('[data-part-index]')?.dataset.partIndex||0));
-                    if(action==='lore-open-result'){const row=e.target.closest('[data-part-index]');this.openLoreResult(Number(row?.dataset.partIndex||0),row?.dataset.batchId||'');}
-                    if(action==='lore-open-merge-result')this.openLoreMergeResult(e.target.closest('[data-merge-id]')?.dataset.mergeId||'');
-                    if(action==='lore-pick-json')overlay.querySelector('#cgc-lore-json-files')?.click();
-                    if(action==='lore-pick-final')overlay.querySelector('#cgc-lore-final-json')?.click();
-                    if(action==='lore-merge')this.startLoreMerge();
-                    if(action==='reset-lore-prompts'){saveSettings({loreExtractPrompt:LORE_EXTRACT_DEFAULT,loreMergePrompt:LORE_MERGE_DEFAULT,promptRevision:PROMPT_REVISION});this.toast('로어 JSON 지침을 내장 V4.8.1 / V4.8.6으로 초기화했어요.');}
-                    if(action==='advisor'){const q=cleanText(overlay.querySelector('#cgc-advisor-question')?.value);if(!q)return this.toast('RP 조언 질문을 입력해 주세요.',true);this.startTool('advisor',q);}
-                    if(action==='open-slot')void this.openCurrentGpt(e.target.closest('[data-slot]')?.dataset.slot||'audit').catch(error=>this.toast(`GPT 대화를 열지 못했어요: ${error.message}`,true));
-                    if(action==='continue-memory1')this.startTool('memory1');
-                    if(action==='approve-no-memory')this.approveNoMemoryRange();
-                    if(action==='release-unsent')void this.releaseUnsentDelivery().catch(error=>this.toast(error.message,true));
-                    if(action==='copy-result'){
-                        const button=e.target.closest('[data-result-key]');
-                        if(button)void this.copyResult(button.dataset.resultKey,button.dataset.resultSession||CrackAdapter.getRouteInfo()?.sessionKey||'').catch(error=>this.toast(error.message,true));
-                    }
-                    if(action==='tasks-tab')this.selectTab('tasks');
-                    if(action==='ask'){const q=cleanText(overlay.querySelector('#cgc-question')?.value);if(!q)return this.toast('질문을 입력해 주세요.',true);this.startTool('ask',q);}
-                    if(action==='refresh-sources')this.refreshReferencePanel(true);
-                    if(action==='save-settings')this.savePanelSettings();
-                    if(action==='disconnect-slot')this.disconnectConversationSlot(e.target.closest('[data-slot]')?.dataset.slot||'');
-                    if(action==='save-task-prompts')this.saveTaskPrompts();
-                    if(action==='toggle-last-prompt')overlay.querySelector('#cgc-last-send-prompt')?.classList.toggle('open');
-                    if(action==='resync')this.resetCurrentSession();
-                });
-                overlay.addEventListener('change',e=>{
-                    const input=e.target.closest('[data-source-toggle]');if(input){input.parentElement.querySelector('.sw')?.classList.toggle('off',!input.checked);}if(input)this.saveSourceToggle(input.dataset.sourceToggle,input.checked);
-                    if(e.target.id==='cgc-audit-target')this.auditTargetId=e.target.value||'';
-                    if(e.target.id==='cgc-reference-slot'){this.referenceStatusSlot=['qa','advisor'].includes(e.target.value)?e.target.value:'qa';this.renderReferenceCards();}
-                    if(e.target.id==='cgc-audit-notes')this.saveAuditNotes(e.target.value);
-                    if(e.target.id==='cgc-policy-preset'&&e.target.value!=='custom')this.applyPolicyPresetToPanel(e.target.value);
-                    if(/^cgc-policy-(audit|qa|advisor|memory1|memory2|usernote|lore)-(conversation|open)$/.test(e.target.id)){const preset=overlay.querySelector('#cgc-policy-preset');if(preset)preset.value='custom';}
-                });
-                overlay.addEventListener('change',e=>{
-                    if(e.target.id==='cgc-lore-json-files')this.handleLoreJsonFiles(e.target.files);
-                    if(e.target.id==='cgc-lore-final-json')this.handleLoreFinalJson(e.target.files?.[0]||null);
-                });
-                overlay.addEventListener('input',e=>{
-                    if(e.target.id!=='cgc-audit-notes')return;
-                    clearTimeout(this.auditNotesTimer);
-                    const value=e.target.value,sessionKey=CrackAdapter.getRouteInfo()?.sessionKey||'';
-                    this.auditNotesTimer=setTimeout(()=>this.saveAuditNotes(value,sessionKey),350);
-                });
-                overlay.addEventListener('input',e=>{if(e.target.closest('#cgc-settings-content')){this.settingsDirty=true;this.updatePromptCount();}});
-                overlay.addEventListener('change',e=>{if(e.target.closest('#cgc-settings-content')){this.settingsDirty=true;e.target.parentElement?.querySelector('.sw')?.classList.toggle('off',!e.target.checked);}});
-                overlay.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();const detail=overlay.querySelector('#cgc-result-detail');if(detail)detail.remove();else this.hidePanel();}});
-                CH.helperMount(overlay);this.panel=overlay;
+            this.ensurePanelStyles();
+            if(this.panelOpen!==true){
+                this.panelSizeCache=undefined;
+                if(CGC_ASYNC_GM_STORAGE&&this.desktopPanelEnabled())void refreshAsyncStorageKey(this.PANEL_SIZE_KEY).then(()=>{this.panelSizeCache=undefined;if(this.panelOpen&&!this.panelGestureCleanup)this.applyPanelGeometry();}).catch(()=>{});
             }
-            const wasOpen=this.panel.style.display==='flex';this.panel.style.display='flex';this.applyPanelGeometry();this.selectTab(tab);this.refreshPanel();const room=CrackAdapter.getRouteInfo()?.sessionKey||'';if(!wasOpen||this.uiCountRoom!==room){this.uiCountRoom=room;this.refreshHomeCounts();}
+            if(!this.panel)this.buildPanel();
+            const wasOpen=this.panelOpen===true;
+            this.panelOpen=true;clearTimeout(this.panelHideTimer);
+            this.panel.style.display='block';this.applyPanelGeometry();this.selectTab(tab);
+            if(!wasOpen){
+                const box=this.panel.querySelector('.cgp');
+                void box.offsetWidth;this.panel.classList.add('open');
+                box.classList.add('booting');clearTimeout(this.bootTimer);this.bootTimer=setTimeout(()=>box.classList.remove('booting'),1700);
+                this.startPanelClock();if(this.activeTab==='work')CgcEcho.start();this.launcher?.querySelector('.cgc-launch-more')?.setAttribute('aria-expanded','true');
+                CgcIsland.hide();requestAnimationFrame(()=>this.placeTabIndicator(false));
+                setTimeout(()=>{if(this.panelOpen&&!box.contains(document.activeElement))box.focus({preventScroll:true});},40);
+                const route=CrackAdapter.getRouteInfo();
+                if(route&&!this.referenceSnapshot)void this.refreshReferencePanel(false);
+            }
+            this.refreshPanel();
+            const room=CrackAdapter.getRouteInfo()?.sessionKey||'';if(!wasOpen||this.uiCountRoom!==room){this.uiCountRoom=room;this.refreshHomeCounts();}
         },
-
-        hidePanel(){CH.shell.close();},
+        hidePanel(){
+            this.panelGestureCleanup?.();if(!this.panel||!this.panelOpen)return;
+            const hadFocus=this.panel.contains(document.activeElement);
+            this.panelOpen=false;this.panel.classList.remove('open');this.stopPanelClock();CgcEcho.stop();this.closeSheet();
+            if(hadFocus)this.launcher?.querySelector('.cgc-launch-more')?.focus({preventScroll:true});
+            this.launcher?.querySelector('.cgc-launch-more')?.setAttribute('aria-expanded','false');
+            clearTimeout(this.panelHideTimer);this.panelHideTimer=setTimeout(()=>{if(!this.panelOpen&&this.panel)this.panel.style.display='none';},380);
+        },
+        togglePanel(){if(this.panelOpen)this.hidePanel();else this.showPanel('work');},
+        startPanelClock(){
+            const tick=()=>{const el=this.panel?.querySelector('#cgc-ui-clock');if(el&&document.visibilityState!=='hidden')el.textContent=new Date().toTimeString().slice(0,8);};
+            tick();clearInterval(this.clockTimer);this.clockTimer=setInterval(tick,1000);
+        },
+        stopPanelClock(){clearInterval(this.clockTimer);this.clockTimer=0;},
+        rememberRoomTitle(sessionKey,raw=readValue(KEY.state,null)){
+            // Saved-data rows need a name. Only a title read from the page is kept (never the '크랙 RP' fallback), a
+            // renamed room is updated, and the title must read the same twice a few seconds apart, so a room switch in
+            // progress never stores the previous room's title. Returns true when it saved.
+            const room=raw?.sessions?.[sessionKey];if(!room||!cgcRoomHasData(room))return false;
+            const title=CrackAdapter.getHeaderTitle(),now=Date.now(),seen=this.titleSeen;
+            if(!title||cleanText(room.title||'')===title){this.titleSeen=null;return false;}
+            if(seen?.room!==sessionKey||seen.title!==title){this.titleSeen={room:sessionKey,title,at:now};return false;}
+            if(now-seen.at<2500)return false;
+            this.titleSeen=null;const state=getState(),session=getSession(state,sessionKey);if(session.title===title)return false;
+            session.title=title;saveState(state);return true;
+        },
         renderAuditTargetOptions(messages = []) {
             const select=this.panel?.querySelector('#cgc-audit-target');if(!select)return;
             const assistants=messages.filter(message=>message.role==='assistant');
@@ -19065,11 +20626,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
 
         async previewSource(key,ensure=true){
-            this.selectedSourceKey=key||'profile';if(ensure&&!this.referenceSnapshot)await this.refreshReferencePanel(false);const src=this.referenceSnapshot?.sources?.[this.selectedSourceKey],meta=SOURCE_META[this.selectedSourceKey];const title=this.panel?.querySelector('#cgc-source-preview-title'),pre=this.panel?.querySelector('#cgc-source-preview');if(title)title.textContent=meta?.label||'자료 미리보기';if(pre)pre.textContent=!src?'아직 자료를 읽지 않았어요.':!src.available?'이 자료를 현재 읽을 수 없어요.':src.text||'(현재 비어 있음)';
+            this.selectedSourceKey=key||'profile';if(ensure&&!this.referenceSnapshot)await this.refreshReferencePanel(false);const src=this.referenceSnapshot?.sources?.[this.selectedSourceKey],meta=SOURCE_META[this.selectedSourceKey];const title=this.panel?.querySelector('#cgc-source-preview-title'),pre=this.panel?.querySelector('#cgc-source-preview');if(title)title.textContent=meta?.label||'자료 미리 보기';if(pre)pre.textContent=!src?'아직 자료를 읽지 않았어요.':!src.available?'이 자료를 지금은 읽을 수 없어요.':src.text||'(지금 비어 있어요)';
+            this.panel?.querySelectorAll('[data-ui-action="source-select"]').forEach(b=>b.classList.toggle('on',b.dataset.source===this.selectedSourceKey));
         },
-
-        saveSourceToggle(key,checked){const meta=SOURCE_META[key];if(!meta)return;saveSettings({[meta.setting]:!!checked});this.toast(`${meta.label} ${checked?'포함':'제외'}로 설정했어요. 자료 설정만 바뀌며 GPT는 실행하지 않습니다.`);this.renderReferenceCards();this.renderTaskSourceSettings();},
-
+        saveSourceToggle(key,checked){const meta=SOURCE_META[key];if(!meta)return;saveSettings({[meta.setting]:!!checked});this.toast(`${meta.label}: ${checked?'함께 보내요':'보내지 않아요'}`);this.renderReferenceCards();this.renderTaskSourceSettings();},
         renderTaskSourceSettings(){
             if(!this.panel)return;const settings=getSettings();
             for(const toolId of ['audit','ask','advisor']){
@@ -19094,13 +20654,6 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             session.auditNotes=next;saveState(state);
         },
 
-        applyPolicyPresetToPanel(name='recommended'){
-            if(!this.panel||name==='custom')return;
-            const values=policyPresetValues(name);
-            const set=(id,value)=>{const el=this.panel.querySelector(id);if(el)el.value=value;};
-            for(const group of ['audit','qa','advisor','memory1','memory2','usernote'])set(`#cgc-policy-${group}-conversation`,values[`${group}ConversationMode`]);
-            for(const group of ['audit','qa','advisor','memory1','memory2','usernote','lore'])set(`#cgc-policy-${group}-open`,values[`${group}OpenMode`]||'inherit');
-        },
 
         disconnectConversationSlot(slotId=''){
             if(!isRoutableConversationSlot(slotId))return;
@@ -19201,6 +20754,168 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
     };
 
+    // Repairs records that builds before 1.4.0 saved while ChatGPT still showed a chat's client-only id
+    // (/c/local-chatgpt:...). That id is reused for later new chats, so every record is repaired per job:
+    // the durable conversation must contain the job's own "[CGC-JOB: <id>]" request, proven either in the
+    // open page or through the read-only conversation API. Nothing is resent.
+    const CgcConversationRepair = {
+        running:null,
+        misses(){const t=readValue(KEY.conversationRepair,null);return t&&typeof t==='object'&&!Array.isArray(t)?t:{};},
+        async noteMiss(jobId){
+            await refreshAsyncStorageKey(KEY.conversationRepair);
+            const rows=Object.entries({...this.misses(),[jobId]:{at:Date.now()}}).sort((a,b)=>Number(b[1]?.at||0)-Number(a[1]?.at||0)).slice(0,100);
+            writeValue(KEY.conversationRepair,Object.fromEntries(rows));await flushStorageWrites();
+        },
+        // jobId -> earliest known submit time, for every record still holding a client-only address.
+        async pendingJobs({receipts=true}={}){
+            await refreshAsyncStorageKey(KEY.state);
+            const state=readValue(KEY.state,null),jobs=new Map();
+            const add=(url,jobId,at=0)=>{
+                if(!jobId||!isTempConversationUrl(url||''))return;
+                const prior=jobs.get(jobId)||0;
+                jobs.set(jobId,Number(at)>0&&(!prior||Number(at)<prior)?Number(at):prior);
+            };
+            for(const session of Object.values(state?.sessions||{})){
+                for(const slot of Object.values(session?.conversations||{}))add(slot?.url,slot?.lastRequestId);
+                for(const tx of session?.transmissions||[])add(tx?.conversationUrl,tx?.jobId,tx?.createdAt);
+                for(const batch of session?.loreBatches||[])for(const part of batch?.parts||[])add(part?.conversationUrl,part?.lastJobId,part?.submittedAt);
+                for(const merge of session?.loreMergeHistory||[])add(merge?.conversationUrl,merge?.lastJobId,merge?.submittedAt);
+            }
+            // Receipts can be large (they carry the job); the periodic wake skips this scan, page start and job runs keep it.
+            if(receipts)for(const id of WebDelivery.ids()){
+                const r=await refreshAsyncStorageKey(WebDelivery.key(id));
+                if(r?.job?.id===id)add(r.conversationUrl||r.ack?.conversationUrl||'',id,r.at);
+            }
+            for(const [id,at] of [...jobs]){
+                const r=await refreshAsyncStorageKey(WebDelivery.key(id));
+                if(Number(r?.at)>0&&(!at||Number(r.at)<at))jobs.set(id,Number(r.at));
+            }
+            return jobs;
+        },
+        pageProof(jobId){
+            const here=persistentConversationUrl(location.href);if(!here)return '';
+            const marker=`[CGC-JOB: ${jobId}]`;
+            return WebDelivery.userRoots().some(root=>String(root.innerText||root.textContent||'').includes(marker))?here:'';
+        },
+        async backendGet(path){
+            const get=async(target,token)=>{
+                const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+                try{
+                    const response=await CgcBackendNetwork.request(CHATGPT_ORIGIN+target,{credentials:'same-origin',cache:'no-store',redirect:'error',signal:controller.signal,headers:{Accept:'application/json',...(token?{Authorization:`Bearer ${token}`}:{})}});
+                    return await response.json();
+                }finally{clearTimeout(timer);}
+            };
+            let token=ChatGPTBridge.backendAuthCache?.expiresAt>Date.now()?ChatGPTBridge.backendAuthCache.token:'';
+            try{
+                if(!token){
+                    const auth=await get('/api/auth/session','');token=typeof auth?.accessToken==='string'?auth.accessToken:'';
+                    if(!token)throw Object.assign(new Error('login required'),{status:401});
+                    ChatGPTBridge.backendAuthCache={token,expiresAt:Date.now()+300000};
+                }
+                return await get(path,token);
+            }catch(error){
+                if(error?.status===401||error?.status===403)ChatGPTBridge.backendAuthCache={token:'',expiresAt:0};
+                throw error;
+            }finally{token='';}
+        },
+        // One listing and at most a few conversation reads per run, shared by every job being repaired.
+        async serverProof(jobId,at,cache){
+            if(!at)return '';
+            if(!cache.list){
+                cache.list=[];
+                for(const offset of [0,60]){
+                    const page=await this.backendGet(`/backend-api/conversations?offset=${offset}&limit=60&order=updated`);
+                    for(const item of page?.items||[]){
+                        const id=String(item?.id||''),created=Date.parse(item?.create_time||'');
+                        if(/^[A-Za-z0-9-]{8,}$/.test(id)&&Number.isFinite(created))cache.list.push({id,created});
+                    }
+                    if(!(page?.items?.length>=60))break;
+                }
+            }
+            // A new chat is created by the request itself, moments after its submit receipt.
+            const candidates=cache.list.filter(item=>item.created>=at-120000&&item.created<=at+15*60000)
+                .sort((a,b)=>Math.abs(a.created-at)-Math.abs(b.created-at)).slice(0,4);
+            const marker=`[CGC-JOB: ${jobId}]`;
+            for(const item of candidates){
+                if(!cache.texts.has(item.id)){
+                    if(cache.reads>=8)break;cache.reads++;
+                    const data=await this.backendGet(`/backend-api/conversation/${encodeURIComponent(item.id)}`);
+                    const texts=[];
+                    for(const node of Object.values(data?.mapping||{})){
+                        const m=node?.message;if(m?.author?.role!=='user')continue;
+                        texts.push(Array.isArray(m.content?.parts)?m.content.parts.filter(p=>typeof p==='string').join('\n'):'');
+                    }
+                    cache.texts.set(item.id,texts.join('\n'));
+                }
+                if(cache.texts.get(item.id).includes(marker))return `${CHATGPT_ORIGIN}/c/${item.id}`;
+            }
+            return '';
+        },
+        // Rewrite only the client-only addresses that belong to this job.
+        async apply(jobId,url){
+            const durable=persistentConversationUrl(url);if(!durable)return false;
+            const fix=value=>isTempConversationUrl(value||'')?durable:value;
+            await refreshAsyncStorageKey(KEY.state);
+            const state=getState();let changed=false;
+            for(const session of Object.values(state.sessions||{})){
+                for(const slot of Object.values(session?.conversations||{}))if(slot?.lastRequestId===jobId&&isTempConversationUrl(slot.url||'')){slot.url=durable;changed=true;}
+                for(const tx of session?.transmissions||[])if(tx?.jobId===jobId&&isTempConversationUrl(tx.conversationUrl||'')){tx.conversationUrl=durable;changed=true;}
+                for(const batch of session?.loreBatches||[])for(const part of batch?.parts||[])if(part?.lastJobId===jobId&&isTempConversationUrl(part.conversationUrl||'')){part.conversationUrl=durable;changed=true;}
+                for(const merge of session?.loreMergeHistory||[])if(merge?.lastJobId===jobId&&isTempConversationUrl(merge.conversationUrl||'')){merge.conversationUrl=durable;changed=true;}
+            }
+            if(changed)saveState(state);
+            const r=await refreshAsyncStorageKey(WebDelivery.key(jobId));
+            if(r?.job?.id===jobId&&(isTempConversationUrl(r.conversationUrl||'')||isTempConversationUrl(r.ack?.conversationUrl||''))){
+                r.conversationUrl=fix(r.conversationUrl);if(r.ack)r.ack={...r.ack,conversationUrl:fix(r.ack.conversationUrl)};
+                await WebDelivery.save(r);changed=true;
+            }
+            await refreshAsyncStorageKey(KEY.submitted);
+            const rows=readValue(KEY.submitted,[]);
+            if(Array.isArray(rows)&&rows.some(row=>row?.jobId===jobId&&isTempConversationUrl(row.ack?.conversationUrl||''))){
+                writeValue(KEY.submitted,rows.map(row=>row?.jobId===jobId&&row.ack?{...row,ack:{...row.ack,conversationUrl:fix(row.ack.conversationUrl)}}:row));changed=true;
+            }
+            await flushStorageWrites();
+            WebDelivery.remember(jobId);
+            CGC_TRACE(jobId,'conversation-repaired',{url:durable,changed});
+            return changed;
+        },
+        run({force=false,jobIds=null,receipts=true}={}){
+            if(this.running)return this.running;
+            this.running=(async()=>{
+                await refreshAsyncStorageKey(KEY.conversationRepair);
+                const cache={list:null,texts:new Map(),reads:0},repaired=new Map();
+                for(const [jobId,at] of await this.pendingJobs({receipts})){
+                    if(jobIds&&!jobIds.includes(jobId))continue;
+                    let url=this.pageProof(jobId);
+                    if(!url){
+                        // A failed server lookup is retried at most every 30 minutes unless a job needs it now.
+                        const miss=this.misses()[jobId];
+                        if(!force&&miss&&Date.now()-Number(miss.at||0)<30*60000)continue;
+                        try{url=await this.serverProof(jobId,at,cache);}
+                        catch(error){console.warn('[cgc] conversation address lookup deferred',error?.message||error);break;}
+                    }
+                    if(url){await this.apply(jobId,url);repaired.set(jobId,url);}
+                    else await this.noteMiss(jobId);
+                }
+                if(repaired.size){
+                    void WebDelivery.recover().catch(error=>console.warn('[cgc] resume',error));
+                    void CompanionTaskUI.refresh().catch(()=>{});
+                }
+                return repaired;
+            })().finally(()=>{this.running=null;});
+            return this.running;
+        },
+        // A new job copied its slot's address; once the slot's last request is repaired, the slot holds the durable chat.
+        async resolveForJob(job){
+            const known=persistentConversationUrl(job?.conversationUrl||'');if(known)return known;
+            if(!isTempConversationUrl(job?.conversationUrl||''))return '';
+            await this.run({force:true});
+            await refreshAsyncStorageKey(KEY.state);
+            const slot=readValue(KEY.state,null)?.sessions?.[job.sessionKey]?.conversations?.[conversationSlotOf(job)];
+            return persistentConversationUrl(slot?.url||'');
+        },
+    };
+
     const ChatGPTBridge = {
         harvestingJobs:new Set(),
         historyWrites:new Map(),titlePauseUntil:0,
@@ -19255,9 +20970,31 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             this.installLifecycleRefresh();
             CgcStartup.mark('bridge-ui');
             CompanionTaskUI.install();
+            // Older builds could save a chat's client-only address; repair those links (read-only proof).
+            if(CGC_EARLY_RESOLVE_MARKER&&!this.bootstrapJobId){
+                this.cleanupHandoffMarkers();
+                setTimeout(()=>void this.openResolvedConversation(CGC_EARLY_RESOLVE_MARKER).catch(error=>this.localToast(error?.message||String(error))),0);
+            }else setTimeout(()=>void CgcConversationRepair.run().catch(error=>console.warn('[cgc] conversation address repair',error)),1200);
             if (this.bootstrapJobId) setTimeout(() => {void this.processJobById(this.bootstrapJobId).catch(showStartupError);}, 0);
             else setTimeout(()=>WebDelivery.recover().catch(error=>console.warn('[cgc] resume',error)),500);
             // Periodic recovery is owned by CgcJobLinks.installGpt().
+        },
+
+        async openResolvedConversation(id){
+            this.localToast('저장된 GPT 대화 주소를 확인하고 있어요…');
+            await CgcConversationRepair.run({force:true});
+            await refreshAsyncStorageKey(KEY.state);
+            const r=await refreshAsyncStorageKey(WebDelivery.key(id));
+            let url=persistentConversationUrl(r?.conversationUrl||r?.ack?.conversationUrl||'');
+            if(!url)for(const session of Object.values(readValue(KEY.state,null)?.sessions||{})){
+                const tx=(session?.transmissions||[]).find(row=>row?.jobId===id);
+                url=persistentConversationUrl(tx?.conversationUrl||'');
+                if(!url)for(const slot of Object.values(session?.conversations||{}))if(slot?.lastRequestId===id){url=persistentConversationUrl(slot.url||'');if(url)break;}
+                if(url)break;
+            }
+            if(!url)return this.localToast('이 작업의 실제 GPT 대화를 찾지 못했어요. 대화 목록에서 해당 대화를 열고 🧭 메뉴의 「현재 대화 연결 복구」를 눌러 주세요.');
+            // The alias was proven by the job's own request marker, so the review marker is safe here.
+            location.replace(r?.job?.id===id?`${url}#cgc-review=${encodeURIComponent(id)}`:url);
         },
 
         readStoredSurfaceMode(){
@@ -19287,10 +21024,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             try{
                 const current=new URL(location.href),before=current.href;
                 const hash=new URLSearchParams(current.hash.slice(1));
-                if(hash.has('cgc-job')||hash.has('cgc-surface')){
-                    hash.delete('cgc-job');hash.delete('cgc-surface');current.hash=hash.toString();
+                if(hash.has('cgc-job')||hash.has('cgc-surface')||hash.has('cgc-resolve')){
+                    hash.delete('cgc-job');hash.delete('cgc-surface');hash.delete('cgc-resolve');current.hash=hash.toString();
                 }
-                for(const key of ['cgc_job','cgc_boot','cgc_surface'])current.searchParams.delete(key);
+                for(const key of ['cgc_job','cgc_boot','cgc_surface','cgc_resolve'])current.searchParams.delete(key);
                 if(current.href!==before)history.replaceState(history.state,'',current.href);
             }catch{}
         },
@@ -19401,6 +21138,17 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(event.targetInstanceId&&event.targetInstanceId!==this.instanceId)return;
                 this.handleDispatch(event).catch(error => console.error(`[${APP.id}] targeted dispatch failed`, error));
             });
+            // Crack nudges pages that hold an unanswered job. Storage events reach a hidden page at once even when
+            // its timers are held for a minute, so the completion check runs inside this event.
+            addValueChangeListenerCompat(KEY.completionPoke, (_name, _oldValue, poke) => {
+                if(!Array.isArray(poke?.jobIds))return;
+                let resume=false;
+                for(const id of poke.jobIds){
+                    const watch=this.completionWatches.get(id);
+                    if(watch)watch.poke?.();else if(WebDelivery.ids().includes(id))resume=true;
+                }
+                if(resume&&!this.processingJobId)void WebDelivery.recover().catch(error=>console.warn('[cgc] resume',error));
+            });
         },
 
         async handleDispatch(event) {
@@ -19436,29 +21184,44 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 return;
             }
             if (event.kind !== 'job' || !event.jobId) return;
-            if (this.processingJobId && this.processingJobId !== event.jobId) return; // Busy tabs intentionally do not ACK; Crack opens another tab.
-            // A manually occupied or currently-generating tab is not commandeered. No ACK => Crack opens a separate job tab.
+            // Phase 1 is written before any await, so even a throttled background page answers at once.
+            // Busy, occupied or incompatible pages decline explicitly; Crack then opens a separate job surface.
+            const reply=(phase,reason='')=>writeValue(KEY.dispatchAck,{nonce:event.nonce,targetTabId:this.tabId,targetInstanceId:this.instanceId,jobId:event.jobId,kind:'job',phase,accepted:phase==='accepted',reason,at:Date.now()});
+            const decline=reason=>{reply('declined',reason);CGC_TRACE(event.jobId,'dispatch-decline',{reason});};
+            if (this.processingJobId && this.processingJobId !== event.jobId) return decline('busy');
+            // A manually occupied or currently-generating tab is not commandeered.
+            // An empty ProseMirror composer reads as "\n" (placeholder paragraph), so judge drafts by visible text.
             const currentComposer = this.findComposer();
-            if (this.isGenerationBusy() || (currentComposer && this.getComposerText(currentComposer))) return;
+            if (this.isGenerationBusy()) return decline('generating');
+            if (currentComposer && this.hasComposerDraft(currentComposer)) return decline('draft');
+            reply('received');
             const controlFailed=await hydrateAsyncJobControl(event.jobId);
-            if(controlFailed.length)return; // No ACK: the sender can open a fresh tab.
+            if(controlFailed.length)return decline('storage');
             const receipt=await refreshAsyncStorageKey(WebDelivery.key(event.jobId));
-            if(await this.guardExistingDelivery(event.jobId,receipt))return;
+            if(await this.guardExistingDelivery(event.jobId,receipt))return decline('delivered');
             const job = readJob(event.jobId);
-            if (!validV3Job(job)) return;
-            if(event.roomKey&&job.sessionKey!==event.roomKey)return;
-            if(event.slotId&&conversationSlotOf(job)!==event.slotId)return;
+            if (!validV3Job(job)) return decline('invalid');
+            if(event.roomKey&&job.sessionKey!==event.roomKey)return decline('room');
+            if(event.slotId&&conversationSlotOf(job)!==event.slotId)return decline('slot');
             await refreshAsyncStorageKey(KEY.state);
-            if(jobInvalidatedByReset(job)){discardJobAfterReset(job.id);return;}
+            if(jobInvalidatedByReset(job)){discardJobAfterReset(job.id);return decline('reset');}
             const liveCompatible=()=>registeredTabRouteCompatible({meta:{...(this.currentTabData?.cgcTab||{}),url:location.href}},
                 job.conversationUrl||job.targetUrl||job.gptBaseUrl,job.sessionKey,conversationSlotOf(job));
-            if(!liveCompatible()||this.isGenerationBusy()||this.hasComposerDraft(this.findComposer()))return;
-            if (!(await this.claimJob(job))) return;
-            if(!liveCompatible()||this.isGenerationBusy()||this.hasComposerDraft(this.findComposer())){this.releaseClaim(job.id);return;}
+            if(!liveCompatible()||this.isGenerationBusy()||this.hasComposerDraft(this.findComposer()))return decline('route');
+            if (!(await this.claimJob(job))) return decline('claimed');
+            if(!liveCompatible()||this.isGenerationBusy()||this.hasComposerDraft(this.findComposer())){this.releaseClaim(job.id);return decline('route');}
             await this.markBusy(job.id,job);
-            writeValue(KEY.dispatchAck,{nonce:event.nonce,targetTabId:this.tabId,targetInstanceId:this.instanceId,jobId:job.id,accepted:true,kind:'job',at:Date.now()});
+            // Phase 2: accept, then start only on Crack's confirmation. Crack may already have opened another
+            // surface after a slow answer; its {go:false} makes this page stand down instead of racing it.
+            const confirmed=waitForStorageEvent(KEY.dispatchConfirm,value=>value?.nonce===event.nonce,DISPATCH_CONFIRM_WAIT_MS);
+            reply('accepted');
             await flushStorageWrites();
-            try { window.focus(); } catch { /* best effort */ }
+            const verdict=await confirmed;
+            if(!verdict?.go){
+                CGC_TRACE(job.id,'dispatch-stand-down',{confirmed:Boolean(verdict)});
+                this.releaseClaim(job.id);if(this.processingJobId===job.id)await this.markBusy('');return;
+            }
+            // v1.4.0: a job never raises a minimized or covered window; the whole pipeline runs in the background.
             await this.processPendingJob(job, true);
         },
 
@@ -19596,10 +21359,11 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             const fresh=current?.jobId===job.id&&Date.now()-Number(current.claimedAt||0)<CLAIM_TTL_MS;
             if(fresh){
                 if(!current.ownerInstanceId)return false;
-                if(current.ownerInstanceId!==this.instanceId)return false;
+                // A page that navigates or reloads for its own job is a new document in the same tab: it keeps the claim.
+                if(current.ownerInstanceId!==this.instanceId&&!(current.ownerId&&current.ownerId===this.tabId))return false;
             }
             writeValue(key,{jobId:job.id,ownerId:this.tabId,ownerInstanceId:this.instanceId,claimedAt:Date.now()});
-            await flushStorageWrites();await sleep(100);
+            await flushStorageWrites();await cgcPause(100);
             const after=await refreshAsyncStorageKey(key);
             return after?.jobId===job.id&&after?.ownerInstanceId===this.instanceId;
         },
@@ -19619,12 +21383,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
 
         async waitForExactTarget(target,timeout=4500) {
-            const started=Date.now();
-            while(Date.now()-started<timeout){
-                if(this.sameTarget(location.href,target))return true;
-                await sleep(120);
-            }
-            return this.sameTarget(location.href,target);
+            return Boolean(await cgcWaitFor(()=>this.sameTarget(location.href,target),{timeout,interval:150,attributes:false,events:['urlchange','popstate','hashchange']}));
         },
 
         async guardExistingDelivery(jobId,receipt=undefined){
@@ -19644,7 +21403,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             return {prompt,attachment};
         },
 
-        async processJobById(jobId) {
+        async processJobById(jobId,afterClaimWait=false) {
             const controlFailed=await hydrateAsyncJobControl(jobId);
             if(controlFailed.length)throw new Error('GPT 작업 정보를 읽지 못했어요. 페이지를 새로고침해 주세요.');
             await refreshAsyncStorageKey(KEY.state);
@@ -19656,7 +21415,15 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(!validV3Job(job))return this.localToast('크랙 작업을 찾지 못했거나 만료됐어요. 크랙에서 다시 눌러 주세요.');
             const submitted=this.findSubmittedAck(job.id);
             if(submitted){writeValue(KEY.ack,{...submitted,nonce:uid('ack-replay')});return;}
-            if(!(await this.claimJob(job)))return;
+            if(!(await this.claimJob(job))){
+                // Another ChatGPT window holds this job. Say so instead of idling silently, and take over
+                // only when that claim is released or lapses (the delivery guards then stop a duplicate).
+                if(afterClaimWait)return this.localToast('이 작업은 다른 GPT 창이 처리하고 있어요. 이 창은 대기를 마칩니다.');
+                this.reportProgress(job,'claim-wait','다른 GPT 창이 이 작업을 처리 중 · 그 창이 멈추면 이 창이 이어받음');
+                this.localToast('이 작업은 다른 GPT 창에서 처리 중이에요. 그 창이 멈추면 이 창이 이어받습니다.');
+                await waitForStorageEvent(claimStorageKey(job.id),value=>!value||value.jobId!==job.id||Date.now()-Number(value.claimedAt||0)>=CLAIM_TTL_MS,CLAIM_TTL_MS+5000);
+                return this.processJobById(jobId,true);
+            }
             await this.markBusy(job.id,job);
             await this.processPendingJob(job,true);
         },
@@ -19679,7 +21446,17 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             try {
                 this.reportProgress(job,'job-load','GPT 작업 수신');
                 await flushStorageWrites();
-                const target=canonicalChatGptUrl(job.conversationUrl||job.targetUrl||job.gptBaseUrl)||CHATGPT_HOME;
+                let target=canonicalChatGptUrl(job.conversationUrl||job.targetUrl||job.gptBaseUrl)||CHATGPT_HOME;
+                let resolvedFromTemp=false;
+                if(isTempConversationUrl(target)){
+                    // Saved by an older build while ChatGPT still showed the chat's client-only id.
+                    phase='resolve';this.reportProgress(job,phase,'저장된 GPT 대화 주소 확인 중');
+                    const durable=await CgcConversationRepair.resolveForJob(job);
+                    if(!durable)throw new Error('저장된 GPT 대화 주소가 ChatGPT 임시 주소라 실제 대화를 찾지 못했어요. 해당 GPT 대화를 열어 「현재 대화 연결 복구」를 누르거나, 이 작업 설정에서 「전체 다시」로 새 대화를 시작해 주세요.');
+                    job={...job,conversationUrl:durable,targetUrl:durable};
+                    writeValue(jobStorageKey(job.id),job);await flushStorageWrites();
+                    target=durable;resolvedFromTemp=true;
+                }
                 CGC_TRACE(job.id, 'nav-evaluate', {
                     currentHref:location.href,
                     target,
@@ -19694,7 +21471,8 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                     scope:jobScopeOf(job),
                 });
                 if(!this.sameTarget(location.href,target)){
-                    const arrivedWithJob = this.bootstrapJobId === job.id;
+                    // A just-resolved address was never opened by Crack, so this page navigates to it once.
+                    const arrivedWithJob = this.bootstrapJobId === job.id && !resolvedFromTemp;
                     if(arrivedWithJob){
                         let currentKind=chatGptTargetKind(location.href), targetKind=chatGptTargetKind(target);
 
@@ -19883,7 +21661,18 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             return new Error(`${message} (Android 빈 편집기 표식은 자동으로 무시합니다.)`);
         },
         isGenerationBusy(){const selectors=['button[data-testid="stop-button"]','button[data-testid*="stop"]','button[aria-label="Stop generating"]','button[aria-label="Stop streaming"]','button[aria-label*="Stop"]','button[aria-label*="중지"]'];return selectors.some(selector=>Array.from(document.querySelectorAll(selector)).some(isVisible));},
-        async waitForTurnReady(timeout){const started=Date.now();let stableSince=0;while(Date.now()-started<timeout){const composer=this.findComposer();const disabled=composer?.getAttribute?.('aria-disabled')==='true';const ready=Boolean(composer&&!disabled&&!this.isGenerationBusy());if(ready){if(!stableSince)stableSince=Date.now();if(Date.now()-stableSince>=450)return composer;}else stableSince=0;await sleep(180);}return null;},
+        async waitForTurnReady(timeout){
+            // Ready = the same enabled composer with no running generation, still so 450 ms later.
+            const deadline=Date.now()+timeout;
+            const ready=()=>{const composer=this.findComposer();return composer&&composer.getAttribute?.('aria-disabled')!=='true'&&!this.isGenerationBusy()?composer:null;};
+            for(;;){
+                const composer=await cgcWaitFor(ready,{timeout:Math.max(1000,deadline-Date.now()),interval:250});
+                if(!composer)return null;
+                await cgcPause(450);
+                if(ready()===composer)return composer;
+                if(Date.now()>deadline)return null;
+            }
+        },
 
         findTextFileInput() {
             const scope=this.composerAttachmentScope();if(!scope)return null;
@@ -20046,48 +21835,16 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(this.uploadHasError())return {done:true,value:false};
                 const preview=this.attachmentPreviewExists(fileName,beforeCount);
                 // A FileList assignment or enabled Send button is not server/UI acceptance.
-                const ready=preview||((CGC_PLATFORM.iOS||CGC_PLATFORM.android||CGC_PLATFORM.firefox)&&input&&file&&this.inputContainsFile(input,file)&&!this.getComposerText(this.findComposer())&&!!this.findSendButton());
+                const ready=preview||((CGC_PLATFORM.iOS||CGC_PLATFORM.android||CGC_PLATFORM.firefox)&&input&&file&&this.inputContainsFile(input,file)&&!this.hasComposerDraft(this.findComposer())&&!!this.findSendButton());
                 if(ready&&!this.uploadLooksBusy())return {done:true,value:true};
                 return {done:false,value:false};
             };
 
             const immediate=evaluate();
             if(immediate.done)return immediate.value;
-
-            return await new Promise(resolve=>{
-                let finished=false,observer=null,timer=0,fallback=0,scheduled=0;
-                const finish=value=>{
-                    if(finished)return;
-                    finished=true;
-                    try{observer?.disconnect();}catch{}
-                    if(timer)clearTimeout(timer);
-                    if(fallback)clearInterval(fallback);
-                    if(scheduled)clearTimeout(scheduled);
-                    resolve(!!value);
-                };
-                const check=()=>{
-                    if(finished)return;
-                    const state=evaluate();
-                    if(state.done)finish(state.value);
-                };
-
-                const scope=this.composerAttachmentScope()||document.body;
-                try{
-                    observer=new MutationObserver(()=>{if(!scheduled)scheduled=setTimeout(()=>{scheduled=0;check();},100);});
-                    observer.observe(scope,{
-                        childList:true,
-                        subtree:true,
-                        characterData:true,
-                        attributes:true,
-                        attributeFilter:['aria-busy','aria-label','aria-disabled','disabled','data-state','data-testid']
-                    });
-                }catch{/* polling safety net below */}
-
-                // MutationObserver가 잡지 못하는 브라우저/UI 변화만 위한 저빈도 안전망.
-                fallback=setInterval(check,500);
-                timer=setTimeout(()=>finish(false),timeout);
-                queueMicrotask(check);
-            });
+            // Composer mutations drive the checks; the interval is only a low-frequency safety net.
+            const state=await cgcWaitFor(()=>{const s=evaluate();return s.done?s:null;},{timeout,root:this.composerAttachmentScope()||document.body,interval:500});
+            return Boolean(state?.value);
         },
 
         async clearInjectedFileInput(input) {
@@ -20662,8 +22419,10 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             // One native file event per job. Never materialize the RP body inside ProseMirror.
             const path=location.pathname;
             let input=this.findTextFileInput();
-            const started=Date.now();
-            while(!input&&Date.now()-started<8000){await sleep(200);if(location.pathname!==path)throw new Error('GPT 대화가 바뀌어 첨부를 중단했어요.');input=this.findTextFileInput();}
+            if(!input){
+                input=await cgcWaitFor(()=>location.pathname!==path?{moved:true}:this.findTextFileInput(),{timeout:8000,interval:250});
+                if(input?.moved)throw new Error('GPT 대화가 바뀌어 첨부를 중단했어요.');
+            }
             if(!input)throw new Error('TXT를 받을 파일 입력 요소가 없어요. GPT 파일 첨부 메뉴를 확인해 주세요.');
             if(this.hasComposerDraft())throw this.composerDraftBlockedError();
             const before=this.getAttachmentSignalSnapshot();
@@ -20718,17 +22477,17 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(text.length>MAX_INLINE_COMPOSER_CHARS)throw Object.assign(new Error('본문 자동 입력이 '+text.length.toLocaleString()+'자로 TXT 기준을 초과했어요. 입력창 과부하를 막기 위해 중단했습니다. 크랙을 새로고침한 뒤 TXT 작업을 다시 만들어 주세요.'),{code:'inline_payload_too_large'});
             if(this.hasComposerDraft(composer))throw this.composerDraftBlockedError(composer,'ChatGPT 입력창에 기존 내용이 남아 있어 자동 삽입을 중단했어요.');
             composer.focus();
-            if(composer instanceof HTMLTextAreaElement||composer instanceof HTMLInputElement){const proto=composer instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(composer,text);if(!setter)composer.value=text;composer.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));composer.dispatchEvent(new Event('change',{bubbles:true}));await sleep(100);if(!await this.waitForComposerExactText(text,5000))throw new Error('프롬프트 입력이 끝까지 반영되지 않았어요.');return;}
+            if(composer instanceof HTMLTextAreaElement||composer instanceof HTMLInputElement){const proto=composer instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(composer,text);if(!setter)composer.value=text;composer.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:text}));composer.dispatchEvent(new Event('change',{bubbles:true}));await cgcPause(100);if(!await this.waitForComposerExactText(text,5000))throw new Error('프롬프트 입력이 끝까지 반영되지 않았어요.');return;}
             if(this.hasComposerDraft(composer))throw this.composerDraftBlockedError(composer,'ChatGPT 입력창에 기존 내용이 남아 있어 자동 삽입을 중단했어요.');
             // One insertion only. A failed/partial write or concurrent user edit must never
             // trigger selectAll/delete, a DOM rewrite, or a second insertion.
             if(document.activeElement!==composer&&!composer.contains(document.activeElement))throw new Error('GPT 입력창 포커스를 확인하지 못해 자동 입력을 중단했어요.');
             try{document.execCommand('insertText',false,text);}catch{throw new Error('GPT 입력창이 자동 입력을 받지 못했어요. 기존 내용은 유지했습니다.');}
-            await sleep(140);
+            await cgcPause(140);
             if(!composer.isConnected||WebDelivery.normalize(this.getComposerText(composer))!==WebDelivery.normalize(text))throw new Error('프롬프트 입력 결과가 달라 중단했어요. 입력창 내용은 지우거나 다시 쓰지 않았습니다.');
             if(!(await this.waitForComposerExactText(text,5000)))throw new Error('프롬프트 입력이 끝까지 반영되지 않았어요.');
         },
-        async waitForComposerExactText(expected,timeout){const started=Date.now();while(Date.now()-started<timeout){if(WebDelivery.normalize(this.getComposerText())===WebDelivery.normalize(expected))return true;await sleep(140);}return false;},
+        async waitForComposerExactText(expected,timeout){const want=WebDelivery.normalize(expected);return Boolean(await cgcWaitFor(()=>WebDelivery.normalize(this.getComposerText())===want,{timeout,interval:200}));},
 
         findSendButton() {
             const scope=this.composerAttachmentScope();if(!scope)return null;
@@ -20741,25 +22500,16 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             return null;
         },
 
-        async waitForSendButton(timeout){const started=Date.now();while(Date.now()-started<timeout){const button=this.findSendButton();if(button)return button;await sleep(180);}return null;},
+        async waitForSendButton(timeout){return cgcWaitFor(()=>this.findSendButton(),{timeout,interval:250});},
         async waitForSubmissionSignal(timeout,clickedButton=null){
-            const started=Date.now();while(Date.now()-started<timeout){
-                const r=WebDelivery.active;
-                if(r&&WebDelivery.findUser(r)){this.scheduleConversationRename(r.job,r);return true;}
-                await sleep(120);
-            }return false;
+            const r=await cgcWaitFor(()=>{const r=WebDelivery.active;return r&&WebDelivery.findUser(r)?r:null;},{timeout,interval:200,events:['urlchange','popstate']});
+            if(r){this.scheduleConversationRename(r.job,r);return true;}
+            return false;
         },
 
         async waitForConversationUrl(timeout=12000) {
-            const immediate=persistentConversationUrl(location.href);if(immediate)return immediate;
-            return new Promise(resolve=>{
-                let finished=false;let listener=null;let timer=0;let poll=0;
-                const done=value=>{if(finished)return;finished=true;clearTimeout(timer);clearInterval(poll);if(listener)try{window.removeEventListener('urlchange',listener);}catch{}resolve(value||'');};
-                listener=()=>{const conv=persistentConversationUrl(location.href);if(conv)done(conv);};
-                try{if(window.onurlchange===null)window.addEventListener('urlchange',listener);}catch{}
-                poll=setInterval(()=>{const conv=persistentConversationUrl(location.href);if(conv)done(conv);},180);
-                timer=setTimeout(()=>done(persistentConversationUrl(location.href)),timeout);
-            });
+            // A new chat keeps a client-only id until the server assigns the durable one; only the durable id counts.
+            return (await cgcWaitFor(()=>persistentConversationUrl(location.href),{timeout,interval:200,attributes:false,events:['urlchange','popstate']}))||'';
         },
 
         getAssistantRoots() {
@@ -20876,7 +22626,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 const event=this.completionEvent(job,fresh,verified);
                 fresh.answerCompletedAt=event.completedAt;
                 await WebDelivery.save(fresh);
-                writeCompletionEvent(event);await flushStorageWrites();
+                writeCompletionEvent(event);await flushStorageWrites();this.mobileDoneCue(job);
                 void CompanionTaskUI.refresh(fresh).catch(()=>{});
                 void CgcReturnDelivery.publishSaved(fresh).catch(error=>console.warn('[cgc] return wake',error));
                 return true;
@@ -20886,7 +22636,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             receipt.answerFinishedAt=Number(receipt.answerFinishedAt||event.completedAt);
             receipt.answerCompletedAt=event.completedAt;receipt.answerVerified=verified;
             await WebDelivery.save(receipt);
-            writeCompletionEvent(event);await flushStorageWrites();
+            writeCompletionEvent(event);await flushStorageWrites();this.mobileDoneCue(job);
             void CompanionTaskUI.refresh(receipt).catch(()=>{});
             if(text)this.queueAnswerHistory(job,receipt,text,verified);
             void CgcReturnDelivery.publishSaved(receipt).catch(error=>console.warn('[cgc] return wake',error));
@@ -20895,7 +22645,7 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         watchJobCompletion(job,before={}){
             if(!job?.id)return;
             const prior=this.completionWatches.get(job.id);if(prior){prior.kick?.();return;}
-            let observer=null,timer=0,dueAt=0,settled=false,checking=false,lastHash='',stableSince=0;
+            let observer=null,timer=0,dueAt=0,settled=false,checking=false,lastHash='',stableSince=0,lastCheckAt=0;
             let probing=false,nextProbeAt=0,lastProbe={state:'unknown',text:'',at:0};
             const cleanup=()=>{
                 settled=true;clearTimeout(timer);try{observer?.disconnect();}catch{}
@@ -20908,21 +22658,47 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 clearTimeout(timer);dueAt=at;timer=setTimeout(()=>{timer=0;dueAt=0;void check();},Math.max(80,at-Date.now()));
             };
             const onWake=()=>{stableSince=0;lastHash='';schedule(120);};
-            const probe=r=>{
-                if(probing||Date.now()<nextProbeAt)return;
-                probing=true;nextProbeAt=Date.now()+15000;
-                void this.readBackendResult(r,{includeState:true}).then(value=>{
+            // force: the page shows a finished turn, so read the server now instead of waiting out the 15 s gate.
+            let deferredForce=false;
+            const probe=(r,force=false)=>{
+                if(probing||(!force&&Date.now()<nextProbeAt))return;
+                if(force){
+                    // The forced read needs a 3 s gap from the last read; the turn's end may come sooner, and no
+                    // further mutation may follow, so wait out the remainder without a throttled timer.
+                    const age=Date.now()-Number(this.backendReadCache?.at||0);
+                    if(age<3000&&lastProbe.state!=='complete'){
+                        if(!deferredForce){deferredForce=true;void cgcPause(3050-age).then(()=>{deferredForce=false;if(!settled)probe(r,true);});}
+                        return;
+                    }
+                }
+                probing=true;nextProbeAt=Date.now()+15000;let fresh=false;
+                void this.readBackendResult(r,{includeState:true,force}).then(value=>{
                     if(settled)return;
-                    lastProbe={...value,at:Number(this.backendReadCache?.at||Date.now())};
+                    const at=Number(this.backendReadCache?.at||Date.now());fresh=at!==lastProbe.at;
+                    lastProbe={...value,at};
                     nextProbeAt=Math.max(Date.now()+15000,Number(this.backendNextReadAt||0));
                 }).catch(error=>{
                     // A previous pending observation is not a permanent veto after communication failure.
                     if(lastProbe.state!=='blocked'&&Date.now()-lastProbe.at>=15000)lastProbe={state:'unknown',text:'',at:0};
                     nextProbeAt=Math.max(Date.now()+15000,Number(this.backendNextReadAt||0),Number(error?.retryAt||0));
-                }).finally(()=>{probing=false;schedule(120);});
+                }).finally(()=>{
+                    probing=false;
+                    // A hidden page may not run the scheduled check for a minute; act on a fresh final answer now.
+                    if(fresh&&lastProbe.state==='complete'&&document.visibilityState==='hidden')void check();
+                    else schedule(120);
+                });
             };
+            // Cheap per-mutation signal: the newest turn shows its answer action row and nothing is generating.
+            const turnLooksFinished=()=>{
+                if(this.isGenerationBusy())return false;
+                const roots=document.querySelectorAll('[data-content-search-unit-key$=":assistant"],[data-message-author-role="assistant"]');
+                const turn=roots[roots.length-1]?.closest('[data-testid^="conversation-turn-"],article,[data-content-search-turn-key]');
+                return Boolean(turn&&[...turn.querySelectorAll('.turn-action-controls button,button[data-testid="copy-turn-action-button"]')]
+                    .some(button=>!button.closest('[data-message-author-role="user"],[data-content-search-unit-key$=":user"]')));
+            };
+            let again=false,lastLooksFinished=false;
             const check=async()=>{
-                if(settled)return;if(checking){schedule(700);return;}checking=true;
+                if(settled)return;if(checking){again=true;schedule(700);return;}checking=true;lastCheckAt=Date.now();
                 try{
                     await refreshAsyncStorageKey(KEY.state);
                     const r=await refreshAsyncStorageKey(WebDelivery.key(job.id));
@@ -20953,17 +22729,32 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                     if(text&&CompanionTaskUI.matches(r)&&!jobInvalidatedByReset(job)){
                         if(await this.publishCompletion(job,r,text,verified)){cleanup();return;}
                     }
-                    if(!busy)probe(r);
+                    // Hidden: the DOM is not trusted as the answer text, but a finished turn triggers the server read now.
+                    if(!visible&&!this.isGenerationBusy()&&WebDelivery.completionDomEvidence(r).final)probe(r,true);
+                    else if(!busy)probe(r);
                     schedule(visible?(evidence.text?700:2000):15000);
                 }catch(error){console.warn('[cgc] completion retry',error);schedule(5000);}
-                finally{checking=false;}
+                finally{
+                    checking=false;
+                    if(again&&!settled){again=false;if(document.visibilityState==='hidden')void check();}
+                }
             };
             // v1.2.7: 입력창(편집 영역) 안의 변화는 답변 완료와 무관하다. 타자마다 대화 전체를 다시 읽지 않는다.
             const outsideEditor=record=>{const node=record.target;const el=node&&node.nodeType===1?node:node?.parentElement;return !el?.closest?.('[contenteditable="true"],textarea');};
-            try{observer=new MutationObserver(records=>{if(records.some(outsideEditor))schedule(350);});observer.observe(document.querySelector('main')||document.body||document.documentElement,
+            // A hidden page may hold timers for a minute; while the answer streams, its own mutations drive the checks.
+            try{observer=new MutationObserver(records=>{
+                if(!records.some(outsideEditor))return;
+                if(document.visibilityState==='hidden'){
+                    // The answer's end is a single burst of mutations; catch it even inside the 3 s spacing.
+                    const finished=turnLooksFinished(),flipped=finished&&!lastLooksFinished;lastLooksFinished=finished;
+                    if(flipped||Date.now()-lastCheckAt>=3000){void check();return;}
+                }
+                schedule(350);
+            });observer.observe(document.querySelector('main')||document.body||document.documentElement,
                 {childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-is-streaming','data-message-status','aria-busy']});}catch{}
             document.addEventListener('visibilitychange',onWake,true);window.addEventListener('pageshow',onWake,true);window.addEventListener('focus',onWake,true);
-            this.completionWatches.set(job.id,{kick:()=>schedule(80),cleanup});schedule(350);
+            // poke: a Crack wake-up event runs the check in the event task itself (a hidden page's timers may wait a minute).
+            this.completionWatches.set(job.id,{kick:()=>schedule(80),poke:()=>{if(checking)again=true;else void check();},cleanup});schedule(350);
         },
 
         // Read-only recovery runs inside a live ChatGPT tab; credentials stay in memory.
@@ -20989,26 +22780,32 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             if(matches.length!==1)return verdict('unknown',matches.length?'ambiguous_request':'request_not_matched');
             const at=matches[0],userText=textOf(chain[at].message);
             if(String(receipt.expected.head||'').includes('[CGC-JOB:')&&!userText.includes(marker))return verdict('unknown','job_marker_mismatch');
-            let result='';
+            // Reasoning models write "thoughts" (end_turn:false), "reasoning_recap" and tool calls before the answer.
+            // Those records are not the answer; the turn's state is read from its last assistant record and the
+            // answer is its last text record.
+            let lastAssistant=null,answer=null;
             for(let i=at+1;i<chain.length;i++){
                 const m=chain[i].message;if(!m)continue;
                 if(m.author?.role==='user')break;
                 if(m.author?.role!=='assistant')continue;
                 if(m.channel&&m.channel!=='final')continue;
                 if(m.recipient&&m.recipient!=='all')continue;
-                if(m.status&&m.status!=='finished_successfully'){
-                    if(/progress|stream|pending|queued/i.test(m.status))return verdict('pending','generation_in_progress');
-                    return verdict('blocked','answer_not_successful');
-                }
-                if(m.end_turn===false)return verdict('pending','turn_not_finished');
-                if(m.status!=='finished_successfully'||m.end_turn!==true)return verdict('unknown','completion_flags_unrecognized');
-                if(m.content?.content_type!=='text')return verdict('unknown','non_text_answer');
-                result=cleanText(textOf(m));
+                lastAssistant=m;
+                if(m.content?.content_type==='text')answer=m;
             }
+            if(!lastAssistant)return verdict('unknown','final_answer_not_readable');
+            if(lastAssistant.status&&lastAssistant.status!=='finished_successfully'){
+                if(/progress|stream|pending|queued/i.test(lastAssistant.status))return verdict('pending','generation_in_progress');
+                return verdict('blocked','answer_not_successful');
+            }
+            if(lastAssistant.end_turn===false)return verdict('pending','turn_not_finished');
+            if(!answer)return verdict('unknown','non_text_answer');
+            if(answer.status!=='finished_successfully'||answer.end_turn!==true)return verdict('unknown','completion_flags_unrecognized');
+            const result=cleanText(textOf(answer));
             return result?verdict('complete','finished_final_answer',result):verdict('unknown','final_answer_not_readable');
         },
         backendResultOf(data,receipt){return this.backendResultStateOf(data,receipt).text;},
-        async readBackendResult(receipt,{includeState=false}={}){
+        async readBackendResult(receipt,{includeState=false,force=false}={}){
             const interpret=data=>includeState?this.backendResultStateOf(data,receipt):this.backendResultOf(data,receipt);
             const url=persistentConversationUrl(receipt?.conversationUrl||'');
             if(!url||url!==persistentConversationUrl(location.href))throw new Error('conversation moved');
@@ -21023,7 +22820,9 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 if(url!==persistentConversationUrl(location.href))throw new Error('conversation moved');
                 return interpret(data);
             }
-            if(Date.now()<this.backendNextReadAt){
+            // A finished turn on screen may bypass the 15 s spacing once it is 3 s old, never during error backoff.
+            const forced=force&&!this.backendReadErrors&&Date.now()-Number(this.backendReadCache?.at||0)>=3000;
+            if(Date.now()<this.backendNextReadAt&&!forced){
                 if(this.backendReadCache?.url===url&&Date.now()-this.backendReadCache.at<15000)
                     return interpret(this.backendReadCache.data);
                 throw Object.assign(new Error('backend read deferred'),{code:'backend_deferred',retryAt:this.backendNextReadAt});
@@ -21101,11 +22900,18 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
             }finally{this.harvestingJobs.delete(job.id);}
         },
 
+        // v1.4.1: iOS Safari has no notifications or sound for a page in another tab, and the Crack tab is
+        // suspended until it is opened again. Say it here, where the user is looking, once per job.
+        mobileDoneCue(job){
+            if(!CGC_PLATFORM.mobile||!job?.id||document.visibilityState==='hidden')return;
+            const shown=this.doneCueIds||(this.doneCueIds=new Set());if(shown.has(job.id))return;shown.add(job.id);
+            this.localToast(`${jobDisplayLabel(job)} · GPT 답변 완료. 크랙 탭으로 돌아가면 자동으로 반영돼요.`);
+        },
         async confirmAutoSubmitted(job,submittedPrompt='',assistantBefore={}) {
             this.scheduleConversationRename(job); // No await: do not wait for link publication or submitted ACK.
             let conversationUrl=persistentConversationUrl(location.href);
             const cgcImmediateConversationUrl=conversationUrl;
-            if(!job.conversationUrl&&!conversationUrl)conversationUrl=await this.waitForConversationUrl(12000);
+            if(!job.conversationUrl&&!conversationUrl)conversationUrl=await this.waitForConversationUrl(90000);
             if(!job.conversationUrl&&!conversationUrl)throw new Error('전송은 시작됐지만 새 ChatGPT 대화 주소(/c/...)를 확인하지 못했어요.');
             await CgcJobLinks.publish(job.id).catch(error=>console.warn('[cgc] address publication deferred',error));
             const cgcAckConversationUrl=persistentConversationUrl(conversationUrl||'')||persistentConversationUrl(job.conversationUrl||'');
@@ -21139,6 +22945,15 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         },
     };
 
+
+    // Pre-release debug builds of 1.4.0 left trace records (CGC_DEV_*) in the userscript store; release builds drop them once.
+    function cgcRemoveDebugKeys(){
+        try{
+            if(typeof GM_listValues!=='function'||typeof GM_deleteValue!=='function')return;
+            try{if(typeof CGC_DEV!=='undefined'&&CGC_DEV)return;}catch{/* release build: no debug bridge */}
+            for(const key of GM_listValues())if(String(key).startsWith('CGC_DEV_'))GM_deleteValue(key);
+        }catch(error){console.warn(`[${APP.id}] debug record cleanup skipped`,error);}
+    }
 
     let cgcStartupStatusMessage='';
     function showStartupStatus(message) {
@@ -21174,6 +22989,13 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
         }catch{/* last resort */}
     }
 
+    const cgcOriginalUiSession=cgcUiSession;
+    cgcUiSession=function(...args){const session=cgcOriginalUiSession(...args);if(!session)return session;return {...session,results:(session.results||[]).filter(r=>r?.kind!=='audit'),transmissions:(session.transmissions||[]).filter(r=>r?.toolId!=='audit')};};
+    const cgcOriginalEnsureSlot=ensureConversationSlot;let cgcReferenceSlot='';
+    ensureConversationSlot=function(session,id){return cgcOriginalEnsureSlot(session,cgcReferenceSlot&&id==='audit'?cgcReferenceSlot:id);};
+    const cgcOriginalRenderReferences=CrackUI.renderReferenceCards;
+    CrackUI.renderReferenceCards=function(...args){cgcReferenceSlot=this.referenceStatusSlot==='advisor'?'advisor':'';try{return cgcOriginalRenderReferences.apply(this,args);}finally{cgcReferenceSlot='';}};
+    CH.companionFrame.bind({CrackUI,CrackAdapter,CgcEcho,CgcIsland,getSettings});
     // Crack UI boot never waits for GM storage. The menu button itself stays hidden until a genuine
     // composer toolbar is available, so startup never flashes a fixed fallback control.
     if(isCrack){
@@ -21208,19 +23030,20 @@ status는 complete / incomplete / no_memory / rebuild_required / unknown 중 하
                 installSettingsCacheInvalidation();
                 CrackUI.finishStorageInit();
                 CrackUI.placeLauncher();
-                if(CrackUI.panel)CrackUI.refreshPanel();
+                CrackUI.refreshPanel();
             }
             if(CGC_ASYNC_GM_STORAGE)void warmAsyncStorageInBackground().then(()=>{
                 pollAsyncStorageListeners();
-                if(isCrack&&cgcStorageReady){CrackUI.finishStorageInit();CrackUI.placeLauncher();if(CrackUI.panel)CrackUI.refreshPanel();}
+                if(isCrack&&cgcStorageReady){CrackUI.finishStorageInit();CrackUI.placeLauncher();CrackUI.refreshPanel();}
             }).catch(error=>console.warn(`[${APP.id}] async storage background warm failed`,error));
-            if(isCrack)setTimeout(()=>{void pruneExpiredTransportKeys().catch(error=>console.warn(`[${APP.id}] cleanup skipped`,error));},8000);
+            if(isCrack)setTimeout(()=>{void pruneExpiredTransportKeys().catch(error=>console.warn(`[${APP.id}] cleanup skipped`,error));cgcRemoveDebugKeys();},8000);
             console.info(`[${APP.id}] ${APP.version} booted`,{isCrack,isChatGPT,asyncGmStorage:CGC_ASYNC_GM_STORAGE});
         }catch(error){CgcStartup.mark('startup-error',{name:String(error?.name||'Error')});CgcStartup.active=false;showStartupError(error);}
     })();
 
     // ---- 크랙 도우미 탭에서 쓰는 원본 함수·상수 ----
     return {
+        CgcTroubleshooting, cgcStorageUsage, cgcWipeRooms, cgcRoomHasData, cgcRoomBusy, WebDelivery, ChatGptPopup, CgcStartup, CGC_START_LATCH_STALE_MS, cgcSettleWhileVisible, cgcLedgerSpec, cgcVerifyLedgerSpec, cgcResolveIncrementalDelivery, jobInvalidatedByReset, jobStorageKey,
         APP, KEY, isCrack, isChatGPT, CGC_PLATFORM, PROMPT_REVISION, DEFAULT_SETTINGS, CGC_ASYNC_GM_STORAGE,
         storageReady: () => cgcStorageReady,
         CrackUI, CrackAdapter, ReferenceAdapter, ChatGPTBridge,
