@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🪽 Wish RP Manager Core · CONTINUUM
 // @namespace    local.rp.context.manager
-// @version      1.5.2-continuum.24
+// @version      1.5.2-continuum.24.1
 // @description  Crack RP용 컨텍스트 주입·인지·자동 장기기억·자료집·전체 재구축을 하나로 관리합니다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-rp-manager-continuum.user.js
@@ -32,10 +32,10 @@
 // @grant        GM_getResourceText
 // @resource     wrmc_current_items https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/currentItems-8.4.2.txt
 // @resource     wrmc_log_summary https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/logSummary-6.2.2.txt
-// @resource     wrmc_person_info https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/personInfo-1.5.4.txt
+// @resource     wrmc_person_info https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/personInfo-1.5.6.txt
 // @resource     wrmc_timeline https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/timeline-1.7.2.txt
 // @resource     wrmc_lore https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/lore-2.0.3.txt
-// @resource     wrmc_master https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/master-1.0.3.txt
+// @resource     wrmc_master https://raw.githubusercontent.com/jerry76478/crack/main/script/wrmc-guides/master-1.0.5.txt
 // ==/UserScript==
 
 (function () {
@@ -65,7 +65,7 @@
   // Storage IDs, ELR contract, strict AI commit validation and rollback formats are preserved.
  let WUI=null;
 
-  const SCRIPT_VERSION = '1.5.2-continuum.24';
+  const SCRIPT_VERSION = '1.5.2-continuum.24.1';
   const EDITION = 'core';
   const RUNTIME_HOST = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   const RUNTIME_ATTR = 'data-wish-rp-runtime';
@@ -4169,14 +4169,14 @@ return {heldRow,heldResolved,settleHeld,mergeHeld,normalizeHeld,openHeld,schema,
     return {MODES,LABELS,array,normalize,get,meta,mode,pending,rawRows,frames,capture,packPatch,merge,token,selected,choose,allowed,filter,copyTo,exportPack,publicView,write,editEntry,afterNormalize};
   })();
 
-const C16_RESOURCES={"currentItems":{"version":"8.4.2","bytes":38546,"resource":"wrmc_current_items","file":"currentItems-8.4.2.txt","sha256":"68216aa6c63dc1127a86292578fa6f8bc85780d220738027f1ecab2b37313a96","hash":"fnv1a32:pwk1nh:16597"},"logSummary":{"version":"6.2.2","bytes":44615,"resource":"wrmc_log_summary","file":"logSummary-6.2.2.txt","sha256":"44d52f8842ea2754733611c6b8972ef4235bd8059edeaabbe80c8dad14592990","hash":"fnv1a32:1jzitat:19401"},"personInfo":{"version":"1.5.4","bytes":37252,"resource":"wrmc_person_info","file":"personInfo-1.5.4.txt","sha256":"fce446f6b8c0ab12fd58b0861cbb4bb6d0172a280ce173282eeb22c84911359f","hash":"fnv1a32:opnntv:17569"}};
+const C16_RESOURCES={"currentItems":{"version":"8.4.2","bytes":38546,"resource":"wrmc_current_items","file":"currentItems-8.4.2.txt","sha256":"68216aa6c63dc1127a86292578fa6f8bc85780d220738027f1ecab2b37313a96","hash":"fnv1a32:pwk1nh:16597"},"logSummary":{"version":"6.2.2","bytes":44615,"resource":"wrmc_log_summary","file":"logSummary-6.2.2.txt","sha256":"44d52f8842ea2754733611c6b8972ef4235bd8059edeaabbe80c8dad14592990","hash":"fnv1a32:1jzitat:19401"},"personInfo":{"version":"1.5.6","bytes":54958,"resource":"wrmc_person_info","file":"personInfo-1.5.6.txt","sha256":"4a3fcc8f2acf1b5cd8164440eed5de286d9e0cb33e41a80f30fd7c565ea2bd1f","hash":"fnv1a32:1iuyqtg:26042"}};
 const C16_PRIVATE_DELTA="━━━━━━━━━━━━━━━━━━━━\n2-B. KNOWLEDGE_PRIVATE_GAP_DELTA_V1 · PRIVATE 사건과 직접 무지 근거\n━━━━━━━━━━━━━━━━━━━━\n기존의 “KNOWS 목록에 없다는 이유만으로 does-not-know를 만들지 않는다”는 규칙을 유지한다. 다음 네 조건이 이번 작업 패킷의 직접 RP 근거로 함께 확인될 때는 단순한 근거 부족과 구분하여 does-not-know를 사용할 수 있다.\n1. 사건이 원문에서 명시적으로 PRIVATE이다.\n2. 해당 인물이 사건 당시 잠들어 있었거나 실제로 보지 못하는 등 비인지 상태였음이 직접 확인된다.\n3. 사건 보유자가 그 인물에게 해당 사건을 의도적으로 숨기거나 은폐했음이 직접 확인된다.\n4. 사건 이후 현재 작업 범위의 끝까지 전달·목격·발각되지 않은 미공개 상태가 직접 유지되었음이 확인된다. 전달 장면을 찾지 못했다는 사실만으로 이 조건을 충족하지 않는다. 이후 범위가 누락되거나 은폐 유지가 모호하면 미확인으로 둔다.\n\n판정 구분:\n- 단순히 장면에 없었음 → 확인 안 됨. 자동으로 does-not-know 카드를 만들지 않는다.\n- 전달 장면을 찾지 못했음 → 확인 안 됨. 미전달을 직접 확인한 사실로 바꾸지 않는다.\n- PRIVATE 사건 + 잠듦/보지 못함의 직접 비인지 + 보유자의 의도적 은폐 + 이후 현재 범위까지 직접 유지된 미공개 → 관련 인물에게 does-not-know를 사용할 수 있다.\n- 구체적 내용은 모르지만 이상 징후를 실제로 의심함 → suspects. fact와 evidence에는 실제 의심한 범위만 기록한다.\n\ndoes-not-know의 evidence에는 PRIVATE·해당 인물의 비인지·보유자의 은폐·현재까지 미공개 유지라는 각 조건의 직접 근거를 사건 당시와 이후 범위로 구분해 적는다. PRIVATE라는 표식 하나나 인물의 현장 부재만으로 네 조건을 대신하지 않는다. 이후 실제 공개·청취·목격·보고·발각이 확인되면 기존 카드의 같은 id와 정본 key를 유지하며 실제 전달된 범위의 최신 상태로 갱신한다.\n\n같은 PRIVATE 사건의 인물별 정보격차는 동일 객관적 사실의 정본 knowledge key를 공유한다. 사건 보유자의 knows와 직접 근거가 있는 관련 인물의 does-not-know를 묶되, PRIVATE라는 이유로 모든 등장인물에게 모름 카드를 대량 생성하지 않는다. 사건과의 연결이 직접 확인된 suspects만 같은 key로 묶고 fact에는 실제 의심한 정황만 적는다. 구체적 비밀 내용까지 아는 것으로 확대하지 않는다. 관련 근거가 없는 나머지 인물은 카드를 억지로 만들지 않으며 UI상 확인 안 됨으로 남긴다.";
 // C1: manual routes only. No provider, carrier or automatic-request replacement.
 const C17_RESOURCES={"timeline":{"version":"1.7.2","bytes":69081,"resource":"wrmc_timeline","file":"timeline-1.7.2.txt","sha256":"474c3db00b06b727a08989a75687909a8b81911bd4a654bad5276ae32aa6561a","hash":"fnv1a32:168gu26:29523"},"lore":{"version":"2.0.3","bytes":39739,"resource":"wrmc_lore","file":"lore-2.0.3.txt","sha256":"68c8e676485f6d63cb30e7ca522b3a64c0c443c966fa676fece9206c5af826a5","hash":"fnv1a32:t8ka20:19069"}};
 const C17_SPINE_DELTA="━━━━━━━━━━━━━━━━━━━━\n15-1. 원본 연속선 식별\n━━━━━━━━━━━━━━━━━━━━\n특수 시간·세계선 구조가 실제로 존재하는 RP에서는 카드의 실제 소속 연속선을 내부 판정에서 반드시 식별한다.\n확장프로그램이 SOURCE_TIMELINE 등 연속선 식별값을 별도로 관리하는 경우 AI가 임의 필드를 추가 출력하지 않더라도, 사건 선정·병합·검수 과정에서는 연속선 소속을 구분한다.\n기존 카드의 연속선 소속을 근거 없이 다른 연속선으로 변경하지 않는다.\n같은 날짜가 여러 연속선에 존재할 수 있으므로 DATE_START / DATE_END를 연속선 식별의 대용으로 사용하지 않는다.\n서로 다른 연속선의 사건·기억·정보를 하나의 카드에 섞지 않는다.\n여러 연속선 중 어디에 속하는지 확인할 수 없으면 추측하지 않고 UNVERIFIED로 두거나, 실행 환경상 필요한 경우 사용자에게 확인한다.\n특수 시간·세계선 구조가 없는 RP에서는 이 절을 적용하지 않는다.\n\n15-2. 날짜 미상 사건 확인\n원문에 없는 날짜를 임의 생성하지 않는 15절 원칙을 강화한다.\n날짜 미상 사건에 강한 후보 날짜가 있더라도, 사용자가 날짜 추론을 명시적으로 허용하지 않은 경우 확정 날짜로 승격하지 않는다.\n수동 출력에서는 UNKNOWN, 구조화 출력에서는 해당 규격의 null/미확정 표현을 사용한다.\n확장프로그램이 실제 날짜를 필수로 요구해 미상 날짜를 저장할 수 없다면 카드 생성을 보류하고 날짜 확인 필요 상태로 둔다.\n사용자가 날짜 추론을 허용한 작업에서는 로그 헤더·사건 순서·명시적 전후관계·기존 기억자료를 대조해 가장 강한 후보를 제시하고, 사용자의 승인 또는 직접 지정값을 우선한다.\n\n";
 Object.assign(C16_RESOURCES,C17_RESOURCES);
 // C1: manual routes only. No provider, carrier or automatic-request replacement.
-Object.assign(C16_RESOURCES,{"master":{"version":"1.0.3","bytes":38090,"resource":"wrmc_master","file":"master-1.0.3.txt","sha256":"fe0dcfd4cc01df20397143c7011b97379809458b2f864279e241881c1beff62c","hash":"fnv1a32:10jzxyg:19211"}});
+Object.assign(C16_RESOURCES,{"master":{"version":"1.0.5","bytes":40441,"resource":"wrmc_master","file":"master-1.0.5.txt","sha256":"418ce73a4355b11e24e8515586e8f273713c033a2fa1c60a5138010ceb34284a","hash":"fnv1a32:17afp94:20426"}});
 const ContinuumWork=(()=>{
   const copy=x=>structuredClone(x),text=x=>String(x??'').trim(),list=x=>Array.isArray(x)?x:[],obj=x=>x&&typeof x==='object'&&!Array.isArray(x)?x:{},uid=()=>crypto.randomUUID();
   const TASKS={currentItems:'현재상태·물품',logSummary:'날짜로그',personInfo:'인물정보',timeline:'타임라인',lore:'자료집'},cache=new Map(),resourceCache=new Map(),busy=new Set();
@@ -4189,9 +4189,9 @@ const ContinuumWork=(()=>{
   function work(r){const m=ContinuumManager.get(r);return m.work||(m.work=normalize({work:{}}).work);}
   function privateGuide(s){if(s.includes('KNOWLEDGE_PRIVATE_GAP_DELTA_V1'))return s;const at='━━━━━━━━━━━━━━━━━━━━\n3. 호칭과 말투 · speech',anchor='□ `does-not-know`와 `mistaken`에 필요한 직접 근거·객관적 사실이 있는가?',audits='□ PRIVATE 사건에서 does-not-know가 단순 미전달 추정이 아니라 비인지+은폐+현재까지 미공개라는 직접 근거로 판정됐는가?\n□ PRIVATE라는 이유만으로 모든 등장인물에게 does-not-know 카드를 대량 생성하지 않았는가? 관련 인물만 기록하고 나머지는 확인 안 됨으로 두었는가?';s=s.includes(at)?s.replace(at,C16_PRIVATE_DELTA+'\n\n'+at):s+'\n\n'+C16_PRIVATE_DELTA;return s.includes(anchor)?s.replace(anchor,anchor+'\n'+audits):s+'\n\nPRIVATE 최종 비공개 검사\n'+audits;}
   function resource(task){if(resourceCache.has(task))return resourceCache.get(task);const info=C16_RESOURCES[task];let value='';try{value=typeof GM_getResourceText==='function'?String(GM_getResourceText(info.resource)||''):'';}catch{}const result={...info,text:value,available:!!value&&fnv(value)===info.hash,reason:!value?'지침 자원을 읽지 못해 기존 경로를 사용합니다.':fnv(value)!==info.hash?'지침 hash가 달라 기존 경로를 사용합니다.':''};resourceCache.set(task,result);return result;}
-  function guide(r,task){const base=resource(task),saved=ContinuumManager.get(r).guideSlots?.[task],enabled=base.available&&saved?.manual!==false;if(!enabled)return {...base,enabled:false,text:'',source:'기존 경로',reason:base.reason||'이 슬롯이 꺼져 있어 기존 경로를 사용합니다.'};let value=typeof saved?.editedText==='string'?saved.editedText:base.text;const effective=task==='personInfo'?privateGuide(value):task==='timeline'?timelineGuide(value):value;return {...base,enabled:true,text:effective,name:effective.split('\n')[0],hash:fnv(effective),source:typeof saved?.editedText==='string'?'사용자 수정본':'수동 업데이트 기본 지침',graph:'GRAPH_STRUCTURE_V1은 D까지 제외'};}
+  function guide(r,task){const base=resource(task),saved=ContinuumManager.get(r).guideSlots?.[task],enabled=base.available&&saved?.manual!==false;if(!enabled)return {...base,enabled:false,text:'',source:'기존 경로',reason:base.reason||'이 슬롯이 꺼져 있어 기존 경로를 사용합니다.'};let value=typeof saved?.editedText==='string'?saved.editedText:base.text;const effective=task==='personInfo'?c241PersonGuide(value):task==='timeline'?timelineGuide(value):value;return {...base,enabled:true,version:typeof saved?.editedText==='string'?(saved.baseVersion||base.version):base.version,newDefault:typeof saved?.editedText==='string'&&(saved.baseVersion!==base.version||saved.baseHash!==base.hash),text:effective,name:effective.split('\n')[0],hash:fnv(effective),source:typeof saved?.editedText==='string'?'사용자 수정본':'수동 업데이트 기본 지침',graph:'관계도 구조는 제외'};}
   async function saveGuide(r,task,value,enabled=true){if(!TASKS[task])throw Error('지원하지 않는 지침 슬롯입니다.');const before=copy(r),m=ContinuumManager.get(r),base=resource(task);m.guideSlots||={};m.guideSlots[task]={manual:enabled,automatic:false,resourceName:base.resource,baseVersion:base.version,baseHash:base.hash,...(value===null?{}:{editedText:String(value)}),graphExcluded:true};try{await saveRoom(r);}catch(e){Object.assign(r,before);throw e;}}
-  const contract=task=>task==='timeline'?'[TIMELINE]의 [CARD]마다 REF/DATE_START/DATE_END/TITLE/TAGS/CONTENT를 출력합니다. 기존 REF 유지, 신규 REF=NEW. 날짜 미상은 UNKNOWN. sourceEvents를 만들지 마세요.':task==='lore'?'INCREMENTAL_UPSERT_NO_DELETE. version=WISH_LORE_V2와 operations만. pack_upsert/card_upsert만, 신규 팩 먼저. 모든 신규·수정에는 이번 RP의 sourceTurnKey와 원문 evidence. 삭제·주입 설정 변경 금지.':task==='currentItems'?'현재상태.txt와 중요물품.txt의 본문 두 개를 분리해 전체 출력합니다. 중요물품이 없으면 빈 목록입니다.':task==='logSummary'?'FULL_OUTPUT=NO. 신규·수정·정정 날짜의 완성된 [날짜-키워드] 블록만 출력합니다. 출력하지 않은 기존 날짜는 유지합니다.':'[[WISH_PERSON_V1]] 표식 한 쌍 사이에 현재 유효한 모든 카드를 한 줄 JSONL로 출력합니다. 직접 종료 근거가 있을 때만 op=end. GRAPH_STRUCTURE_V1은 사용하지 않습니다.';
+  const contract=task=>task==='timeline'?'[TIMELINE]의 [CARD]마다 REF/DATE_START/DATE_END/TITLE/TAGS/CONTENT를 출력합니다. 기존 REF 유지, 신규 REF=NEW. 날짜 미상은 UNKNOWN. sourceEvents를 만들지 마세요.':task==='lore'?'INCREMENTAL_UPSERT_NO_DELETE. version=WISH_LORE_V2와 operations만. pack_upsert/card_upsert만, 신규 팩 먼저. 모든 신규·수정에는 이번 RP의 sourceTurnKey와 원문 evidence. 삭제·주입 설정 변경 금지.':task==='currentItems'?'현재상태.txt와 중요물품.txt의 본문 두 개를 분리해 전체 출력합니다. 중요물품이 없으면 빈 목록입니다.':task==='logSummary'?'FULL_OUTPUT=NO. 신규·수정·정정 날짜의 완성된 [날짜-키워드] 블록만 출력합니다. 출력하지 않은 기존 날짜는 유지합니다.':'[[WISH_PERSON_V1]] 표식 한 쌍 사이에 현재 유효한 모든 카드를 한 줄 JSONL로 출력합니다. 직접 종료 근거가 있을 때만 op=end. 관계도 구조(graph)는 사용하지 않습니다.';
   function personRecords(r,c){const m=ContinuumManager.get(r),meta=m.personMeta||{},names=id=>list(c.actors).find(a=>a.id===id)?.name||'';return [
     ...m.knowledgeV1.filter(x=>!x.archived).map(x=>({type:'knowledge',op:'upsert',id:x.id,key:x.key,person:x.person.name||names(x.person.id),status:x.status,fact:x.fact,actualFact:x.actualFact,evidence:x.evidence,hiddenFrom:x.hiddenFrom.map(names),concealmentNote:x.concealmentNote})),
     ...list(r.relationships).filter(x=>x.enabled!==false).map(x=>{const f=m.relationFacets.find(f=>f.relationId===x.id)||{};return {type:'relationship',op:'upsert',id:x.id,key:meta['R:'+x.id]?.key||'relation_'+fnv(x.id).split(':')[1],person:x.speaker,target:x.target,official:f.official||x.current,stance:f.stance||'',conflict:f.conflict||x.unresolved,trajectory:x.trajectory,evidence:f.evidence||meta['R:'+x.id]?.evidence||'',protected:!!x.manual};}),
@@ -4421,7 +4421,7 @@ function c21Plan(r,c,s,area,id,force=false){const a=c21Config(r).areas[area],sta
  for(let end=Math.min(s.rows.length-1,start+a.interval-1);end>=start;end--){const input=c21Input(r,c,s,area,id,start,end);if(input.chars<=120000)return input;}throw Object.assign(Error('자동 불가(입력 초과) → 센터 범위'),{code:'C21_INPUT'});
 }
 function c21Failure(a,e,frontier){const kind=e.code||'C21_PARSE',auth=[401,403].includes(Number(e.diagnostic?.httpStatus||e.status))||kind==='C21_AUTH';a.failedEnd=frontier;a.failureCount=a.failureKind===kind?a.failureCount+1:1;a.failureKind=kind;a.reason=auth?'인증 오류':kind==='C21_INPUT'?'입력 초과':kind==='C21_GUIDE'?'지침 확인 필요':kind==='C21_MANUAL'?'센터 복사 경로를 사용하세요.':kind==='AI_TIMEOUT'?'제한 시간 초과':'결과 형식 또는 요청 오류';a.paused=auth||a.failureCount>=3||kind==='C21_GUIDE';a.status=a.paused?'일시정지':kind==='C21_INPUT'||kind==='C21_MANUAL'?'자동 불가':'실패';}
-function c21Status(r,area){const a=c21Config(r).areas[area];if(a.draftId)return (a.enabled?'초안 대기 · 이후 새 RP '+a.newTurns+'턴':'검토 대기');if(a.paused)return '일시정지 · '+a.reason;if(!a.enabled)return 'OFF';if(a.status==='자동 불가')return a.reason==='입력 초과'?'자동 불가(입력 초과) → 센터 범위':'자동 불가 · '+a.reason;if(a.reason==='하루 상한')return '일시정지 · 하루 상한';return a.interval+'턴 중 '+a.remaining+'턴 남음';}
+function c21Status(r,area){const a=c21Config(r).areas[area];if(a.draftId)return (a.enabled?'초안 대기 · 이후 새 RP '+a.newTurns+'턴':'검토 대기');if(a.paused)return '일시정지 · '+a.reason;if(!a.enabled)return 'OFF';if(c241ManualWaiting(r,area))return '수동 결과 대기';if(a.status==='자동 불가')return a.reason==='입력 초과'?'자동 불가(입력 초과) → 센터 범위':'자동 불가 · '+a.reason;if(a.reason==='하루 상한')return '일시정지 · 하루 상한';return a.interval+'턴 중 '+a.remaining+'턴 남음';}
 const c21Current=current,c21Preview=preview,c21Apply=apply,c21Cancel=cancel,c21Copy=copyTo,c21Public=publicView,c21TaskHash=taskHash,c21Undo=undo;
 current=async function(r,j,allow=false){if(j.origin!=='managerAI')return c21Current(r,j,allow);if(state.currentRoom!==r||r.chatId!==j.chatId||j.route!=='managerTask'||j.status!=='pending'||j.needsRevalidation)throw Error('방 또는 초안 기준이 바뀌었습니다.');await loadLorePackCache(true);const rawCog=await readRawCog(r),c=await bridge().snapshotRaw(apiChatIdOf(r)),s=await c21Source(r);assertSource(s.snapshot,j.history,allow);await ContinuumSource20.prefix(s,j.source,allow,j.history);if(await digest(await c21Stamp(r,c,j.area))!==await digest(j.stamp))throw Error('수동 기준점·메모·지침 또는 영역 기억이 바뀌었습니다. 다시 만드세요.');return {c,s,rawCog};};
 function c21Diffs(r,c,j,values={}){const area=j.area,task=j.task,v={...j.values,...values};let parsed;if(area==='currentState'){const state=parseState(unwrap(v.currentState,j.id)),before=r.slots.find(x=>x.id==='currentState').content;parsed={rows:state.text===before?[]:[{key:'state:currentState',kind:'state',id:'currentState',label:'현재상태',before,after:state.text,selected:true}],warnings:state.warnings};}else if(area==='importantItems'){parsed=c18Native.diffs(r,c,j,{currentState:r.slots.find(x=>x.id==='currentState').content||'유지',importantItems:v.importantItems});parsed.rows=parsed.rows.filter(x=>x.kind==='item');}else parsed=c18Native.diffs(r,c,j,v);
@@ -4439,17 +4439,17 @@ cancel=async function(r,id){const j=await getRuntimeRecord(id);return j?.origin=
 undo=async function(r,id){const rec=await getRuntimeRecord(id);const value=await c21Undo(r,id);if(rec?.origin==='managerAI'){for(const area of rec.areas){const a=c21Config(r).areas[area];a.paused=true;a.reason='되돌림 후 확인 필요';a.draftId=rec.confirmationOf?.id||'';a.status='일시정지';}await saveRoom(r);}return value;};
 copyTo=function(t,s,...args){c21Copy(t,s,...args);const config=c21Config(t);for(const a of Object.values(config.areas))Object.assign(a,{enabled:false,baseline:'',cursor:'',lastAppliedStart:'',lastAppliedEnd:'',failedEnd:'',draftId:'',paused:false,reason:'',failureKind:'',failureCount:0,status:'꺼짐',coverage:'',remaining:0,newTurns:0,lastGeneratedFrontier:''});for(const slot of Object.values(ContinuumManager.get(t).guideSlots||{}))slot.automatic=false;};
 publicView=function(r,clean,...args){const v=c21Public(r,clean,...args),cfg=c21Config(r);v.aiMemory={schemaVersion:2,areas:Object.fromEntries(C18_AREAS.map(k=>[k,{enabled:cfg.areas[k].enabled,interval:cfg.areas[k].interval,status:clean(c21Status(r,k)),reviewCount:cfg.areas[k].draftId?1:0}]))};for(const [task,g]of Object.entries(v.guideSlots||{}))g.automatic=ContinuumManager.get(r).guideSlots?.[task]?.automatic??C18_AREAS.some(k=>c21Tasks[k]===task&&cfg.areas[k].enabled);return v;};
-saveGuide=async function(r,task,value,enabled=true){if(!TASKS[task])throw Error('지원하지 않는 지침 슬롯입니다.');const before=copy(r),m=ContinuumManager.get(r),base=resource(task),automatic=m.guideSlots?.[task]?.automatic===true;m.guideSlots||={};m.guideSlots[task]={manual:enabled,automatic,resourceName:base.resource,baseVersion:base.version,baseHash:base.hash,...(value===null?{}:{editedText:String(value)}),graphExcluded:true};try{await saveRoom(r);}catch(e){Object.assign(r,before);throw e;}};
+saveGuide=async function(r,task,value,enabled=true){if(!TASKS[task])throw Error('지원하지 않는 지침 슬롯입니다.');const before=copy(r),m=ContinuumManager.get(r),base=resource(task),previous=m.guideSlots?.[task],automatic=m.guideSlots?.[task]?.automatic===true;m.guideSlots||={};m.guideSlots[task]={manual:enabled,automatic,resourceName:base.resource,baseVersion:value!==null&&typeof previous?.editedText==='string'?(previous.baseVersion||base.version):base.version,baseHash:value!==null&&typeof previous?.editedText==='string'?(previous.baseHash||base.hash):base.hash,...(value===null?{}:{editedText:String(value)}),graphExcluded:true};try{await saveRoom(r);}catch(e){Object.assign(r,before);throw e;}};
 async function c21Set(r,area,on,options={}){if(!C18_AREAS.includes(area))throw Error('영역을 확인하세요.');return withRoomExclusiveKeys([String(apiChatIdOf(r)),'ai:'+apiChatIdOf(r)],async()=>{const cfg=c21Config(r);if(area==='importantItems'&&!on&&cfg.areas.currentState.enabled)throw Error('현재상태와 물품을 함께 끄세요.');const s=await c21Source(r),targets=area==='currentState'&&on?['currentState','importantItems']:[area];for(const k of targets){const a=cfg.areas[k];if(on&&!a.enabled&&!a.draftId){const mode=options.mode||'now',i=mode==='specific'?c21Clamp(options.turn,1,1,s.rows.length)-2:mode==='beginning'?-1:s.rows.length-1;a.baseline=s.rows[i]?.key||'';a.cursor='';const map=r.aiUpdateCursors?.[k]?.messageId;if(map)a.cursor=s.rows[c21Index(s.rows,map,true)].key;}a.enabled=on===true;if(on){a.paused=false;a.reason='';a.failureCount=0;a.failureKind='';a.failedEnd='';}a.status=a.draftId?'검토 대기':on?'대기':'꺼짐';const task=c21Tasks[k];ContinuumManager.get(r).guideSlots||={};ContinuumManager.get(r).guideSlots[task]={...ContinuumManager.get(r).guideSlots[task],automatic:targets.some(a=>cfg.areas[a].enabled)||C18_AREAS.some(a=>c21Tasks[a]===task&&cfg.areas[a].enabled)};}await saveRoom(r);U3.invalidate(r);return cfg;});}
 async function c21Limits(r,limit,unlimited){return withRoomExclusiveKeys([String(apiChatIdOf(r)),'ai:'+apiChatIdOf(r)],async()=>{const cfg=c21Config(r);cfg.dailyLimit=c21Clamp(limit,60,1,100000);cfg.unlimited=unlimited===true;await saveRoom(r);return cfg;});}
 async function c21StartInfo(r,area,mode='now',turn=1){const s=await c21Source(r),a=c21Config(r).areas[area],i=mode==='beginning'?0:mode==='specific'?Math.max(0,Number(turn)-1):s.rows.length,remaining=Math.max(0,s.rows.length-i),c=await bridge().snapshotRaw(apiChatIdOf(r));let chars=0;if(remaining){const g=guide(r,c21Tasks[area]);chars=c21System(c21Tasks[area],c21Labels[area]).length+packet(r,c,s,c21Tasks[area],g,i,s.rows.length-1,{mode:'custom'},'estimate').length;}return {turns:s.rows.length,remaining,approvals:Math.ceil(remaining/a.interval),chars,over:chars>120000};}
-async function c21GenerateLocked(r,area,force=false,shared=null){const stored=await getRoom(r.chatId);if(!stored||state.currentRoom!==r||document.hidden||localRestoreInProgress()||ExternalReplay.pending(apiChatIdOf(r)))return null;Object.assign(r,stored);const cfg=c21Config(r),a=cfg.areas[area];if(!a.enabled||a.draftId||a.paused&&!force)return null;if(force){if(a.paused){a.failureCount=0;a.failureKind='';}a.paused=false;a.reason='';a.failedEnd='';}
+async function c21GenerateLocked(r,area,force=false,shared=null){const stored=await getRoom(r.chatId);if(!stored||state.currentRoom!==r||document.hidden||localRestoreInProgress()||ExternalReplay.pending(apiChatIdOf(r)))return null;Object.assign(r,stored);const cfg=c21Config(r),a=cfg.areas[area];if(!a.enabled||a.draftId||a.paused&&!force)return null;await c241RefreshWaiting(r);if(c241ManualWaiting(r,area))return null;if(force){if(a.paused){a.failureCount=0;a.failureKind='';}a.paused=false;a.reason='';a.failedEnd='';}
  const s=shared?.source||await c21Source(r);if(shared)shared.source=s;if(!s.rows.length)return null;for(const k of C18_AREAS){const x=cfg.areas[k];try{const count=s.rows.length-c21Effective(r,k,s)-1;x.remaining=Math.max(0,x.interval-count);x.newTurns=x.draftId?Math.max(0,s.rows.length-c21Index(s.rows,x.lastGeneratedFrontier||x.baseline||'',false)-1):0;}catch{}}
  if(!force&&a.failedEnd===s.frontier)return null;const count=c21CountView(r);if(!cfg.unlimited&&count.room>=cfg.dailyLimit){a.reason='하루 상한';await saveRoom(r);return null;}
  let targets=[area],plan,c;try{c=await bridge().snapshotRaw(apiChatIdOf(r));await loadLorePackCache(true);const id=jobId(r,uid());plan=c21Plan(r,c,s,area,id,force);if(!plan){await saveRoom(r);return null;}
- if(area==='currentState'||area==='importantItems'){const other=area==='currentState'?'importantItems':'currentState',b=cfg.areas[other];if(b.enabled&&!b.draftId&&!b.paused&&(force||b.failedEnd!==s.frontier)){try{const p=c21Plan(r,c,s,other,id,force);if(p&&p.start===plan.start&&p.end===plan.end)targets.push(other);}catch{}}}
+ if(area==='currentState'||area==='importantItems'){const other=area==='currentState'?'importantItems':'currentState',b=cfg.areas[other];if(!c241ManualWaiting(r,other)&&b.enabled&&!b.draftId&&!b.paused&&(force||b.failedEnd!==s.frontier)){try{const p=c21Plan(r,c,s,other,id,force);if(p&&p.start===plan.start&&p.end===plan.end)targets.push(other);}catch{}}}
  const settings=aiTaskSettings(loadAiSettings(),'extract');if(settings.provider==='manual')throw Object.assign(Error('센터 복사 경로'),{code:'C21_MANUAL'});if(!isAiProviderReady(settings))throw Object.assign(Error('인증 오류'),{code:'C21_AUTH'});
- const snapshots=Object.fromEntries(await Promise.all(targets.map(async k=>[k,await c21Stamp(r,c,k)])));const ownership=JSON.stringify(targets.map(k=>[k,cfg.areas[k].enabled,cfg.areas[k].draftId]));if(!await c21Reserve(r))return null;
+ const snapshots=Object.fromEntries(await Promise.all(targets.map(async k=>[k,await c21Stamp(r,c,k)])));const ownership=JSON.stringify(targets.map(k=>[k,cfg.areas[k].enabled,cfg.areas[k].draftId]));await c241RefreshWaiting(r);if(targets.some(k=>c241ManualWaiting(r,k)))return null;if(!await c21Reserve(r))return null;
  const result=await callAiProvider(settings,plan.system,plan.prompt,{taskKind:'extract',operationLabel:targets.length===2?'현재상태·물품(짝)':'매니저 자동 정리 · '+c21Labels[area],timeoutMs:continuumAiTimeoutMs(settings),maxOutputTokens:16384,responseMimeType:plan.task==='currentItems'||plan.task==='lore'?'application/json':'text/plain'});
  if(/MAX_TOKENS|LENGTH|TOKEN_LIMIT|INCOMPLETE/i.test(String(result.finishReason||result.diagnostic?.finishReason||'')))throw Object.assign(Error('잘린 출력'),{code:'C21_INCOMPLETE'});
  if(state.currentRoom!==r||ownership!==JSON.stringify(targets.map(k=>[k,c21Config(r).areas[k].enabled,c21Config(r).areas[k].draftId])))throw Error('생성 중 방 또는 실행권이 바뀌었습니다.');
@@ -4695,6 +4695,45 @@ async function c23Apply(r,id,selection){const d=c23Drafts.get(id);if(!d)throw Er
 async function c23Version(r,packId,id,versionId){await loadLorePackCache(true);const p=packsOf(r).find(x=>x.scopeId===packId),old=p?.entries.find(x=>x.id===id);if(!old)throw Error('삭제된 카드 ID는 복원할 수 없습니다.');if(c23Protected(r,p,old))throw Error('보호된 카드는 복원할 수 없습니다.');const row=(await ContinuumBD.listVersions(packId,id)).find(x=>x.id===versionId);if(!row)throw Error('과거 버전을 찾지 못했습니다.');const b=await getRuntimeRecord(row.blobRef);if(!b)throw Error('복원 본문 참조가 없습니다.');const body=JSON.parse(b.body),next=copy(p),entry={...copy(body.entry),id,embedding:null,continuumRaw23:{schemaVersion:1,raw:body.raw,replaceRaw:true,projection:body.entry}};next.entries=next.entries.map(x=>x.id===id?entry:x);return c23Prepare(r,'versionRestore',[next],[],{meta:{[id]:body.meta}});}
 async function c23Snapshot(r,id){const rec=await getRuntimeRecord(id);if(rec?.kind!=='continuum-eri-snapshot')throw Error('복구 지점을 찾지 못했습니다.');await loadLorePackCache(true);if(!packsOf(r).some(x=>x.scopeId===rec.packId))throw Error('삭제된 팩 ID는 복원할 수 없습니다.');const pool=new Map((await ContinuumBD.records()).filter(x=>x.kind==='continuum-bd-blob').map(x=>[x.id,x])),p=await ContinuumBD.expandManifest(rec.manifest,pool),meta={};for(const x of rec.manifest.entries)meta[x.id]=JSON.parse(pool.get(x.blobRef).body).meta;return c23Prepare(r,'snapshotRestore',[p],[],{meta});}
 const bd={prepare:c23Prepare,stamp:c23Stamp,fresh:c23Fresh,apply:c23Apply,version:c23Version,snapshot:c23Snapshot,drafts:c23Drafts,protected:c23Protected};
+
+
+// .24.1: shared effective person guide and runtime manual ownership.
+function c241PersonGuide(value) {
+  return privateGuide(value).replace(/(?:^|\r?\n)━━━━━━━━━━━━━━━━━━━━\r?\nGRAPH_STRUCTURE_V1[^\n]*\r?\n━━━━━━━━━━━━━━━━━━━━\r?\n[\s\S]*?(?=\r?\n━━━━━━━━━━━━━━━━━━━━\r?\n[^\n]+\r?\n━━━━━━━━━━━━━━━━━━━━(?:\r?\n|$)|$)/g, '').trimEnd();
+}
+function c241ManualJob(r, j) {
+  return j?.chatId === r.chatId && j.route === 'managerTask' && j.status === 'pending'
+    && (!j.origin || j.origin === 'manual' || j.origin === 'master');
+}
+function c241ManualWaiting(r, area) {
+  return (ContinuumManager.get(r).work?.pendingJobIds || []).some(id => {
+    const j = cache.get(id);
+    if (!c241ManualJob(r, j)) return false;
+    const areas = j.areas?.length ? j.areas : j.task === 'master' ? C18_AREAS
+      : j.task === 'currentItems' ? ['currentState', 'importantItems'] : [j.task];
+    return areas.includes(area);
+  });
+}
+async function c241RefreshWaiting(r) {
+  if (ContinuumManager.get(r).work?.pendingJobIds?.length) await resume(r);
+}
+function c241ResumeAuto(r) {
+  c21Last.delete(r.chatId);
+  queueMicrotask(() => c21Due(r).catch(() => {}));
+}
+const c241Apply = apply, c241Cancel = cancel;
+apply = async function(r, j, ...args) {
+  if (!c241ManualJob(r, j)) return c241Apply(r, j, ...args);
+  const value = await c241Apply(r, j, ...args);
+  c241ResumeAuto(r);
+  return value;
+};
+cancel = async function(r, id) {
+  const j = cache.get(id) || await getRuntimeRecord(id), waiting = c241ManualJob(r, j);
+  const value = await c241Cancel(r, id);
+  if (waiting) c241ResumeAuto(r);
+  return value;
+};
 
 return {bd,utility,auto,C18_ORIGINS,C18_AREAS,masterReady,createMaster,parseMaster,masterDiffs,compositeApply,coreDraft,corePending,setReview,checkRows,aiMemory,masterStamp,queueAutomaticDate,parseTimeline,parseLore,loreEvidence,taskRefs,timelineText,dateValue,timelineGuide,evidenceOptions,dateInbox,confirmDate,copyTaskMeta,packsOf,taskHash,TASKS,cache,resourceCache,busy,fnv,digest,normalize,work,privateGuide,resource,guide,saveGuide,contract,personRecords,existing,domain,source,stamp,assertSource,current,historyBlock,packet,create,load,resume,cancel,unwrap,parseState,parseItems,parseLogs,parsePerson,diffs,preview,materialize,apply,undoPreview,undo,copyTo,publicView,zip};
 })();
@@ -20935,7 +20974,7 @@ ${open ? `<div class="wp-err-body"><div class="wp-err-row"><span>원인</span><p
   DLG.c16Diff=d=>{const p=d.draft.preview,missing=p.rows.filter(x=>x.missing).length;return sheet(d,{title:'결과 비교 · 선택 적용',body:c16Wrap(p.warnings.map(c16Text).join('')+(missing?c16Text('빠진 물품 '+missing+'개 · 기본 유지, 고른 카드만 은퇴'):c16Text('선택한 변경만 저장합니다.'))+p.rows.map((x,i)=>'<section class="m3-panel c16-diff" data-key="c16-diff-'+i+'"><b>'+esc(x.label)+'</b>'+field(x.missing?'이 물품':'적용 여부',selc(D(d,'pick'+i),d.draft['pick'+i],[['off',x.missing?'유지':'선택 안 함'],['on',x.missing?'은퇴':'선택']]))+'<span class="c16-caption">이전</span><pre class="c16-value">'+esc(c16Value(x.before))+'</pre><span class="c16-caption">제안</span><pre class="c16-value">'+esc(c16Value(x.after))+'</pre></section>').join('')+(p.rows.length?'':c16Text('바뀐 내용이 없습니다. 기준점만 저장할 수 있습니다.'))),foot:closeBtn(d,'취소')+btn('선택 적용','c16Apply',{arg:d.id,cls:'primary'})});};
   DLG.c16Receipts=d=>sheet(d,{title:'영수증 · 최근 5회 되돌리기',body:c16Wrap((ContinuumManager.get(d.wishRoom).work?.receipts||[]).slice().reverse().map(x=>c16Row(ContinuumWork.TASKS[x.task]+' · '+x.changes+'건',c16Text((c18Origins[x.origin||'manual']||'수동')+' · '+x.at+' · '+(x.verified?'저장 확인됨':'저장 확인 필요'))+c16Text(x.carrier)+c16Text(x.undoable?x.undoUnavailableAt:(x.undoneAt?'되돌림':'되돌리기 불가 · '+x.undoUnavailableAt)),x.undoable?btn('되돌리기','c16UndoOpen',{arg:d.id+'|'+x.id}):'','c16-receipt-'+x.id)).join('')||c16Text('적용 영수증이 없습니다.')),foot:closeBtn(d)});
   DLG.c16Undo=d=>sheet(d,{title:'되돌리기 비교',body:c16Wrap(c16Text('선택했던 '+d.draft.changes+'개 변경과 수동 기준점을 복원합니다.')+c16Text('이후 같은 기억이 바뀌었으면 적용을 막습니다.')+(d.draft.rows||[]).map(x=>'<section class="m3-panel c16-diff"><b>'+esc(x.label)+'</b><span class="c16-caption">현재</span><pre class="c16-value">'+esc(c16Value(x.before))+'</pre><span class="c16-caption">복원</span><pre class="c16-value">'+esc(c16Value(x.after))+'</pre></section>').join('')),foot:closeBtn(d,'취소')+btn('되돌리기','c16Undo',{arg:d.id,cls:'primary'})});
-  DLG.c16Guide=d=>sheet(d,{title:ContinuumWork.TASKS[d.draft.task]+' 지침',body:c16Wrap(c16Text(d.draft.source)+c16Text(d.draft.hash)+c16Text(d.draft.task==='personInfo'?'v1.5.4 + PRIVATE 2-B + 검사 2줄 · GRAPH는 D까지 제외':'본문 수정본은 기본값과 구별해 보존합니다.')+field('수동 슬롯',selc(D(d,'enabled'),d.draft.enabled,[['on','켜짐'],['off','꺼짐 · 기존 경로']]))+field('사용자 편집본',ta(D(d,'editedText'),d.draft.editedText,'기본 본문을 직접 편집',230))),foot:closeBtn(d)+btn('기본값','c16GuideReset',{arg:d.id})+btn('저장','c16GuideSave',{arg:d.id,cls:'primary'})});
+  DLG.c16Guide=d=>sheet(d,{title:ContinuumWork.TASKS[d.draft.task]+' 지침',body:c16Wrap(c16Text(d.draft.source)+c16Text(d.draft.hash)+c16Text(d.draft.task==='personInfo'?'v1.5.6 · 인지 감사·PRIVATE 2-B 포함 · 관계도 구조 제외':'본문 수정본은 기본값과 구별해 보존합니다.')+field('수동 슬롯',selc(D(d,'enabled'),d.draft.enabled,[['on','켜짐'],['off','꺼짐 · 기존 경로']]))+field('사용자 편집본',ta(D(d,'editedText'),d.draft.editedText,'기본 본문을 직접 편집',230))),foot:closeBtn(d)+btn('기본값','c16GuideReset',{arg:d.id})+btn('저장','c16GuideSave',{arg:d.id,cls:'primary'})});
   DLG.c16Relay=d=>sheet(d,{title:'코어 수동 릴레이',body:c16Wrap(field('원래 요청문',ta(D(d,'request'),d.draft.request,'',160,' readonly'))+field('JSON 답',ta(D(d,'answer'),d.draft.answer,'wish_job을 유지하세요.',180))),foot:closeBtn(d)+btn('복사','c16RelayCopy',{arg:d.id})+btn('원래 적용','c16RelayApply',{arg:d.id,cls:'primary'})});
   AD.act.c16Open=async()=>{await ContinuumWork.resume(c13Room());return c16Open('c16Center');};
   AD.act.c16Start=arg=>{const [did,task]=arg.split('|'),d=c16Find(did),g=ContinuumWork.guide(d.wishRoom,task);if(!g.enabled){closeSheet(d);WUI.open('tools');return;}return c16Open('c16Setup',{task,mode:'checkpoint',packetMode:'standalone',startKey:'',endKey:'',guideProvidedHash:''});};
@@ -21214,6 +21253,31 @@ for(const key of ['enabled','cooldownTurns','aiMemoryTurns'])AD.bind['eri24.'+ke
 function c24Reasons(){const view=ContinuumEri24.view(state.currentRoom);return view.enabled&&view.reasons.length?'<div class="c24-retrieval" data-key="c24-reasons">'+view.reasons.map(x=>c16Text(x)).join('')+'</div>':'';}
 const c24Summary=injectionSummary,c24DeliveryCards=deliveryCards;injectionSummary=function(...args){return c24Summary(...args)+c24Reasons();};deliveryCards=function(...args){return c24DeliveryCards(...args)+c24Reasons();};
 if(!document.getElementById('wish-c24-style')){const style=document.createElement('style');style.id='wish-c24-style';style.textContent='#wish-rp-root .c24-retrieval{display:flex;flex-direction:column;gap:12px;min-width:0;margin-top:12px}#wish-rp-root .c24-retrieval .m3-toggle{min-height:44px}#wish-rp-root .c24-retrieval .m3-field{min-width:0}#wish-rp-root .c24-retrieval>label:not(.m3-toggle)>span{font-size:14px!important;line-height:23px!important;font-weight:400!important}#wish-rp-root .c24-retrieval input{min-height:44px;width:100%;box-sizing:border-box}#wish-rp-root .c24-retrieval .c16-note{font-size:13px!important;line-height:18px!important;color:var(--m3-fg2);white-space:normal;overflow-wrap:anywhere}';document.head.append(style);}
+
+
+// Keep the current screen; only add the two state notices.
+function c241GuideNotices(r, tasks) {
+  return tasks.filter(t => ContinuumWork.guide(r, t).newDefault)
+    .map(t => c16Text(ContinuumWork.TASKS[t] + ' · 새 기본 지침 있음')).join('');
+}
+const c241Center = DLG.c16Center, c241Guide = DLG.c16Guide;
+DLG.c16Center = d => c241Center(d).replace('<div class="c16-sheet">',
+  '<div class="c16-sheet">' + c241GuideNotices(d.wishRoom, ['personInfo', 'master']));
+DLG.c16Guide = d => {
+  const g = ContinuumWork.guide(d.wishRoom, d.draft.task);
+  let html = c241Guide(d).replace('<div class="c16-sheet">',
+    '<div class="c16-sheet">' + c241GuideNotices(d.wishRoom, [d.draft.task]));
+  if (d.draft.task === 'personInfo' && g.source === '사용자 수정본')
+    html = html.replace('v1.5.6 · 인지 감사·PRIVATE 2-B 포함 · 관계도 구조 제외',
+      '편집본 기준 v' + esc(g.version) + ' · PRIVATE 2-B 적용 · 관계도 구조 제외');
+  return html;
+};
+AD.act.c21Settings = async () => {
+  const r = state.currentRoom;
+  if (!r) return;
+  await ContinuumWork.resume(r);
+  if (state.currentRoom === r) return c16Open('c21Auto');
+};
 
 return { sendButton:findSendAction, mountMonitor, boot, open, close, toggle: () => (S.open ? close() : open()), paint, toast, job, openSheet, closeSheet, confirm: ask, isOpen: () => S.open, ui };
 }
