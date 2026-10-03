@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         ✏️ 크랙 메시지 도구
+// @name         ✏️ 크랙 원고실
 // @namespace    https://crack.wrtn.ai/
-// @version      0.8.0
-// @description  메시지 일괄 편집·드래그 핀셋 수정·대화록 저장을 한곳에서 쓴다. 기본값은 읽기 전용이며 일괄 저장 직전 백업 여부를 고를 수 있다. AI를 호출하지 않는다.
+// @version      0.9.0
+// @description  크랙 원고실 · 메시지 일괄 편집·드래그 핀셋 수정·대화록 저장·HTML 꾸미기를 한곳에서 쓴다. 기본값은 읽기 전용이며 일괄 저장 직전 백업 여부를 고를 수 있다. AI를 호출하지 않는다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-message-editor.user.js
 // @updateURL    https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-message-editor.user.js
@@ -16,14 +16,17 @@
 // @grant        unsafeWindow
 // @noframes
 // @run-at       document-idle
+// @require      https://cdn.jsdelivr.net/npm/marked@18.0.5/lib/marked.umd.js
+// @require      https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js
+// HTML 틀·글꼴 목록·마크다운 처리: 크랙 아카이브 5.10.2(원작자 허락)
 // ==/UserScript==
 
 (function(){
 'use strict';
-/* 메시지 도구 연결부. 원작자 기능은 build.cjs의 검사된 연결점으로만 부른다. */
+/* 크랙 원고실 연결부. 원작자 기능은 build.cjs의 검사된 연결점으로만 부른다. */
 const CME = (() => {
     'use strict';
-    const VERSION = '0.8.0';
+    const VERSION = '0.9.0';
     const page = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
     const state = { pinset: null, transcript: null, duplicates: new Set(), themes: null };
     const writes = new Set();
@@ -240,6 +243,15 @@ const CME = (() => {
         }
     }
     function wirePanel(open) {
+        function publicOpen(e) {
+            if(!route()){alert('채팅방 안에서 눌러 주세요.');return;}
+            const tool=['edit','pinset','transcript'].includes(e?.detail?.tool)?e.detail.tool:'edit';
+            open();
+            document.querySelector('.crack-msg-ed-overlay .cme-tool-btn[data-tool="'+tool+'"]')?.click();
+            if(tool==='transcript'&&externalTranscript())openTranscript();
+        }
+        document.addEventListener('crack-wongosil:open',publicOpen);
+        if(typeof GM_registerMenuCommand==='function')GM_registerMenuCommand('크랙 원고실',()=>publicOpen());
         let pending=0;
         const soon=()=>{if(!pending)pending=setTimeout(()=>{pending=0;placeEditorRow(open);externalTranscript();},600);};
         document.addEventListener('click',soon,true);page.addEventListener('popstate',soon);
@@ -248,8 +260,1016 @@ const CME = (() => {
         if(document.body)observe();else document.addEventListener('DOMContentLoaded',observe,{once:true});
         page.addEventListener('storage',syncTheme);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',syncTheme);
     }
-    return { VERSION,page,state,route,changed,writeLocked,duplicate,externalTranscript,notice,syncTheme,mountEditor,openTranscript,migrateKeywords,filterKeywords,readScreen,wirePanel,
+    let announced=false;
+    const ready=()=>{if(announced)return;announced=true;document.documentElement.setAttribute('data-crack-wongosil-ready',VERSION);document.dispatchEvent(new Event('crack-wongosil:ready'));};
+    return { VERSION,page,state,route,changed,writeLocked,duplicate,externalTranscript,notice,syncTheme,mountEditor,openTranscript,migrateKeywords,filterKeywords,readScreen,wirePanel,ready,escape,dark,
         setThemes(themes){state.themes=themes;syncTheme();}, pinCss,transcriptCss };
+})();
+
+/* HTML 틀·글꼴 목록·마크다운 처리: 크랙 아카이브 5.10.2(원작자 허락) */
+CME.html = (() => {
+ 'use strict';
+ const toStringValue=v=>String(v??''), escapeHTML=CME.escape;
+   const LOG_HTML_LAYOUTS = Object.freeze({
+    specsheet:  { label: '00 · 스펙시트', defaultColor: 'light' },
+    baekjimeok: { label: '01 · 백지먹', defaultColor: 'ivory' },
+    simya:      { label: '02 · 심야', defaultColor: 'goldnavy' },
+    yeonji:     { label: '03 · 연지', defaultColor: 'dustyrose' },
+    cheongram:  { label: '04 · 청람', defaultColor: 'slate' },
+    wongo:      { label: '05 · 원고', defaultColor: 'vermilion' },
+    silentfilm: { label: '06 · 무성영화', defaultColor: 'mono' },
+    tajeon:     { label: '07 · 타전', defaultColor: 'gray' },
+    seongjwa:   { label: '08 · 성좌', defaultColor: 'indigo' },
+    makgan:     { label: '09 · 막간', defaultColor: 'creamgold' },
+    crosslog:   { label: '10 · 교차 기록', defaultColor: 'mungo' },
+    airmail:    { label: '11 · 항공우편', defaultColor: 'builtin', builtIn: true },
+    gwedo:      { label: '12 · 궤도', defaultColor: 'light' },
+    heugyo:     { label: '13 · 흑요', defaultColor: 'bone' },
+    cheongin:   { label: '14 · 청인', defaultColor: 'klein' },
+    yeobaek:    { label: '15 · 여백', defaultColor: 'cream' },
+    muji:       { label: '16 · 무지', defaultColor: 'warm' },
+  });
+  const LOG_SIMPLE_PALETTES = Object.freeze({
+    hanji: {
+      bg: '#e9e0cd', paper: '#f8f1df', fg: '#2c241a', muted: '#6b5d47', border: '#cdbf9f',
+      aiBg: '#f8f1df', aiAccent: '#8a3a34', userBg: '#e3dcc6', userAccent: '#a98a3f',
+      italic: '#7a6650', quoteBg: '#f2ead8', quoteAccent: '#9a7650',
+    },
+    sumuk: {
+      bg: '#edeeef', paper: '#f5f6f7', fg: '#2a2e33', muted: '#68727c', border: '#c6cdd4',
+      aiBg: '#f5f6f7', aiAccent: '#3c4650', userBg: '#e2e5e9', userAccent: '#b3402e',
+      italic: '#657789', quoteBg: '#e7eaed', quoteAccent: '#6f7f8d',
+    },
+    mungo: {
+      bg: '#faf7f0', paper: '#fffdf8', fg: '#33302a', muted: '#6b6256', border: '#d9d2c4',
+      aiBg: '#fffdf8', aiAccent: '#6b4a3a', userBg: '#f5efe5', userAccent: '#7a5b48',
+      italic: '#7d6c5d', quoteBg: '#f7f1e7', quoteAccent: '#8a6a52',
+    },
+    twoink: {
+      bg: '#fbf8f1', paper: '#fffdf8', fg: '#33302a', muted: '#625b50', border: '#d9d2c4',
+      aiBg: '#fffdf8', aiAccent: '#8a4a2e', userBg: '#f3f1ec', userAccent: '#596777',
+      italic: '#6b5d77', quoteBg: '#f3f0ea', quoteAccent: '#596777',
+    },
+    nangdok: {
+      bg: '#f7f4ec', paper: '#fbfaf6', fg: '#37332c', muted: '#6a6255', border: '#d6cfc0',
+      aiBg: '#fbfaf6', aiAccent: '#755f45', userBg: '#eee9db', userAccent: '#31456b',
+      italic: '#7b6a55', quoteBg: '#f1ede3', quoteAccent: '#755f45',
+    },
+    yahwa: {
+      bg: '#211e1a', paper: '#292520', fg: '#d8d0c2', muted: '#958b7a', border: '#3d3830',
+      aiBg: '#292520', aiAccent: '#b29a68', userBg: '#2b281f', userAccent: '#e8c56a',
+      italic: '#b5a58e', quoteBg: '#24211d', quoteAccent: '#b29a68',
+    },
+  });
+  const LOG_CROSSLOG_VARIANT_LABELS = Object.freeze({
+    hanji: '한지',
+    sumuk: '수묵',
+    mungo: '문고',
+    twoink: '이색잉크',
+    nangdok: '낭독',
+    yahwa: '야화',
+  });
+  const LOG_HTML_VARIANTS = Object.freeze({
+    specsheet: Object.freeze({
+      light: { label:'LIGHT', bg:'#F5F5F1', text:'#161513', title:'#161513', accent:'#57544D', dialogue:'#161513', line:'#161513' },
+      dark:  { label:'DARK',  bg:'#161614', text:'#EDEBE4', title:'#EDEBE4', accent:'#B8B5AC', dialogue:'#EDEBE4', line:'#EDEBE4' },
+    }),
+    baekjimeok: Object.freeze({
+      ivory:      { label:'기본 · 아이보리', bg:'#faf8f2', text:'#2b2a26', title:'#26241f', accent:'#9a8f75', dialogue:'#6e6350', line:'#b5a98c' },
+      snow:       { label:'설백', bg:'#f8f9fa', text:'#33363a', title:'#24272b', accent:'#8a9098', dialogue:'#5c6670', line:'#c3c8ce' },
+      kraft:      { label:'갱지', bg:'#f3ead8', text:'#4a3f2e', title:'#3c3222', accent:'#a08b5f', dialogue:'#7d6a45', line:'#c4ad82' },
+      blackpaper: { label:'흑지 · 다크', bg:'#1e1d1a', text:'#d8d4c8', title:'#ece8dc', accent:'#a3987e', dialogue:'#c0b394', line:'#4a463c' },
+    }),
+    simya: Object.freeze({
+      goldnavy:  { label:'기본 · 골드네이비', bg:'#161b24', text:'#d6dae2', title:'#eef0f4', accent:'#c2a468', dialogue:'#c2a468', line:'#3a4152' },
+      purple:    { label:'자정보라', bg:'#1b1722', text:'#d8d4e0', title:'#efecf5', accent:'#a68bc9', dialogue:'#b9a3d6', line:'#3d3550' },
+      silverblue:{ label:'흑청은사', bg:'#14181c', text:'#ccd3d8', title:'#e8edf1', accent:'#9db3bf', dialogue:'#a9c0cc', line:'#333d44' },
+      wine:      { label:'와인나이트', bg:'#201619', text:'#ddd2d4', title:'#f2e9eb', accent:'#c98a94', dialogue:'#d19aa3', line:'#493339' },
+    }),
+    yeonji: Object.freeze({
+      dustyrose: { label:'기본 · 더스티로즈', bg:'#f8f2f1', text:'#3a2f30', title:'#332728', accent:'#a56b6f', dialogue:'#a56b6f', line:'#e0c8ca' },
+      wine:      { label:'와인', bg:'#f6efee', text:'#3d2a2e', title:'#332226', accent:'#8e4a57', dialogue:'#8e4a57', line:'#d9bcc2' },
+      apricot:   { label:'살구', bg:'#faf3ec', text:'#40342a', title:'#362b21', accent:'#c08a5e', dialogue:'#a9743f', line:'#e8d2bc' },
+      mauve:     { label:'모브 · 연보라', bg:'#f5f1f6', text:'#38313d', title:'#2e2833', accent:'#8f7aa3', dialogue:'#7d6693', line:'#d9cde2' },
+    }),
+    cheongram: Object.freeze({
+      slate:     { label:'기본 · 슬레이트', bg:'#eef1f5', text:'#2c3440', title:'#242c38', accent:'#5d708e', dialogue:'#4e6488', line:'#8fa0ba' },
+      deepsea:   { label:'심해 · 다크', bg:'#131a24', text:'#c8d2de', title:'#e6edf5', accent:'#7d9cc4', dialogue:'#8fadd2', line:'#35455c' },
+      teal:      { label:'청록', bg:'#ecf4f3', text:'#263a3a', title:'#1e3131', accent:'#4e8583', dialogue:'#3d6f6d', line:'#a5c6c4' },
+      graycloud: { label:'잿빛하늘', bg:'#f0f1f3', text:'#363a41', title:'#2b2f36', accent:'#7e8796', dialogue:'#626a78', line:'#b8bdc7' },
+    }),
+    wongo: Object.freeze({
+      vermilion:{ label:'기본 · 주홍교정', bg:'#f9f6ef', text:'#3a352c', title:'#2f2a21', accent:'#a35138', dialogue:'#a35138', line:'#c3b899' },
+      blueink:  { label:'청먹 · 파란 잉크', bg:'#f6f7f4', text:'#34383c', title:'#292d32', accent:'#3f5e8c', dialogue:'#3f5e8c', line:'#b3bdc9' },
+      greenproof:{ label:'초고녹 · 녹색 펜', bg:'#f7f7f0', text:'#363a30', title:'#2b2f26', accent:'#5d7a4e', dialogue:'#5d7a4e', line:'#bfc7ab' },
+      midnight: { label:'심야원고 · 다크', bg:'#201e1a', text:'#d5d0c4', title:'#eae5d8', accent:'#c97a5e', dialogue:'#d18a70', line:'#4e483c' },
+    }),
+    silentfilm: Object.freeze({
+      mono:     { label:'기본 · 흑백', bg:'#101010', text:'#e6e4de', title:'#f2f0ea', accent:'#9a9a92', dialogue:'#b8b6ae', line:'#4c4c48' },
+      sepia:    { label:'세피아필름', bg:'#171310', text:'#e3d8c8', title:'#f0e7d8', accent:'#a89478', dialogue:'#c4b298', line:'#55483a' },
+      cyanfilm: { label:'청화필름', bg:'#0f1416', text:'#d8e2e4', title:'#eaf2f3', accent:'#8aa4a8', dialogue:'#a8c0c4', line:'#3c4c50' },
+      silver:   { label:'은막 · 라이트', bg:'#f2f1ee', text:'#33322f', title:'#232220', accent:'#7a7972', dialogue:'#5c5b55', line:'#c6c4be' },
+    }),
+    tajeon: Object.freeze({
+      gray:      { label:'기본 · 회백', bg:'#ededeb', text:'#38383a', title:'#2c2c30', accent:'#5f6570', dialogue:'#55606e', line:'#9aa0a8' },
+      kraft:     { label:'갱지전보', bg:'#f2ead9', text:'#453c2e', title:'#372f22', accent:'#8c6f45', dialogue:'#7a6038', line:'#bfa87e' },
+      officeblue:{ label:'관청청색', bg:'#e9eef2', text:'#313a44', title:'#262e38', accent:'#4a6280', dialogue:'#3f5872', line:'#92a6ba' },
+      night:     { label:'야간교신 · 다크', bg:'#1b1d20', text:'#cfd2d6', title:'#e8eaee', accent:'#8f9aa8', dialogue:'#a3b2c4', line:'#464b52' },
+    }),
+    seongjwa: Object.freeze({
+      indigo: { label:'기본 · 감청', bg:'#0e1220', text:'#cfd6e6', title:'#e9eef8', accent:'#7286ad', dialogue:'#9db1dd', line:'#54648a' },
+      nebula: { label:'보랏빛성운', bg:'#151022', text:'#d5cee4', title:'#efeaf8', accent:'#8d7ab0', dialogue:'#ab97d2', line:'#5c4e80' },
+      dawn:   { label:'새벽여명', bg:'#101a22', text:'#cdd9de', title:'#e8f1f4', accent:'#6f96a4', dialogue:'#8fb8c6', line:'#3f5a66' },
+      ground: { label:'지상관측 · 라이트', bg:'#eef1f7', text:'#303748', title:'#252b3a', accent:'#6a7aa0', dialogue:'#52679a', line:'#b4bdd2' },
+    }),
+    makgan: Object.freeze({
+      creamgold:{ label:'기본 · 크림골드', bg:'#f7efe4', text:'#43313a', title:'#37232e', accent:'#ab8a55', dialogue:'#8a4a5e', line:'#c4a97e' },
+      velvet:   { label:'벨벳 · 다크 버건디', bg:'#251419', text:'#e4d5cc', title:'#f4e9dd', accent:'#c69b6b', dialogue:'#d1919e', line:'#5a3a40' },
+      operablue:{ label:'오페라블루', bg:'#eff1f6', text:'#37404e', title:'#2a3242', accent:'#9a8250', dialogue:'#4a5e86', line:'#b8a983' },
+      greenroom:{ label:'그린룸 · 다크 그린', bg:'#14201b', text:'#d7ddd4', title:'#ecf1ea', accent:'#c2a36a', dialogue:'#9cc0a6', line:'#3a4c42' },
+    }),
+    gwedo: Object.freeze({
+      light:   { label:'기본 · 라이트', bg:'#FAFAF8', text:'#201F1C', title:'#161512', accent:'#201F1C', dialogue:'#77746C', line:'#E4E2DC' },
+      dark:    { label:'흑지 · 다크', bg:'#171714', text:'#E9E7E0', title:'#F2F0EA', accent:'#E9E7E0', dialogue:'#98948A', line:'#33322D' },
+      blueink: { label:'청잉크', bg:'#F7F8FA', text:'#2A2F38', title:'#232C3E', accent:'#33415C', dialogue:'#7C8494', line:'#DDE1E6' },
+      sepia:   { label:'세피아', bg:'#FAF6EE', text:'#373127', title:'#2A241B', accent:'#4E4638', dialogue:'#8C8272', line:'#E4DDCE' },
+    }),
+    heugyo: Object.freeze({
+      bone:  { label:'기본 · 본블랙', bg:'#131210', text:'#DDD9CF', title:'#F0EDE4', accent:'#D8D3C6', dialogue:'#C9B788', line:'#2A2925' },
+      ember: { label:'잔불', bg:'#171210', text:'#E0D6CE', title:'#F2E8E0', accent:'#D8C8BC', dialogue:'#CF8A62', line:'#33291F' },
+      moss:  { label:'이끼', bg:'#121411', text:'#D6DCD2', title:'#EAF0E6', accent:'#C6D0C0', dialogue:'#9CB88A', line:'#272B25' },
+      ivory: { label:'백요 · 라이트', bg:'#F1EFE9', text:'#2C2A24', title:'#191813', accent:'#55524A', dialogue:'#8A7141', line:'#DCD9CF' },
+    }),
+    cheongin: Object.freeze({
+      klein:     { label:'기본 · 클라인블루', bg:'#F6F5F0', text:'#26251F', title:'#1D1C17', accent:'#2B3FB0', dialogue:'#6B6858', line:'#E2E0D8' },
+      vermilion: { label:'주인 · 붉은 인장', bg:'#F8F5EF', text:'#2A2620', title:'#1E1B15', accent:'#C2402A', dialogue:'#6E6759', line:'#E6E1D6' },
+      jade:      { label:'옥인 · 초록 인장', bg:'#F3F6F3', text:'#24302C', title:'#1A2622', accent:'#17796B', dialogue:'#67746E', line:'#DCE4DF' },
+      night:     { label:'야인 · 다크', bg:'#14151A', text:'#D9DBE2', title:'#EEF0F6', accent:'#6E82E8', dialogue:'#9AA0AE', line:'#2E3038' },
+    }),
+    yeobaek: Object.freeze({
+      cream:    { label:'기본 · 크림', bg:'#FCFBF7', text:'#262521', title:'#1C1B17', accent:'#9C988C', dialogue:'#9C988C', line:'#E0DDD3' },
+      coolgray: { label:'한랭지 · 쿨그레이', bg:'#F7F8F8', text:'#2C2E30', title:'#202224', accent:'#94989C', dialogue:'#94989C', line:'#DADDDF' },
+      dark:     { label:'묵지 · 다크', bg:'#191917', text:'#DFDCD4', title:'#F0EEE6', accent:'#8F8C82', dialogue:'#8F8C82', line:'#3A3934' },
+      blush:    { label:'담홍', bg:'#FBF7F5', text:'#322B2A', title:'#241E1D', accent:'#A08D89', dialogue:'#A08D89', line:'#E7DCD8' },
+    }),
+    muji: Object.freeze({
+      warm:      { label:'기본 · 미색', bg:'#F8F5EF', text:'#3A362E', title:'#2C2922', accent:'#7A6A50', dialogue:'#9A6A54', line:'#E5E0D4' },
+      grove:     { label:'초록등', bg:'#F3F5F0', text:'#333830', title:'#262B24', accent:'#587050', dialogue:'#8C7346', line:'#DDE2D7' },
+      nightlamp: { label:'남등 · 다크', bg:'#1A1B1E', text:'#D6D7DA', title:'#ECEDF0', accent:'#A8B4C8', dialogue:'#C8A87E', line:'#33353A' },
+      mono:      { label:'무채', bg:'#FBFAF7', text:'#2A2925', title:'#1B1A17', accent:'#55534C', dialogue:'#8B887F', line:'#E3E1D9' },
+    }),
+  });
+  const COA_CORE_GOOGLE_FONTS_URL = 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap';
+  const COA_PRETENDARD_FONT_URL = 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css';
+  const COA_FONT_PRESETS = Object.freeze({
+    pretendard: {
+      label: '프리텐다드', group: 'sans',
+      family: "'Pretendard Variable',Pretendard,'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif",
+    },
+    notosanskr: {
+      label: 'Noto Sans KR', group: 'sans',
+      family: "'Noto Sans KR','Pretendard Variable',Pretendard,'Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap',
+    },
+    gowundodum: {
+      label: '고운돋움', group: 'sans',
+      family: "'Gowun Dodum','Noto Sans KR','Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap',
+    },
+    nanumgothic: {
+      label: '나눔고딕', group: 'sans',
+      family: "'Nanum Gothic','Noto Sans KR','Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap',
+    },
+    sans: {
+      label: '기본 고딕', group: 'sans',
+      family: "Arial,'Apple SD Gothic Neo','Malgun Gothic',sans-serif",
+    },
+    dotum: {
+      label: '돋움', group: 'sans',
+      family: "Dotum,'돋움','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif",
+    },
+    notoserifkr: {
+      label: 'Noto Serif KR', group: 'serif',
+      family: "'Noto Serif KR','Gowun Batang',Batang,'바탕',serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;800&display=swap',
+    },
+    gowunbatang: {
+      label: '고운바탕', group: 'serif',
+      family: "'Gowun Batang','Noto Serif KR',Batang,'바탕',serif",
+    },
+    nanummyeongjo: {
+      label: '나눔명조', group: 'serif',
+      family: "'Nanum Myeongjo','Noto Serif KR',Batang,'바탕',serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&display=swap',
+    },
+    songmyung: {
+      label: '송명', group: 'serif',
+      family: "'Song Myung','Noto Serif KR',Batang,'바탕',serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Song+Myung&display=swap',
+    },
+    batang: {
+      label: '바탕', group: 'serif',
+      family: "Batang,'바탕','AppleMyungjo','Malgun Gothic',serif",
+    },
+    nanumpen: {
+      label: '나눔손글씨 펜', group: 'hand',
+      family: "'Nanum Pen Script','Noto Sans KR','Malgun Gothic',cursive",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap',
+    },
+    nanumbrush: {
+      label: '나눔손글씨 붓', group: 'hand',
+      family: "'Nanum Brush Script','Noto Sans KR','Malgun Gothic',cursive",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&display=swap',
+    },
+    blackhan: {
+      label: '검은고딕', group: 'display',
+      family: "'Black Han Sans','Noto Sans KR','Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap',
+    },
+    dohyeon: {
+      label: '도현', group: 'display',
+      family: "'Do Hyeon','Noto Sans KR','Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap',
+    },
+    jua: {
+      label: '주아', group: 'display',
+      family: "Jua,'Noto Sans KR','Malgun Gothic',sans-serif",
+      stylesheet: 'https://fonts.googleapis.com/css2?family=Jua&display=swap',
+    },
+    ibmplexmono: {
+      label: 'IBM Plex Mono', group: 'mono',
+      family: "'IBM Plex Mono',Consolas,Menlo,'Courier New','Malgun Gothic',monospace",
+    },
+    mono: {
+      label: '기본 고정폭', group: 'mono',
+      family: "Consolas,Menlo,'Courier New','Malgun Gothic',monospace",
+    },
+  });
+  const COA_FONT_GROUPS = Object.freeze([
+    ['sans', '고딕'],
+    ['serif', '명조 · 소설'],
+    ['hand', '손글씨'],
+    ['display', '제목 · 장식'],
+    ['mono', '고정폭'],
+  ]);
+  const AIRMAIL_FRAME_TILE_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADQAAAA0CAYAAADFeBvrAAABMElEQVR4nN3YK24DQRAE0GefKcTBIc4RDHw4Ax8gICHmvksOEBKQkAWr1X5mFk1N45ZaT0VKffh4ffmzY86Pz6r90+W254zn/Vq1f9xzpFXM19t7PahlDJUJtY6hApSAoRCUgqEAlIRhA5SGYQWUiGEBlIphBpSMYQJKxzAC9YBhAPWCgcPvz3dV224ZQ2WXax1zfnyWgxIwFCaUgqEAlIRhA5SGYQWUiGEBlIphBpSMYQJKxzAC9YBhAPWCgWNPGHZ+TlvFnC63elDLGCoTah1DBSgBQyEoBUMBKAnDBigNwwooEcMCKBXDDCgZwwSUjmEE6gHDAOoFw47PacsYKrtc65jn/VoOSsBQmFAKhgJQEoYNUBqGFVAihgVQKoYZUDKGCSgdwwjUA4YB1AsG/gGIoj19fJsnfwAAAABJRU5ErkJggg==';
+  function getLogSimplePalette(colorKey) {
+    return LOG_SIMPLE_PALETTES[toStringValue(colorKey).trim().toLocaleLowerCase()] || LOG_SIMPLE_PALETTES.mungo;
+  }
+  function getLogHTMLVariantMap(layoutValue) {
+    const raw = toStringValue(layoutValue).trim().toLocaleLowerCase();
+    const layoutKey = raw === 'hoerok' ? 'baekjimeok' : (LOG_HTML_LAYOUTS[raw] ? raw : 'crosslog');
+    if (layoutKey === 'crosslog') {
+      return Object.fromEntries(Object.keys(LOG_CROSSLOG_VARIANT_LABELS).map((key) => [key, {
+        label: LOG_CROSSLOG_VARIANT_LABELS[key],
+        ...LOG_SIMPLE_PALETTES[key],
+      }]));
+    }
+    if (LOG_HTML_LAYOUTS[layoutKey]?.builtIn) return { builtin: { label: '고정 색상' } };
+    return LOG_HTML_VARIANTS[layoutKey] || LOG_HTML_VARIANTS.baekjimeok;
+  }
+  function getLogHTMLPalette(layoutValue, colorValue) {
+    const layoutKey = normalizeLogHTMLLayout(layoutValue);
+    const colorKey = normalizeLogHTMLColor(colorValue, layoutKey);
+    const raw = getLogHTMLVariantMap(layoutKey)[colorKey];
+    if (layoutKey === 'crosslog') {
+      return {
+        ...raw,
+        text: raw.fg,
+        title: raw.fg,
+        accent: raw.aiAccent,
+        dialogue: raw.userAccent,
+        line: raw.border,
+      };
+    }
+    return {
+      ...raw,
+      fg: raw.text,
+      paper: raw.bg,
+      muted: raw.accent,
+      border: raw.line,
+      aiBg: raw.bg,
+      userBg: raw.bg,
+      aiAccent: raw.accent,
+      userAccent: raw.dialogue,
+      italic: raw.dialogue,
+      quoteBg: raw.bg,
+      quoteAccent: raw.line,
+    };
+  }
+  function getLogHTMLVariantLabel(layoutValue, colorValue) {
+    const layoutKey = normalizeLogHTMLLayout(layoutValue);
+    const colorKey = normalizeLogHTMLColor(colorValue, layoutKey);
+    return getLogHTMLVariantMap(layoutKey)[colorKey]?.label || colorKey;
+  }
+  function normalizeLogHTMLLayout(value) {
+    const clean = toStringValue(value).trim().toLocaleLowerCase();
+    if (clean === 'specsheetdark') return 'specsheet';
+    if (clean === 'hoerok') return 'baekjimeok';
+    return LOG_HTML_LAYOUTS[clean] ? clean : 'specsheet';
+  }
+  function normalizeLogHTMLColor(value, layoutValue = 'crosslog') {
+    const layoutKey = normalizeLogHTMLLayout(layoutValue);
+    const variants = getLogHTMLVariantMap(layoutKey);
+    const clean = toStringValue(value).trim().toLocaleLowerCase();
+    if (variants[clean]) return clean;
+    return LOG_HTML_LAYOUTS[layoutKey].defaultColor;
+  }
+  function normalizeCOAFont(value) {
+    const text = toStringValue(value).trim().toLocaleLowerCase();
+    if (COA_FONT_PRESETS[text]) return text;
+    if (/noto\s*serif/.test(text)) return 'notoserifkr';
+    if (/noto\s*sans/.test(text)) return 'notosanskr';
+    if (/gowun\s*dodum|고운\s*돋움/.test(text)) return 'gowundodum';
+    if (/gowun\s*batang|고운\s*바탕/.test(text)) return 'gowunbatang';
+    if (/nanum\s*myeongjo|나눔\s*명조/.test(text)) return 'nanummyeongjo';
+    if (/nanum\s*gothic|나눔\s*고딕/.test(text)) return 'nanumgothic';
+    if (/song\s*myung|송명/.test(text)) return 'songmyung';
+    if (/nanum\s*pen|나눔.*펜/.test(text)) return 'nanumpen';
+    if (/nanum\s*brush|나눔.*붓/.test(text)) return 'nanumbrush';
+    if (/black\s*han|검은\s*고딕/.test(text)) return 'blackhan';
+    if (/do\s*hyeon|도현/.test(text)) return 'dohyeon';
+    if (/ibm.*plex.*mono/.test(text)) return 'ibmplexmono';
+    return 'pretendard';
+  }
+  function getCOAFontFamily(fontKey) {
+    return COA_FONT_PRESETS[normalizeCOAFont(fontKey)].family;
+  }
+  function splitMarkdownTableRow(line) {
+    let text = toStringValue(line).trim();
+    if (!text.includes('|')) return [];
+    if (text.startsWith('|')) text = text.slice(1);
+    if (text.endsWith('|')) text = text.slice(0, -1);
+    const cells = [];
+    let buf = '';
+    let escaped = false;
+    for (const ch of text) {
+      if (escaped) {
+        buf += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === '|') {
+        cells.push(buf.trim());
+        buf = '';
+        continue;
+      }
+      buf += ch;
+    }
+    cells.push(buf.trim());
+    return cells;
+  }
+  function isMarkdownTableSeparator(line) {
+    const cells = splitMarkdownTableRow(line);
+    if (!cells.length) return false;
+    return cells.every((cell) => /^:?-{3,}:?$/.test(cell.replace(/\s+/g, '')));
+  }
+  function isMarkdownPipeLikeLine(line) {
+    const text = toStringValue(line).trim();
+    if (!text.includes('|')) return false;
+    if (/^\s*(?:```|>|#{1,6}\s+)/.test(text)) return false;
+    return splitMarkdownTableRow(text).length >= 1;
+  }
+  function isMarkdownPipeTableStart(lines, index) {
+    const header = splitMarkdownTableRow(lines[index] || '');
+    if (header.length < 1) return false;
+    if (!isMarkdownTableSeparator(lines[index + 1] || '')) return false;
+    // | 항목 | 관찰 기록 | 다음 줄이 |---| 처럼 느슨하게 와도 표로 본다.
+    // AI 출력에서 구분선 칸 수가 틀어지는 경우가 잦아서, header 기준으로 보정한다.
+    return header.some(Boolean);
+  }
+  function renderMarkdownInlineLite(value) {
+    // marked가 차단되어 내장 렌더러로 내려가도 이미지/링크를 평문으로
+    // 흘리지 않는다. 특히 크랙 상황 이미지 URL은 확장자가 없는 경우가 많으므로
+    // ![alt](https://...) 형식 자체를 기준으로 이미지인지 판별한다.
+    let source = toStringValue(value);
+    const inlineTokens = [];
+    const stash = (html) => {
+      const token = `\uE000COAINLINE${inlineTokens.length}\uE001`;
+      inlineTokens.push(html);
+      return token;
+    };
+
+    // 인라인 코드를 가장 먼저 보호해 코드 안의 Markdown 이미지/링크를 렌더하지 않는다.
+    source = source.replace(/`([^`\n]+)`/g, (_m, code) => stash(`<code>${escapeHTML(code)}</code>`));
+
+    // 주석 이미지 복원기가 만들어 둔 안전한 raw <img>도 fallback에서 다시 평문이 되지 않게 보호한다.
+    source = source.replace(/<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["'][^>]*>/gi, (match, url) => {
+      const altMatch = match.match(/\balt\s*=\s*["']([^"']*)["']/i);
+      const alt = altMatch ? altMatch[1] : '첨부 이미지';
+      return stash(`<img src="${escapeHTML(url)}" alt="${escapeHTML(alt)}">`);
+    });
+
+    // Markdown 이미지. URL 확장자 유무와 무관하게 표시한다.
+    source = source.replace(/!\[([^\]\n]*)\]\(\s*(https?:\/\/[^\s)]+)(?:\s+["'][^"']*["'])?\s*\)/gi, (_m, alt, url) => (
+      stash(`<img src="${escapeHTML(url)}" alt="${escapeHTML(alt || '첨부 이미지')}">`)
+    ));
+
+    // 일반 Markdown 링크도 fallback에서 클릭 가능한 링크로 유지한다.
+    source = source.replace(/(^|[^!])\[([^\]\n]+)\]\(\s*(https?:\/\/[^\s)]+)(?:\s+["'][^"']*["'])?\s*\)/gi, (_m, prefix, label, url) => (
+      `${prefix}${stash(`<a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(label)}</a>`)}`
+    ));
+
+    let out = escapeHTML(source);
+    out = out
+      .replace(/\*\*([^*\n][\s\S]*?[^*\n])\*\*/g, '<strong>$1</strong>')
+      .replace(/__([^_\n][\s\S]*?[^_\n])__/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+      .replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>')
+      .replace(/~~([^~\n]+)~~/g, '<s>$1</s>');
+
+    inlineTokens.forEach((html, i) => {
+      out = out.replace(`\uE000COAINLINE${i}\uE001`, html);
+    });
+    return out;
+  }
+  function archiveRenderMarkdownPipeTableHTML(tableLines) {
+    const header = splitMarkdownTableRow(tableLines[0] || '');
+    const separators = splitMarkdownTableRow(tableLines[1] || '');
+    const colCount = Math.max(header.length, 1);
+    const alignOf = (cell) => {
+      const text = toStringValue(cell).replace(/\s+/g, '');
+      if (/^:-+:$/.test(text)) return 'center';
+      if (/-+:$/.test(text)) return 'right';
+      if (/^:-+/.test(text)) return 'left';
+      return '';
+    };
+    const normalizeCells = (cells) => Array.from({ length: colCount }, (_, i) => cells[i] || '');
+    const aligns = normalizeCells(separators).map(alignOf);
+    const ths = normalizeCells(header).map((cell, i) => {
+      const align = aligns[i] ? ` style="text-align:${aligns[i]}"` : '';
+      return `<th${align}>${renderMarkdownInlineLite(cell) || '&nbsp;'}</th>`;
+    }).join('');
+    const bodyRows = tableLines.slice(2)
+      .map((line) => splitMarkdownTableRow(line))
+      .filter((cells) => cells.length >= 1);
+    const trs = bodyRows.map((cells) => {
+      // AI가 | 항목 | 관찰 기록 | / |---| 뒤에 |긴 문장|만 주는 식으로
+      // 칸 수를 깨뜨리면, 한 칸짜리 행은 colspan으로 자연스럽게 보정한다.
+      if (cells.length === 1 && colCount > 1) {
+        const align = aligns[0] ? ` style="text-align:${aligns[0]}"` : '';
+        return `<tr><td${align} colspan="${colCount}">${renderMarkdownInlineLite(cells[0]) || '&nbsp;'}</td></tr>`;
+      }
+      const tds = normalizeCells(cells).map((cell, i) => {
+        const align = aligns[i] ? ` style="text-align:${aligns[i]}"` : '';
+        return `<td${align}>${renderMarkdownInlineLite(cell) || '&nbsp;'}</td>`;
+      }).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('\n');
+    return `<table>\n<thead><tr>${ths}</tr></thead>\n<tbody>${trs}</tbody>\n</table>`;
+  }
+  function stripMarkdownQuoteMarker(line) {
+    const match = toStringValue(line).match(/^\s*>\s?(.*)$/);
+    return match ? match[1] : toStringValue(line);
+  }
+  function isMarkdownQuoteStart(line) {
+    return /^\s*>\s?.*/.test(toStringValue(line));
+  }
+  function archiveRenderMarkdownQuoteHTML(quoteLines) {
+    // 인용문 안의 ### 제목, 표, 목록, 이미지, 인라인 코드를 평문으로 낮추지 않는다.
+    // 바깥의 > 한 겹만 벗긴 뒤 동일 Markdown 렌더러로 다시 처리한다. >> 중첩 인용은
+    // 호출마다 한 겹씩 줄어드므로 재귀가 유한하게 끝난다.
+    const source = quoteLines.map(stripMarkdownQuoteMarker).join('\n').trim();
+    if (!source) return '<blockquote>&nbsp;</blockquote>';
+    const body = coaRenderMarkdown(source) || '<p>&nbsp;</p>';
+    return `<blockquote>${body}</blockquote>`;
+  }
+  function preprocessMarkdownPipeTables(md) {
+    const lines = toStringValue(md).replace(/\r\n?/g, '\n').split('\n');
+    const out = [];
+    let inFence = false;
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      if (/^\s*```/.test(line)) {
+        inFence = !inFence;
+        out.push(line);
+        continue;
+      }
+      // GFM 파이프 표가 환경에 따라 평문으로 남는 경우를 피하려고
+      // | 제목 | 제목 | + |---|---| 블록은 직접 HTML table로 먼저 바꾼다.
+      if (!inFence && isMarkdownPipeTableStart(lines, i)) {
+        const tableLines = [lines[i], lines[i + 1]];
+        i += 2;
+        while (i < lines.length) {
+          const row = lines[i];
+          if (!row.trim() || /^\s*```/.test(row) || !isMarkdownPipeLikeLine(row)) break;
+          tableLines.push(row);
+          i += 1;
+        }
+        i -= 1;
+        out.push('', renderMarkdownPipeTableHTML(tableLines), '');
+        continue;
+      }
+      // 인용도 직접 HTML blockquote로 보정한다.
+      // > 인용 / > **굵게** 가 자동 구조화나 디시 변환에서 평문으로 새는 것을 방지한다.
+      if (!inFence && isMarkdownQuoteStart(line)) {
+        const quoteLines = [line];
+        i += 1;
+        while (i < lines.length) {
+          const row = lines[i];
+          if (!isMarkdownQuoteStart(row)) break;
+          quoteLines.push(row);
+          i += 1;
+        }
+        i -= 1;
+        out.push('', renderMarkdownQuoteHTML(quoteLines), '');
+        continue;
+      }
+      out.push(line);
+    }
+    return out.join('\n');
+  }
+  function normalizeMarkdownImageParagraphs(html) {
+    // marked({ breaks:true })는 아래처럼 이미지 다음의 단순 줄바꿈도 <br>로 만든다.
+    // <p><img ...><br><strong>화자</strong>...</p>
+    // img를 display:block으로 렌더하면 그 <br>가 사실상 빈 줄 하나가 되어 보인다.
+    // 픽셀 margin 보정 대신 이미지와 후속 텍스트를 실제 별도 문단으로 분리한다.
+    const template = document.createElement('template');
+    template.innerHTML = toStringValue(html);
+
+    [...template.content.querySelectorAll('p')].forEach((paragraph) => {
+      const isWhitespaceText = (node) => node?.nodeType === Node.TEXT_NODE && !toStringValue(node.nodeValue).trim();
+      let first = paragraph.firstChild;
+      while (first && isWhitespaceText(first)) {
+        const next = first.nextSibling;
+        first.remove();
+        first = next;
+      }
+      if (!(first instanceof HTMLImageElement)) return;
+
+      // 이미지 직후의 공백 + marked가 만든 첫 번째 <br>만 제거한다.
+      let cursor = first.nextSibling;
+      while (cursor && isWhitespaceText(cursor)) {
+        const next = cursor.nextSibling;
+        cursor.remove();
+        cursor = next;
+      }
+      if (cursor?.nodeName === 'BR') {
+        const next = cursor.nextSibling;
+        cursor.remove();
+        cursor = next;
+        while (cursor && isWhitespaceText(cursor)) {
+          const after = cursor.nextSibling;
+          cursor.remove();
+          cursor = after;
+        }
+      }
+
+      const hasFollowingContent = [...paragraph.childNodes].some((node) => {
+        if (node === first) return false;
+        if (isWhitespaceText(node)) return false;
+        if (node.nodeName === 'BR') return false;
+        return node.nodeType === Node.ELEMENT_NODE || Boolean(toStringValue(node.nodeValue).trim());
+      });
+
+      if (!hasFollowingContent) {
+        // 이미지 단독 문단이면 whitespace/잔여 BR만 치워 :only-child 스타일이 확실히 먹게 한다.
+        [...paragraph.childNodes].forEach((node) => {
+          if (node === first) return;
+          if (isWhitespaceText(node) || node.nodeName === 'BR') node.remove();
+        });
+        return;
+      }
+
+      const imageParagraph = document.createElement('p');
+      imageParagraph.appendChild(first);
+      paragraph.parentNode?.insertBefore(imageParagraph, paragraph);
+
+      // 분리 후 텍스트 문단 앞에 남은 whitespace/BR도 제거한다.
+      let leading = paragraph.firstChild;
+      while (leading && (isWhitespaceText(leading) || leading.nodeName === 'BR')) {
+        const next = leading.nextSibling;
+        leading.remove();
+        leading = next;
+      }
+      if (!paragraph.textContent?.trim() && !paragraph.querySelector('*')) paragraph.remove();
+    });
+
+    return template.innerHTML;
+  }
+  function renderLogDiamondRule(symbolColor, lineColor, width = 190, symbol = '◆') {
+    const safeWidth = Math.max(72, Math.min(320, Math.round(Number(width) || 190)));
+    return `<table width="${safeWidth}" cellpadding="0" cellspacing="0" border="0" align="center" aria-hidden="true" style="width:${safeWidth}px;max-width:100%;border-collapse:collapse;table-layout:fixed;margin:0 auto;"><tbody><tr><td width="42%" valign="middle" style="width:42%;padding:0 8px 0 0;vertical-align:middle;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;"><tbody><tr><td height="1" bgcolor="${lineColor}" style="height:1px;padding:0;background-color:${lineColor};font-size:0;line-height:0;">&#8203;</td></tr></tbody></table></td><td width="16%" align="center" valign="middle" style="width:16%;padding:0;color:${symbolColor};font-family:'IBM Plex Mono',Consolas,Menlo,monospace;font-size:13px;font-weight:700;line-height:1;text-align:center;vertical-align:middle;white-space:nowrap;">${symbol}</td><td width="42%" valign="middle" style="width:42%;padding:0 0 0 8px;vertical-align:middle;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;"><tbody><tr><td height="1" bgcolor="${lineColor}" style="height:1px;padding:0;background-color:${lineColor};font-size:0;line-height:0;">&#8203;</td></tr></tbody></table></td></tr></tbody></table>`;
+  }
+  function renderHeugyoMarkSVG(fill, bg, size = 58) {
+    const s = Math.max(20, Math.round(Number(size) || 58));
+    return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" aria-hidden="true" style="display:block;width:${s}px;height:${s}px;"><path d="M10 92 L90 92 C66 80 58 54 54 14 C46 56 32 80 10 92 Z" fill="${fill}"/><path d="M40 57 C39 70 33 73 23 74 C33 75 39 78 40 91 C41 78 47 75 57 74 C47 73 41 70 40 57 Z" fill="${bg}"/><circle cx="63" cy="80" r="6.5" fill="${bg}"/></svg>`;
+  }
+  function renderCheonginGlyphMark(accent, line, compact = false) {
+    const symbolFont = "'Segoe UI Symbol','Arial Unicode MS','Malgun Gothic',sans-serif";
+    if (compact) {
+      return `<span aria-hidden="true" style="display:inline-block;color:${accent};font-family:${symbolFont};font-size:14px;font-weight:400;line-height:1;">⊹</span>`;
+    }
+    return `<table width="76" cellpadding="0" cellspacing="0" border="0" align="center" aria-hidden="true" style="width:76px;border-collapse:collapse;table-layout:fixed;margin:0 auto;"><tbody><tr><td width="20" align="right" valign="middle" style="width:20px;padding:0;color:${line};font-family:${symbolFont};font-size:10px;line-height:1;text-align:right;vertical-align:middle;">·</td><td width="36" align="center" valign="middle" style="width:36px;padding:0;color:${accent};font-family:${symbolFont};font-size:25px;font-weight:400;line-height:1;text-align:center;vertical-align:middle;">⊹</td><td width="20" align="left" valign="middle" style="width:20px;padding:0;color:${line};font-family:${symbolFont};font-size:10px;line-height:1;text-align:left;vertical-align:middle;">·</td></tr></tbody></table>`;
+  }
+  function renderSpecBarcodeSVG(color = 'currentColor') {
+    // currentColor는 SVG를 data URL 이미지로 고정하는 순간 부모 색 상속이 끊겨 검정으로 바뀔 수 있다.
+    // 스펙시트처럼 색이 정해진 호출부는 실제 HEX를 SVG fill에 직접 기록한다.
+    const requested = toStringValue(color).trim();
+    const fill = /^#[0-9a-f]{3,8}$/i.test(requested) ? requested : 'currentColor';
+    return `<svg width="118" height="30" viewBox="0 0 118 30" aria-hidden="true" style="display:block;width:118px;height:30px;max-width:none;overflow:visible;"><g fill="${fill}"><rect x="0" width="3" height="30"/><rect x="5" width="1.5" height="30"/><rect x="9" width="4" height="30"/><rect x="15" width="1.5" height="30"/><rect x="19" width="2" height="30"/><rect x="24" width="5" height="30"/><rect x="31" width="1.5" height="30"/><rect x="35" width="3" height="30"/><rect x="40" width="1.5" height="30"/><rect x="44" width="4" height="30"/><rect x="50" width="2" height="30"/><rect x="54" width="1.5" height="30"/><rect x="58" width="5" height="30"/><rect x="65" width="1.5" height="30"/><rect x="69" width="3" height="30"/><rect x="74" width="2" height="30"/><rect x="79" width="1.5" height="30"/><rect x="83" width="4" height="30"/><rect x="89" width="1.5" height="30"/><rect x="93" width="3" height="30"/><rect x="98" width="5" height="30"/><rect x="105" width="1.5" height="30"/><rect x="109" width="2" height="30"/><rect x="114" width="4" height="30"/></g></svg>`;
+  }
+  function renderAirmailStampSVG() {
+    return `<svg width="72" height="88" viewBox="0 0 72 88" aria-hidden="true"><rect x="4" y="4" width="64" height="80" fill="#FFFDF6" stroke="#D9CDB4" stroke-width="1" stroke-dasharray="0.1 6" stroke-linecap="round" stroke-dashoffset="3"/><rect x="4" y="4" width="64" height="80" fill="#FFFDF6"/><rect x="9" y="9" width="54" height="70" fill="#EEF1F6" stroke="#34508C" stroke-width="1.4"/><rect x="31" y="46" width="10" height="22" fill="#B23A34" opacity=".85"/><path d="M36 28 C31 36,31 41,36 45 C41 41,41 36,36 28 Z" fill="#B23A34"/><line x1="36" y1="45" x2="36" y2="47" stroke="#34508C" stroke-width="1.4"/><text x="36" y="23" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6.4" letter-spacing="1.6" fill="#34508C">CA POST</text><text x="36" y="76" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="7.2" font-weight="600" fill="#34508C">2026</text></svg>`;
+  }
+  function renderAirmailPostmarkSVG(dateText) {
+    return `<svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="30" fill="none" stroke="#5A5245" stroke-width="1.4" opacity=".85"/><circle cx="42" cy="42" r="22" fill="none" stroke="#5A5245" stroke-width="1" opacity=".7"/><text x="42" y="38" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="7.4" letter-spacing="1.4" fill="#5A5245">CRACK</text><text x="42" y="50" text-anchor="middle" font-family="'IBM Plex Mono',monospace" font-size="6.6" letter-spacing="1" fill="#5A5245">${escapeHTML(dateText)}</text><path d="M4 60 q10 -5 20 0 t20 0 t20 0 t20 0" fill="none" stroke="#5A5245" stroke-width="1.2" opacity=".6"/><path d="M4 67 q10 -5 20 0 t20 0 t20 0 t20 0" fill="none" stroke="#5A5245" stroke-width="1.2" opacity=".5"/></svg>`;
+  }
+  function getAirmailFrameStyle() {
+    // 원본 repeating-linear-gradient를 52px PNG 타일로 래스터화한 값.
+    // HTML 미리보기·HTML 파일·html2canvas PNG에서 같은 연속 사선 액자를 유지한다.
+    return `background-color:#FBF6EA;background-image:url(${AIRMAIL_FRAME_TILE_URL});background-repeat:repeat;background-size:52px 52px;background-position:0 0;`;
+  }
+  function toLogHanjaNumber(value) {
+    const n = Math.max(1, Math.floor(Number(value) || 1));
+    const d = ['零','一','二','三','四','五','六','七','八','九'];
+    if (n < 10) return d[n];
+    if (n === 10) return '十';
+    if (n < 20) return `十${d[n - 10]}`;
+    if (n < 100) return `${d[Math.floor(n / 10)]}十${n % 10 ? d[n % 10] : ''}`;
+    return String(n);
+  }
+  function renderSpecSheetLogHTML(card, blocks, options = {}) {
+    const normalized = normalizeCard(card);
+    const meta = getExportMetaOptions(options);
+    const layoutKey = normalizeLogHTMLLayout(options.layout || normalized.view?.htmlLayout);
+    const colorKey = normalizeLogHTMLColor(options.color || normalized.view?.htmlColor || normalized.view?.htmlTheme, layoutKey);
+    const dark = colorKey === 'dark';
+    const maxWidth = Math.max(360, Math.min(900, Number(options.maxWidth) || 760));
+    const title = escapeHTML(stripSmartMarkdown(normalized.title || '기록').trim() || '기록');
+    const tags = meta.showTags ? normalized.tags.slice(0, 8).map((tag) => `#${escapeHTML(tag)}`).join(' · ') : '';
+    const turnsCount = blocks.length;
+    const date = new Date(normalized.createdAt || nowMs());
+    const dateLabel = `${date.getFullYear()} · ${String(date.getMonth()+1).padStart(2,'0')} · ${String(date.getDate()).padStart(2,'0')}`;
+    const fontFamily = getCOAFontFamily(options.font || normalized.view?.fontFamily);
+    const c = dark ? {
+      bg:'#161614', grid:'rgba(240,238,230,.05)', paper:'#201F1D', ink:'#EDEBE4', sub:'#B8B5AC', muted:'#7E7B73', strip:'#2A2926', fill:'#EDEBE4', fillText:'#161614', shadow:'rgba(237,235,228,.82)'
+    } : {
+      bg:'#F5F5F1', grid:'rgba(22,21,19,.05)', paper:'#FBFBF8', ink:'#161513', sub:'#57544D', muted:'#87847C', strip:'#E6E5E0', fill:'#161513', fillText:'#F5F5F1', shadow:'rgba(22,21,19,.9)'
+    };
+    const barcodeColor = dark ? '#FFFFFF' : c.ink;
+    const palette = { fg:c.ink, muted:c.sub, italic:c.sub, aiAccent:c.ink, paper:c.paper, quoteBg:c.strip, quoteAccent:c.ink };
+    const turns = blocks.map((block, index) => {
+      const isUser = block.type === 'user';
+      const body = renderSimpleLogContentHTML(block.raw || block.text || '', { excludeComments:true, palette });
+      return `<article style="border:1.5px solid ${c.ink};background:${c.paper};margin:0 0 20px;"><div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid ${c.ink};background:${isUser ? c.fill : c.strip};color:${isUser ? c.fillText : c.ink};padding:5px 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;letter-spacing:.2em;"><span style="white-space:nowrap;flex:0 0 auto;">${isUser ? 'USER' : 'AI'}</span><span style="white-space:nowrap;flex:0 0 auto;">T-${String(index+1).padStart(2,'0')}</span></div><div style="padding:16px 18px;font-family:${fontFamily};font-size:14px;line-height:1.95;">${body}</div></article>`;
+    }).join('');
+    return `<section class="coa-html-log" data-coa-log-layout="specsheet" data-coa-log-color="${colorKey}" style="width:100%;max-width:${maxWidth}px;margin:0 auto;background:linear-gradient(${c.grid} 1px,transparent 1px),linear-gradient(90deg,${c.grid} 1px,transparent 1px),${c.bg};background-size:20px 20px;border:2px solid ${c.ink};box-shadow:6px 6px 0 ${c.shadow};color:${c.ink};box-sizing:border-box;overflow:hidden;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;background:${c.strip};border-bottom:2px solid ${c.ink};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:clamp(7px,1.1vw,10px);font-weight:600;letter-spacing:clamp(.06em,.16vw,.16em);color:${c.sub};"><tbody><tr><td style="width:50%;padding:8px 9px 8px 18px;text-align:left;white-space:nowrap;vertical-align:middle;">${meta.showReference ? `REF: ${escapeHTML(getCardExportRef(normalized))}` : '&nbsp;'}</td><td style="width:50%;padding:8px 18px 8px 9px;text-align:right;white-space:nowrap;vertical-align:middle;">CRACK ARCHIVE</td></tr></tbody></table><header style="padding:30px 30px 24px;border-bottom:2px solid ${c.ink};background:${c.bg};"><table style="width:100%;border-collapse:collapse;table-layout:fixed;"><tbody><tr><td style="padding:0 18px 0 0;vertical-align:bottom;overflow-wrap:break-word;word-break:keep-all;"><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.32em;color:${c.muted};margin-bottom:12px;white-space:nowrap;">ROLEPLAY LOG</div><h1 style="margin:0;font-family:${fontFamily};font-size:27px;font-weight:900;letter-spacing:-.015em;line-height:1.25;color:${c.ink};">${title}</h1><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:${c.sub};margin-top:12px;letter-spacing:.08em;">${tags ? `${tags} · ` : ''}<span style="white-space:nowrap;">${turnsCount} TURNS</span></div></td><td width="132" style="width:132px;padding:0;vertical-align:bottom;text-align:center;color:${c.ink};"><div style="width:118px;margin:0 auto;">${renderSpecBarcodeSVG(barcodeColor)}</div><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.16em;color:${c.sub};margin-top:5px;text-align:center;white-space:nowrap;">${meta.showDate ? dateLabel : '&nbsp;'}</div></td></tr></tbody></table></header><div style="padding:26px 30px 10px;">${turns}</div><table style="width:100%;border-collapse:collapse;table-layout:auto;border-top:2px solid ${c.ink};background:${c.strip};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;letter-spacing:.22em;color:${c.sub};"><tbody><tr><td style="padding:8px 9px 8px 18px;text-align:left;white-space:nowrap;vertical-align:middle;">END OF LOG</td><td style="padding:8px 18px 8px 9px;text-align:right;white-space:nowrap;vertical-align:middle;">${turnsCount} TURNS RECORDED</td></tr></tbody></table></section>`;
+  }
+  function renderAirmailLogHTML(card, blocks, options = {}) {
+    const normalized = normalizeCard(card);
+    const meta = getExportMetaOptions(options);
+    const maxWidth = Math.max(360, Math.min(900, Number(options.maxWidth) || 760));
+    const title = escapeHTML(stripSmartMarkdown(normalized.title || '기록').trim() || '기록');
+    const tags = meta.showTags ? normalized.tags.slice(0, 8).map((tag) => `#${escapeHTML(tag)}`).join(' · ') : '';
+    const date = new Date(normalized.createdAt || nowMs());
+    const mmdd = `${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')}`;
+    const fontFamily = getCOAFontFamily(options.font || normalized.view?.fontFamily);
+    const palette = { fg:'#3A342B', muted:'#8C8270', italic:'#8C8270', aiAccent:'#34508C', paper:'#FFFDF6', quoteBg:'#F4EEE2', quoteAccent:'#34508C' };
+    const letters = blocks.map((block, index) => {
+      const isUser = block.type === 'user';
+      const body = renderSimpleLogContentHTML(block.raw || block.text || '', { excludeComments:true, palette });
+      return `<article style="background:#FFFDF6;border:1px solid #E2D8C2;box-shadow:0 2px 10px rgba(60,45,25,.09);padding:20px 24px 18px;background-image:repeating-linear-gradient(transparent 0 31px,rgba(52,80,140,.10) 31px 32px);background-position:0 54px;transform:rotate(${isUser ? '.4deg' : '-.35deg'});"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 13px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;letter-spacing:.18em;color:${isUser ? '#B23A34' : '#34508C'};"><tbody><tr><td style="padding:0;text-align:left;">FROM : ${isUser ? 'USER' : 'AI'}</td><td width="82" align="right" style="width:82px;padding:0;text-align:right;white-space:nowrap;color:#B4A98F;font-weight:400;letter-spacing:.1em;">№ ${String(index+1).padStart(2,'0')}</td></tr></tbody></table><div style="font-family:${fontFamily};font-size:14.4px;line-height:2.14;color:#3A342B;">${body}</div></article>`;
+    }).join('');
+    return `<section class="coa-html-log" data-coa-log-layout="airmail" data-coa-log-color="builtin" style="position:relative;width:100%;max-width:${maxWidth}px;margin:0 auto;${getAirmailFrameStyle()}padding:12px;box-shadow:0 10px 34px rgba(60,45,25,.18);color:#3A342B;box-sizing:border-box;overflow:hidden;"><div style="position:relative;background:#FBF6EA;padding:34px 38px 40px;"><header style="display:grid;grid-template-columns:1fr 150px;gap:20px;align-items:start;border-bottom:1px solid #D9CDB4;padding-bottom:22px;margin-bottom:28px;"><div><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:600;letter-spacing:.3em;color:#34508C;margin-bottom:14px;">PAR AVION — VIA AIR MAIL</div><h1 style="margin:0;font-family:${fontFamily};font-size:25px;font-weight:700;letter-spacing:-.01em;line-height:1.4;">${title}</h1><div style="font-size:12px;color:#8C8270;margin-top:11px;letter-spacing:.04em;">${tags ? `${tags} · ` : ''}편지 ${blocks.length}통</div></div><div style="position:relative;width:150px;height:104px;"><div style="position:absolute;top:0;right:0;transform:rotate(2deg);">${renderAirmailStampSVG()}</div>${meta.showDate ? `<div style="position:absolute;top:16px;right:66px;transform:rotate(-9deg);opacity:.82;">${renderAirmailPostmarkSVG(mmdd)}</div>` : ''}</div></header><div style="display:flex;flex-direction:column;gap:26px;">${letters}</div><footer style="margin-top:30px;padding-top:18px;border-top:1px solid #D9CDB4;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.24em;color:#B4A98F;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;color:#B4A98F;font:inherit;letter-spacing:inherit;"><tbody><tr><td style="padding:0;text-align:left;">FIN.</td><td width="240" align="right" style="width:240px;padding:0;text-align:right;white-space:nowrap;">CA POST · ${blocks.length} LETTERS</td></tr></tbody></table></footer></div></section>`;
+  }
+  function renderLogHTMLTheme(card, options = {}) {
+    const normalized = prepareCardForGeneralVisibleRender(card);
+    const layoutKey = normalizeLogHTMLLayout(options.layout || normalized.view?.htmlLayout);
+    const colorKey = normalizeLogHTMLColor(options.color || options.theme || normalized.view?.htmlColor || normalized.view?.htmlTheme, layoutKey);
+    const palette = getLogHTMLPalette(layoutKey, colorKey);
+    const meta = getExportMetaOptions(options);
+    const fontKey = normalizeCOAFont(options.font || normalized.view?.fontFamily);
+    const fontFamily = getCOAFontFamily(fontKey);
+    const maxWidth = Math.max(360, Math.min(900, Number(options.maxWidth) || 820));
+    const parsedBlocks = parseDCRPLogBlocks(normalized, { excludeCodeBlocks: options.excludeCodeBlocks === true, excludeComments: false });
+    const blocks = parsedBlocks.length ? parsedBlocks : [{ type: 'ai', raw: normalized.body || '', text: normalized.body || '' }];
+    if (layoutKey === 'specsheet') return renderSpecSheetLogHTML(normalized, blocks, { ...options, layout: layoutKey, color: colorKey });
+    if (layoutKey === 'airmail') return renderAirmailLogHTML(normalized, blocks, options);
+
+    const title = escapeHTML(stripSmartMarkdown(normalized.title || '기록').trim() || '기록');
+    const rawTagText = getDCRPLogTagText(normalized);
+    const tagText = rawTagText === '크랙 · 로그' ? '' : escapeHTML(rawTagText);
+    const bodyLength = toStringValue(normalized.body || '').length;
+    const chapterNo = toLogHanjaNumber(1 + (bodyLength % 12));
+    const pageNo = 1 + (bodyLength % 320);
+
+    const turnData = blocks.map((block) => {
+      const isUser = block.type === 'user';
+      return {
+        isUser,
+        role: isUser ? 'USER' : 'AI',
+        accent: isUser ? palette.dialogue : palette.accent,
+        body: renderSimpleLogContentHTML(block.raw || block.text || '', {
+          excludeImages: false,
+          excludeCodeBlocks: options.excludeCodeBlocks === true,
+          excludeComments: true,
+          palette,
+          color: colorKey,
+        }),
+      };
+    });
+
+    const commonRoot = `width:100%;max-width:${maxWidth}px;margin:0 auto;box-sizing:border-box;overflow:hidden;background:${palette.bg};color:${palette.text};font-family:${fontFamily};font-size:15px;line-height:1.95;letter-spacing:.01em;word-break:keep-all;`;
+    const tagLine = meta.showTags && tagText ? `<div style="margin-top:10px;font-size:12px;line-height:1.7;color:${palette.accent};">${tagText}</div>` : '';
+    let html = '';
+
+    if (layoutKey === 'crosslog') {
+      const turns = turnData.map((turn) => {
+        const bg = turn.isUser ? palette.userBg : palette.aiBg;
+        const side = turn.isUser ? 'right' : 'left';
+        const align = turn.isUser ? 'right' : 'left';
+        return `<article style="width:100%;margin:0 0 16px;padding:16px 18px;box-sizing:border-box;background:${bg};color:${palette.text};border-${side}:4px solid ${turn.accent};"><div style="margin:0 0 10px;text-align:${align};font-size:11px;font-weight:900;letter-spacing:.08em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></article>`;
+      }).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:34px 28px 24px;text-align:center;border-bottom:1px solid ${palette.line};"><div style="font-size:11px;letter-spacing:.28em;color:${palette.accent};">ROLEPLAY LOG</div><h1 style="margin:12px 0 0;font-size:29px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:22px 24px 28px;">${turns}</div></section>`;
+    } else if (layoutKey === 'baekjimeok') {
+      const turns = turnData.map((turn, index) => `<section style="padding:0 2px ${index === turnData.length - 1 ? '0' : '22px'};margin:0 0 ${index === turnData.length - 1 ? '0' : '22px'};${index === turnData.length - 1 ? '' : `border-bottom:1px solid ${palette.line};`}"><div style="margin:0 0 9px;text-align:${turn.isUser ? 'right' : 'left'};font-size:11px;font-weight:800;letter-spacing:.18em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border-top:4px double ${palette.line};border-bottom:4px double ${palette.line};"><header style="padding:43px 30px 26px;text-align:center;"><div style="font-size:11px;letter-spacing:.46em;color:${palette.accent};">BOOK LOG</div><h1 style="margin:15px 0 0;font-size:28px;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}<div style="margin-top:22px;color:${palette.accent};font-size:12px;">◆</div></header><div style="padding:8px 34px 34px;">${turns}<div style="margin-top:38px;text-align:center;font-size:11px;letter-spacing:.28em;color:${palette.accent};">— ${pageNo} —</div></div></section>`;
+    } else if (layoutKey === 'simya') {
+      const turns = turnData.map((turn) => `<section style="width:92%;margin:0 ${turn.isUser ? '0 24px' : '24px 0'} 28px;padding:${turn.isUser ? '0 15px 0 0' : '0 0 0 15px'};box-sizing:border-box;border-${turn.isUser ? 'right' : 'left'}:2px solid ${turn.accent};"><div style="margin:0 0 8px;text-align:${turn.isUser ? 'right' : 'left'};font-size:11px;font-weight:900;letter-spacing:.2em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border-left:8px solid ${palette.accent};border-right:1px solid ${palette.line};"><header style="padding:40px 34px 26px;border-bottom:1px solid ${palette.line};"><div style="font-size:11px;letter-spacing:.42em;color:${palette.accent};">MIDNIGHT RECORD</div><h1 style="margin:14px 0 0;font-size:30px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:28px 32px 24px;">${turns}<div style="padding-top:16px;border-top:1px solid ${palette.line};text-align:right;font-size:11px;letter-spacing:.3em;color:${palette.accent};">FIN</div></div></section>`;
+    } else if (layoutKey === 'yeonji') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0;padding:0 4px;"><div style="margin:0 0 8px;text-align:${turn.isUser ? 'right' : 'left'};font-size:11px;font-weight:900;letter-spacing:.16em;color:${turn.accent};">〔${turn.role}〕</div><div>${turn.body}</div></section>${index < turnData.length - 1 ? `<div style="margin:27px 0;text-align:center;color:${palette.line};font-size:12px;letter-spacing:.6em;">❀</div>` : ''}`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:44px 30px 25px;text-align:center;"><div style="font-size:11px;letter-spacing:.48em;color:${palette.accent};">第 ${chapterNo} 章</div><h1 style="margin:16px 0 0;font-size:29px;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}<div style="margin-top:22px;color:${palette.accent};font-size:14px;">❀</div></header><div style="padding:10px 35px 38px;">${turns}<div style="margin-top:38px;text-align:center;color:${palette.accent};font-size:13px;">❀ 終 ❀</div></div></section>`;
+    } else if (layoutKey === 'cheongram') {
+      const turns = turnData.map((turn, index) => `<section style="padding:0 0 20px;margin:0 0 20px;${index === turnData.length - 1 ? '' : `border-bottom:1px solid ${palette.line};`}"><span style="display:inline-block;margin:0 0 11px;padding:4px 10px;border:1px solid ${turn.accent};color:${turn.accent};font-size:10px;font-weight:900;letter-spacing:.14em;">${turn.role}</span><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:26px 28px 23px;border-bottom:2px solid ${palette.accent};"><div style="display:flex;align-items:flex-start;gap:15px;"><span style="display:inline-block;padding:7px 10px;background:${palette.accent};color:${palette.bg};font-size:10px;font-weight:900;letter-spacing:.14em;">LOG</span><div style="min-width:0;flex:1;"><h1 style="margin:0;font-size:28px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</div><span style="font-size:11px;color:${palette.accent};">NO.${String(pageNo).padStart(3,'0')}</span></div></header><div style="padding:28px 30px 30px;">${turns}<div style="padding-top:14px;border-top:1px solid ${palette.line};text-align:right;font-size:10px;letter-spacing:.24em;color:${palette.accent};">END OF RECORD</div></div></section>`;
+    } else if (layoutKey === 'wongo') {
+      const turns = turnData.map((turn) => `<section style="padding:0 0 20px;margin:0 0 20px;"><div style="margin:0 0 8px;font-size:11px;font-weight:900;letter-spacing:.18em;color:${turn.accent};">${turn.isUser ? '→' : '✎'} ${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border-top:2px dashed ${palette.line};border-bottom:2px dashed ${palette.line};"><header style="padding:34px 32px 22px;border-bottom:1px dashed ${palette.line};"><div style="font-size:11px;letter-spacing:.34em;color:${palette.accent};">✎ MANUSCRIPT</div><h1 style="margin:13px 0 0;font-size:28px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:27px 32px 28px;">${turns}<div style="padding-top:15px;border-top:1px dashed ${palette.line};text-align:right;font-size:11px;letter-spacing:.25em;color:${palette.accent};">校了</div></div></section>`;
+    } else if (layoutKey === 'silentfilm') {
+      const turns = turnData.map((turn) => `<section style="margin:0 0 22px;padding:18px 20px;border:1px solid ${palette.line};"><div style="margin:0 0 12px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.3em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}padding:12px;border:1px solid ${palette.line};"><div style="border:1px solid ${palette.line};"><header style="padding:38px 28px 24px;text-align:center;"><div style="font-size:11px;letter-spacing:.5em;color:${palette.accent};">SILENT PICTURE</div><div style="margin-top:18px;color:${palette.line};font-size:11px;letter-spacing:.35em;">·—·—·</div><h1 style="margin:18px 0 0;font-size:29px;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:12px 28px 31px;">${turns}<div style="text-align:center;color:${palette.line};font-size:12px;letter-spacing:.7em;">◦◦◦</div></div></div></section>`;
+    } else if (layoutKey === 'tajeon') {
+      const turns = turnData.map((turn) => `<section style="padding:0 0 18px;margin:0 0 18px;"><span style="display:inline-block;margin:0 0 10px;padding:3px 9px;border:1px dashed ${palette.line};color:${turn.accent};font-size:10px;font-weight:900;letter-spacing:.15em;">${turn.role}</span><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:2px dashed ${palette.line};"><header style="padding:30px 30px 22px;border-bottom:1px dashed ${palette.line};"><span style="display:inline-block;padding:5px 10px;border:1px dashed ${palette.line};color:${palette.accent};font-size:10px;font-weight:900;letter-spacing:.17em;">TRANSMISSION</span><h1 style="margin:15px 0 0;font-size:27px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:26px 30px 27px;">${turns}<div style="padding-top:13px;border-top:1px dashed ${palette.line};font-size:11px;font-weight:900;letter-spacing:.35em;color:${palette.accent};">=== STOP ===</div></div></section>`;
+    } else if (layoutKey === 'seongjwa') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0;padding:0 3px;"><div style="margin:0 0 8px;text-align:${turn.isUser ? 'right' : 'left'};font-size:11px;font-weight:900;letter-spacing:.18em;color:${turn.accent};">✦ ${turn.role}</div><div>${turn.body}</div></section>${index < turnData.length - 1 ? `<div style="margin:27px 0;text-align:center;color:${palette.line};font-size:11px;letter-spacing:.12em;">✦───✧───✦</div>` : ''}`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}"><header style="padding:42px 30px 25px;text-align:center;"><div style="font-size:14px;letter-spacing:.35em;color:${palette.accent};">˚✦˚</div><div style="margin-top:15px;font-size:10px;letter-spacing:.48em;color:${palette.accent};">CONSTELLATION LOG</div><h1 style="margin:15px 0 0;font-size:29px;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:13px 35px 38px;">${turns}<div style="margin-top:38px;text-align:center;color:${palette.accent};font-size:13px;letter-spacing:.4em;">✦ ✦ ✦</div></div></section>`;
+    } else if (layoutKey === 'gwedo') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0 0 ${index === turnData.length - 1 ? '0' : '36px'};"><div style="margin:0 0 9px;text-align:${turn.isUser ? 'right' : 'left'};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;font-weight:700;letter-spacing:.3em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      const orbitRule = renderLogDiamondRule(palette.accent, palette.line, 210, '◆');
+      const orbitEnd = renderLogDiamondRule(palette.accent, palette.line, 118, '◆');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:47px 34px 32px;text-align:center;"><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;font-weight:600;letter-spacing:.42em;color:${palette.accent};">ORBITAL LOG</div><div style="margin-top:17px;">${orbitRule}</div><h1 style="margin:20px 0 0;font-size:28px;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:10px 48px 43px;">${turns}<footer style="margin-top:43px;text-align:center;">${orbitEnd}</footer></div></section>`;
+    } else if (layoutKey === 'heugyo') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0 0 ${index === turnData.length - 1 ? '0' : '34px'};"><div style="margin:0 0 9px;text-align:${turn.isUser ? 'right' : 'left'};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;font-weight:700;letter-spacing:.28em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:46px 42px 30px;border-bottom:1px solid ${palette.line};">${renderHeugyoMarkSVG(palette.title, palette.bg, 58)}<h1 style="margin:22px 0 0;font-size:30px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:34px 42px 42px;">${turns}<footer style="margin-top:42px;text-align:right;">${renderLogDiamondRule(palette.dialogue, palette.line, 92, '◆')}</footer></div></section>`;
+    } else if (layoutKey === 'cheongin') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0 0 ${index === turnData.length - 1 ? '0' : '34px'};"><div style="margin:0 0 9px;text-align:${turn.isUser ? 'right' : 'left'};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;font-weight:700;letter-spacing:.26em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};border-top:5px solid ${palette.accent};"><header style="padding:48px 34px 34px;text-align:center;">${renderCheonginGlyphMark(palette.accent, palette.line)}<h1 style="margin:20px 0 0;font-size:27px;font-weight:800;line-height:1.45;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:8px 46px 44px;">${turns}<footer style="margin-top:42px;text-align:center;">${renderCheonginGlyphMark(palette.accent, palette.line, true)}</footer></div></section>`;
+    } else if (layoutKey === 'yeobaek') {
+      const turns = turnData.map((turn, index) => `<section style="margin:0 0 ${index === turnData.length - 1 ? '0' : '38px'};"><div style="margin:0 0 9px;text-align:${turn.isUser ? 'right' : 'left'};font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;font-weight:700;letter-spacing:.32em;color:${turn.accent};">${turn.role}</div><div>${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:56px 50px 40px;"><div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:.42em;color:${palette.accent};">LOG</div><h1 style="margin:18px 0 0;font-size:31px;letter-spacing:-.015em;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:0 50px 50px;">${turns}<footer style="margin-top:48px;"><div style="width:44px;margin:0 auto;border-top:1px solid ${palette.line};"></div></footer></div></section>`;
+    } else if (layoutKey === 'muji') {
+      const turns = turnData.map((turn, index) => `<section style="display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:10px;align-items:start;margin:0 0 ${index === turnData.length - 1 ? '0' : '32px'};"><div style="padding-top:5px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:700;letter-spacing:.2em;color:${turn.accent};white-space:nowrap;">${turn.role}&nbsp;·</div><div style="min-width:0;">${turn.body}</div></section>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border:1px solid ${palette.line};"><header style="padding:54px 40px 40px;text-align:center;"><h1 style="margin:0;font-size:24px;line-height:1.5;color:${palette.title};">${title}</h1>${tagLine}</header><div style="padding:0 52px 50px;">${turns}<footer style="margin-top:44px;text-align:center;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9.5px;letter-spacing:.3em;color:${palette.accent};">끝</footer></div></section>`;
+    } else {
+      const turns = turnData.map((turn) => `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 22px;"><tbody><tr><td width="78" align="right" style="width:78px;padding:3px 14px 0 0;vertical-align:top;text-align:right;white-space:nowrap;font-size:10px;font-weight:900;letter-spacing:.16em;color:${turn.accent};">${turn.role}</td><td style="padding:0 0 0 14px;border-left:1px solid ${palette.line};vertical-align:top;">${turn.body}</td></tr></tbody></table>`).join('');
+      html = `<section class="coa-html-log" style="${commonRoot}border-top:3px solid ${palette.accent};border-bottom:3px solid ${palette.accent};"><header style="padding:39px 30px 24px;text-align:center;"><div style="font-size:11px;letter-spacing:.48em;color:${palette.accent};">ACT Ⅱ</div><h1 style="margin:15px 0 0;font-size:30px;line-height:1.4;color:${palette.title};">${title}</h1>${tagLine}<div style="margin-top:20px;color:${palette.line};font-size:12px;">─❖─</div></header><div style="padding:10px 34px 33px 32px;">${turns}<div style="margin-top:34px;padding-top:15px;border-top:1px solid ${palette.line};text-align:center;font-size:11px;letter-spacing:.34em;color:${palette.accent};">CURTAIN</div></div></section>`;
+    }
+
+    return html.replace('<section class="coa-html-log"', `<section class="coa-html-log" data-coa-log-layout="${escapeHTML(layoutKey)}" data-coa-log-color="${escapeHTML(colorKey)}"`);
+  }
+ // 원본의 저장/청소는 호출하지 않는다. 두 표본으로 장식 구조와 CSS만 얻는다.
+ const normalizeCard=x=>x,prepareCardForGeneralVisibleRender=x=>x;
+ const stripSmartMarkdown=x=>toStringValue(x),getDCRPLogTagText=()=>'',getCardExportRef=()=>'',nowMs=()=>Date.now();
+ const getExportMetaOptions=()=>({showTags:false,showReference:false,showDate:true});
+ const parseDCRPLogBlocks=()=>[{type:'user',raw:'WONGOSIL_USER_BODY'},{type:'ai',raw:'WONGOSIL_AI_BODY'}];
+ const renderSimpleLogContentHTML=x=>x;
+ const layouts={original:{label:'00 원래 모양'},...LOG_HTML_LAYOUTS,chat:{label:'대화형'},book:{label:'책'}};
+ const defaults={layout:'original',color:'system',font:'pretendard',size:'normal',leading:'normal',own:'show',status:'table',header:'chapter',translation:'below',turns:true,time:true,css:''};
+ const enumValues={size:['small','normal','large'],leading:['tight','normal','wide'],own:['show','muted','hide'],status:['table','box','fold','hide'],header:['chapter','raw'],translation:['below','hide']};
+ const palette={light:{bg:'#F8F7F4',text:'#242424',accent:'#BE4422',dialogue:'#5F5F5F',line:'#E3E1DC',card:'#FFFFFF',soft:'#F1F0EC'},dark:{bg:'#131315',text:'#ECECEC',accent:'#E86542',dialogue:'#B4B4BA',line:'#38383E',card:'#1C1C1F',soft:'#26262A'}};
+ const esc=escapeHTML;
+ const fontURL=u=>/^https:\/\/(?:fonts\.(?:googleapis|bunny)\.com\/|cdn\.jsdelivr\.net\/(?:gh\/orioncactus\/pretendard@|gh\/projectnoonnu\/|npm\/))/i.test(u);
+ function safeCss(value){
+  const s=toStringValue(value);
+  if(s.length>20000)throw Error('직접 꾸미기는 20,000자까지 쓸 수 있어요.');
+  if(/<\s*\/?\s*(?:style|script)\b|[\\]|\/\*|expression\s*\(|javascript\s*:|behavior\s*:|-moz-binding/i.test(s))throw Error('사용할 수 없는 CSS 글자가 있어요.');
+  for(const m of s.matchAll(/@import\s+(?:url\(\s*)?["']?([^"'\s);]+)["']?\s*\)?[^;]*;/gi))if(!fontURL(m[1]))throw Error('https 글꼴 주소만 가져올 수 있어요.');
+  const rest=s.replace(/@import\s+(?:url\(\s*)?["']?[^"'\s);]+["']?\s*\)?[^;]*;/gi,'');
+  if(/@import\b/i.test(rest)||/url\s*\(/i.test(rest))throw Error('직접 꾸미기의 외부 주소는 글꼴 가져오기에만 쓸 수 있어요.');
+  return s;
+ }
+ function config(value={}){
+  const h={...defaults,...value};
+  if(!layouts[h.layout])h.layout='original';
+  h.font=normalizeCOAFont(h.font);
+  if(LOG_HTML_LAYOUTS[h.layout])h.color=normalizeLogHTMLColor(h.color,h.layout);else if(!['light','dark','system'].includes(h.color))h.color='system';
+  for(const [k,vs] of Object.entries(enumValues))if(!vs.includes(h[k]))h[k]=defaults[k];
+  h.turns=h.turns!==false;h.time=h.time!==false;h.css=safeCss(h.css);
+  return h;
+ }
+ const readGM=(k,d)=>{try{return GM_getValue(k,d);}catch{return d;}};
+ const writeGM=(k,v)=>{try{GM_setValue(k,v);}catch{}};
+ const load=()=>config(readGM('cme:html:last',defaults));
+ const allowedTags=new Set('a abbr b blockquote br caption code col colgroup dd del details div dl dt em h1 h2 h3 h4 h5 h6 hr i img kbd li mark ol p pre s small span strong sub summary sup table tbody td th thead tr u ul script style iframe'.split(' '));
+ function protect(text){return text.replace(/<\/?([^\s<>/!]+)(?:\s[^<>]*?)?\/?\s*>/g,(all,name)=>allowedTags.has(name.toLowerCase())?all:esc(all));}
+ const renderer=new marked.Renderer();
+ const linkSafe=u=>/^(?:https?:\/\/|mailto:|#)/i.test(u||'');
+ renderer.link=function({href,title,tokens}){const label=this.parser.parseInline(tokens);return linkSafe(href)?'<a href="'+esc(href)+'"'+(title?' title="'+esc(title)+'"':'')+' rel="noopener noreferrer">'+label+'</a>':label;};
+ renderer.image=function({href,title,text}){return /^https?:\/\//i.test(href||'')?'<img src="'+esc(href)+'" alt="'+esc(text)+'"'+(title?' title="'+esc(title)+'"':'')+' loading="lazy" decoding="async">':esc(text);};
+ const markdownOptions={gfm:true,breaks:true,renderer};
+ let parkMarkdown=null;
+ function renderMarkdownPipeTableHTML(lines){const html=archiveRenderMarkdownPipeTableHTML(lines);return parkMarkdown?parkMarkdown(html):html;}
+ function renderMarkdownQuoteHTML(lines){const html=archiveRenderMarkdownQuoteHTML(lines);return parkMarkdown?parkMarkdown(html):html;}
+ const plainToken='WONGOSILPLAINTEXT';
+ const plainFrames={em:marked.parseInline('*'+plainToken+'*',markdownOptions),strong:marked.parseInline('**'+plainToken+'**',markdownOptions)};
+ function inlineParagraph(text){
+  const special=/[<>&*_~`\[\\]/;
+  // 이 경로는 위의 special 검사로 &, <, >가 없는 글자만 받는다.
+  const plain=s=>s.includes('\n')?s.replace(/ {2,}\n/g,'\n').replace(/\n/g,'<br>'):s;
+  if(!special.test(text))return plain(text);
+  const outer=text.match(/^(\*\*|\*)(\S[\s\S]*\S|\S)\1$/);
+  if(outer&&!special.test(outer[2]))return plainFrames[outer[1]==='*'?'em':'strong'].replace(plainToken,()=>plain(outer[2]));
+  return marked.parseInline(text,markdownOptions);
+ }
+ function coaRenderMarkdown(text,parked){
+  let s=toStringValue(text);if(s.includes('<'))s=protect(s);
+  if(/(?:^|\n)\s*(?:\||>)/.test(s)){
+   const previous=parkMarkdown;parkMarkdown=parked?(html=>'\n\nWONGOSILBLOCK'+(parked.push(html)-1)+'END\n\n'):null;
+   try{s=preprocessMarkdownPipeTables(s);}finally{parkMarkdown=previous;}
+  }
+  // 일반 문단은 같은 marked 인라인 결과를 사용한다. 장식 없는 글자는 토큰을 다시 만들지 않는다.
+  if(!s.includes('<')&&!/(?:^|\n)(?: {0,3}(?:#{1,6}[ \t]|[-+*][ \t]|\d+[.)][ \t]|[>\x60~|]|\[[^\]]+\]:|(?:[-*_][ \t]*){3,}$|[=-]{2,}$)| {4}|\t)/m.test(s))return s.trim().split(/\n{2,}/).map(p=>{const match=parked&&p.startsWith('WONGOSILBLOCK')&&p.match(/^WONGOSILBLOCK(\d+)END$/);return match?parked[+match[1]]:'<p>'+inlineParagraph(p)+'</p>\n';}).join('');
+  return marked.parse(s,markdownOptions);
+ }
+ const cleanHtml=text=>{
+  let out=DOMPurify.sanitize(text,{FORBID_TAGS:['script','style','iframe','object','embed','form','input','button','textarea','select','link','meta'],FORBID_ATTR:['style','id','name','srcset'],ADD_ATTR:['loading','decoding'],ALLOW_DATA_ATTR:false});
+  if(/<img\b/i.test(out))out=normalizeMarkdownImageParagraphs(out).replace(/<img\b(?![^>]*\bloading=)/g,'<img loading="lazy" decoding="async"');
+  return out.replace(/\sstyle="text-align:(left|right|center)"/g,' class="align-$1"');
+ };
+ function statusRows(text){
+  const lines=text.trim().split('\n').filter(x=>x.trim());
+  if(!lines.length||!lines.every(x=>/^\s*[^:\n]{1,80}:\s*.+/.test(x)))return null;
+  return lines.map(x=>{const i=x.indexOf(':');return [x.slice(0,i).trim(),...x.slice(i+1).split(/[｜|]/).map(x=>x.trim())];});
+ }
+ function bodyFactory(h){
+  let previousDate='';const cache=new Map();
+  function body(text){
+   text=toStringValue(text);if(text.includes('<!--'))text=text.replace(/<!--[\s\S]*?(?:-->|$)/g,'');
+   const match=text.match(/^\s*\[\s*#\d+\s*[|｜]([^\]\n]+)\]\s*\n?/);
+   let chapter='';
+   if(match&&h.header==='chapter'){
+    const fields=match[1].split(/[|｜]/).map(x=>x.trim()),date=fields[0];
+    if(date!==previousDate){const dm=date.match(/(?:(\d{4})[.\-/년]\s*)?(\d{1,2})[.\-/월]\s*(\d{1,2})/);const parsed=dm?new Date(Number(dm[1]||new Date().getFullYear()),+dm[2]-1,+dm[3]):null;
+     const label=parsed&&!isNaN(parsed)?`${+dm[2]}월 ${+dm[3]}일 ${['일','월','화','수','목','금','토'][parsed.getDay()]}요일`:date;
+     chapter=`<h3 class="chapter">${esc(label)}</h3><p class="place">${esc(fields.slice(1).join(' · '))}</p>`;
+    }else chapter=`<h3 class="chapter">${esc(fields.slice(2).join(' · ')||fields[1]||'')}</h3>`;
+    previousDate=date;text=text.slice(match[0].length);
+   }
+   const cacheKey=text;let result=cache.get(cacheKey);
+   if(result===undefined){
+    const hasHtml=text.includes('<')&&[...text.matchAll(/<\/?([a-z][\w-]*)\b[^>]*>/gi)].some(m=>allowedTags.has(m[1].toLowerCase()));
+    const parked=[];const park=x=>`\n\nWONGOSILBLOCK${parked.push(x)-1}END\n\n`;
+    if(text.includes('```')||text.includes('~~~'))text=text.replace(/^\s*(`{3,}|~{3,})[^\n]*\n([\s\S]*?)^\s*\1\s*$/gm,(all,fence,inside)=>{
+     const rows=statusRows(inside);if(!rows)return park('<pre><code>'+esc(inside.trimEnd())+'</code></pre>');
+     if(h.status==='hide')return '';
+     let out='<table class="status">'+rows.map(r=>'<tr><th>'+esc(r[0])+'</th>'+r.slice(1).map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</table>';
+     if(h.status==='fold')out='<details class="status-fold"><summary>상태 보기</summary>'+out+'</details>';
+     if(h.status==='box')out='<div class="status-box">'+rows.map(r=>'<p><b>'+esc(r[0])+'</b> '+r.slice(1).map(esc).join(' · ')+'</p>').join('')+'</div>';
+     return park(out);
+    });
+    if(text.includes('｜'))text=text.replace(/^(?:\*\*)?([^「"“\n<>]{1,24}?)\s*｜\s*(?:\*\*)?\s*([「"“][^\n]+)(?:\n\s*(\([^\n]+\)))?$/gm,(all,name,speech,next)=>{
+     const trailing=speech.match(/\s*(\([^\n]+\))\s*$/);if(trailing)speech=speech.slice(0,trailing.index);
+     const tr=trailing?.[1]||next;
+     return park('<p class="speech"><b class="speaker">'+esc(name.replace(/\*\*/g,'').trim())+'</b>'+inlineParagraph(speech.includes('<')?protect(speech):speech)+'</p>'+(tr&&h.translation!=='hide'?'<p class="translation">'+esc(tr)+'</p>':''));
+    });
+    text=text.replace(/(^|\n[ \t]*\n)[ \t]*([-*_])(?:[ \t]*\2){2,}[ \t]*(?=\n|$)/g,(_,prefix)=>prefix+park('<hr>'));
+    // 원래 HTML과 같이 확장자가 없는 상황 그림 주소도 그림으로 둔다.
+    if(text.includes('http'))text=text.replace(/^\s*(https?:\/\/[^\s<>]+\.(?:png|jpe?g|gif|webp)(?:\?[^\s<>]*)?)\s*$/gim,'![]($1)');
+    result=coaRenderMarkdown(text,parked);
+    if(result.includes('WONGOSILBLOCK'))result=result.replace(/<p>WONGOSILBLOCK(\d+)END<\/p>\n?/g,(_,n)=>parked[+n]);
+    if(result.includes('```'))result=result.replace(/`{3,}/g,'');
+    if(result.includes('style='))result=result.replace(/\sstyle="text-align:(left|right|center)"/g,' class="align-$1"');
+    // 마크다운에서 만든 태그는 안전한 렌더러만 사용한다. 메시지에 있던 HTML은 반드시 DOMPurify를 통과한다.
+    if(hasHtml)result=cleanHtml(result);
+    else if(/<p>\s*<img\b[^>]*>\s*<br>/i.test(result))result=normalizeMarkdownImageParagraphs(result);
+    cache.set(cacheKey,result);
+   }
+   return chapter+result;
+  }
+  return body;
+ }
+ const templateCache=new Map();
+ function template(h,title,now,count){
+  if(!LOG_HTML_LAYOUTS[h.layout])return {css:'',root:'',header:'',user:null,ai:null};
+  const key=[h.layout,h.color,h.font].join(':');
+  const fill=t=>({...t,header:t.header.replaceAll('WONGOSIL_EXPORT_TITLE',()=>esc(title)).replaceAll('WONGOSIL_COUNT',esc(count)).replaceAll('1970 · 01 · 01',()=>new Date(now).getFullYear()+' · '+String(new Date(now).getMonth()+1).padStart(2,'0')+' · '+String(new Date(now).getDate()).padStart(2,'0')).replaceAll('01.01',()=>String(new Date(now).getMonth()+1).padStart(2,'0')+'.'+String(new Date(now).getDate()).padStart(2,'0'))});
+  if(templateCache.has(key))return fill(templateCache.get(key));
+  const el=document.createElement('template');
+  el.innerHTML=renderLogHTMLTheme({title:'WONGOSIL_EXPORT_TITLE',body:'',tags:[],view:{},createdAt:new Date(0)},{layout:h.layout,color:h.color,font:h.font});
+  const src=el.content.firstElementChild,rules=[],styles=new Map();
+  // 같은 규격이 class CSS에 이미 있으므로 옛 표의 반복 표현 속성은 덜어낸다.
+  for(const table of src.querySelectorAll('table,td,th'))for(const attr of ['width','height','cellpadding','cellspacing','border','align','valign'])table.removeAttribute(attr);
+  for(const e of [src,...src.querySelectorAll('[style]')]){
+   const style=e.getAttribute('style');if(!style)continue;
+   let cls=styles.get(style);if(!cls){cls='w'+styles.size;styles.set(style,cls);rules.push('.'+cls+'{'+style+'}');}
+   e.classList.add(cls);e.removeAttribute('style');
+  }
+  function piece(token,other){
+   const w=document.createTreeWalker(src,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode())if(n.nodeValue.includes(token))break;
+   if(!n)throw Error('아카이브 틀 본문을 찾지 못했어요: '+h.layout);
+   let e=n.parentElement;
+   while(e.parentElement!==src&&e.parentElement&&!e.parentElement.textContent.includes(other))e=e.parentElement;
+   return e.outerHTML.replace(token,'WONGOSIL_MESSAGE').replace(/T-0[12]|№ 0[12]/g,'WONGOSIL_NUMBER');
+  }
+  const head=src.querySelector('header');
+  const compiled={css:rules.join(''),root:src.className,header:head?.outerHTML.replace(/^<header\b/,'<div').replace(/<\/header>$/,'</div>').replace(/2 TURNS|편지 2통/g,'WONGOSIL_COUNT TURNS')||'',user:piece('WONGOSIL_USER_BODY','WONGOSIL_AI_BODY'),ai:piece('WONGOSIL_AI_BODY','WONGOSIL_USER_BODY')};
+  if(templateCache.size>=20)templateCache.delete(templateCache.keys().next().value);templateCache.set(key,compiled);
+  return fill(compiled);
+ }
+ function prepare(h,title,now,count){
+  h=config(h);const t=template(h,title,now,count),body=bodyFactory(h);
+  const fixed=h.color==='system'?(CME.dark()?'dark':'light'):h.color;
+  let p=palette[fixed]||getLogHTMLPalette(h.layout,h.color);
+  if(h.layout==='airmail')p={bg:'#FBF6EA',text:'#3A342B',accent:'#34508C',dialogue:'#8C8270',line:'#D9CDB4',card:'#FFFDF6',soft:'#F4EEE2'};
+  const cssFor=p=>`:root{--bg:${p.bg};--ink:${p.text};--sub:${p.text};--mute:${p.text};--line:${p.line};--u:${p.soft||p.bg};--acc:${p.accent};--card:${p.card||p.bg}}`;
+  const stylesheet=COA_FONT_PRESETS[h.font].stylesheet||(h.font==='pretendard'?COA_PRETENDARD_FONT_URL:['gowunbatang','ibmplexmono'].includes(h.font)?COA_CORE_GOOGLE_FONTS_URL:'');
+  const css=cssFor(p)+(h.color==='system'?`@media(prefers-color-scheme:dark){${cssFor(palette.dark)}}`:'')+t.css+`
+body{font-family:${getCOAFontFamily(h.font)};font-size:${{small:14,normal:16,large:18}[h.size]}px;line-height:${{tight:1.6,normal:1.85,wide:2.1}[h.leading]}}
+.wrap{width:100%;max-width:820px;overflow-wrap:anywhere}.tx{white-space:normal}.tx :is(p,ul,ol,blockquote){margin:0 0 .8em}.tx :is(strong,b){font-weight:600}.tx :is(em,i){font-style:normal;color:var(--ink);opacity:.8}.tx :is(pre,code){background:var(--u);border:1px solid var(--line);border-radius:8px}.tx pre{padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}.tx pre code{border:0;background:none}.tx code{padding:2px 4px}.tx table{width:100%;table-layout:fixed;border-collapse:collapse;margin:12px 0}.tx :is(td,th){border:1px solid var(--line);padding:6px;overflow-wrap:anywhere;font-size:.88em}.tx blockquote{border-left:3px solid var(--acc);padding:8px 12px;color:var(--sub)}.tx img{max-width:100%;height:auto;max-height:480px;object-fit:contain}.tx hr{border:0;text-align:center;color:var(--acc);margin:24px 0}.tx hr:after{content:'✦'}.chapter{font-size:1.25em;font-weight:600;margin:20px 0 8px}.place,.translation{font-size:.88em;color:var(--ink);opacity:.8}.speaker{display:inline-block;margin-right:8px;color:var(--acc)}.status-box,.status-fold{border:1px solid var(--line);border-radius:12px;padding:10px;margin:16px 0}.status-fold summary{cursor:pointer}.tx .align-right{text-align:right}.tx .align-center{text-align:center}
+${h.layout==='chat'?'.m{border:1px solid var(--line);background:var(--card);border-radius:18px}.m.u{margin-left:32px}.m.a{margin-right:20px}':''}
+${h.layout==='book'?'.m.a{border:0;padding:20px 0}.m.u{border-left:3px solid var(--line);border-radius:0}.t{border:0}.chapter{letter-spacing:.1em}':''}
+${h.own==='hide'?'.m.u{display:none}':h.own==='muted'?'.m.u{color:var(--sub);opacity:.8}':''}
+${!h.turns?'.t>h2{display:none}':''}${!h.time?'.who time{display:none}':''}
+.archive-head{margin-bottom:20px}.archive-msg .tx{font:inherit!important;font-size:inherit!important;line-height:inherit!important}.archive-msg{min-width:0;max-width:100%}.archive-msg>table{table-layout:fixed;width:100%}.wrap.coa-html-log{overflow:visible;padding:20px!important;box-shadow:none}.bar{z-index:4}.bar #go{flex:0 0 105px}.bar input{height:44px}.bar span{min-width:0;overflow:hidden;text-overflow:ellipsis}.who{flex-wrap:wrap}.tx a{color:var(--acc)}
+@media(max-width:500px){.wrap{padding:16px 12px 60px}.archive-head{overflow:hidden}.archive-head h1{font-size:22px!important}.archive-head>div,.archive-head{padding:12px!important}.archive-head table td{min-width:0;overflow-wrap:anywhere;white-space:normal!important}.archive-head svg{max-width:100%}.archive-msg{padding-left:8px!important;padding-right:8px!important;transform:none!important}.archive-msg>div{max-width:100%;padding-left:8px!important;padding-right:8px!important}.archive-msg table td{overflow-wrap:anywhere}.bar{gap:6px}}
+${h.css}`;
+  const wrappers=new Map(),links=[stylesheet,...[...h.css.matchAll(/@import\s+(?:url\(\s*)?["']?([^"'\s);]+)["']?\s*\)?[^;]*;/gi)].map(m=>m[1])].filter(Boolean);
+  return {h,css,link:[...new Set(links)].map(u=>'<link rel="stylesheet" href="'+esc(u)+'">').join(''),root:t.root,header:t.header?'<div class="archive-head">'+t.header+'</div>':'',body,clean:cleanHtml,
+   message(m,who,pics,fmtDate,no){
+    const inside='<div class="who">'+who+(m.status&&m.status!=='end'?' <span class="st">('+esc(m.status)+')</span>':'')+'<time>'+fmtDate(m.createdAt)+'</time></div><div class="tx">'+body(m.content)+'</div>'+pics(m);
+    const pattern=m.role==='user'?t.user:t.ai;
+    let content=inside;
+    if(pattern){const key=m.role+':'+who;let parts=wrappers.get(key);if(!parts){parts=pattern.replace(/\bUSER\b/g,m.role==='user'?who:'USER').replace(/>AI</g,'>'+who+'<').split('WONGOSIL_MESSAGE');wrappers.set(key,parts);}content=parts[0].replaceAll('WONGOSIL_NUMBER',esc(no||''))+inside+parts[1];}
+    return '<div class="m '+(m.role==='user'?'u':'a')+(pattern?' archive-msg':'')+'">'+content+'</div>';
+   }};
+ }
+  function uiHtml(){
+  const select=(key,label,choices)=>'<label class="wh-field"><span>'+label+'</span><select data-wh="'+key+'" aria-label="'+label+'">'+choices.map(([v,t])=>'<option value="'+esc(v)+'">'+esc(t)+'</option>').join('')+'</select></label>';
+  const fonts=COA_FONT_GROUPS.map(([key,label])=>'<optgroup label="'+esc(label)+'">'+Object.entries(COA_FONT_PRESETS).filter(([,v])=>v.group===key).map(([k,v])=>'<option value="'+k+'">'+esc(v.label)+'</option>').join('')+'</optgroup>').join('');
+  return `<style data-wh-style>
+.wh[hidden],.wh-sheet[hidden]{display:none!important}.wh{min-width:0;border-top:1px solid var(--line);padding-top:16px;margin-top:16px}.wh-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.wh-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px}.wh :is(select,button,input,textarea){box-sizing:border-box;border:1px solid var(--line);border-radius:12px;background:var(--fill);color:var(--ink);font:14px/20px system-ui;min-height:44px;min-width:0;width:100%;padding:10px 12px}.wh button,.wh select{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wh :is(p,h3){overflow-wrap:anywhere}.wh p{font-size:12px;color:var(--sub);line-height:18px}.wh .wh-note{margin:8px 0}.wh iframe{width:100%;height:280px;border:1px solid var(--line);border-radius:12px;background:var(--fill);display:block;margin:10px 0}.wh summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600}.wh textarea{min-height:120px;resize:vertical}.wh-template{display:grid;grid-template-columns:1fr 1fr;gap:8px}.wh-template .wide{grid-column:1/-1}.wh-sheet{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--ink) 20%,transparent);display:flex;align-items:flex-end;justify-content:center}.wh-list{width:min(100%,600px);max-height:100%;height:85dvh;overflow:auto;padding:16px;border-radius:20px 20px 0 0;background:var(--solid);color:var(--ink);box-sizing:border-box}.wh-list button{width:100%;display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--fill);color:var(--ink);border-radius:12px;min-height:56px;font:14px/20px system-ui;text-align:left;padding:8px 12px;margin:6px 0}.wh-dot{display:block;flex:0 0 56px;width:56px;height:32px;border-radius:8px;background:var(--wh-dot);border:1px solid var(--line)}.wh-list button[aria-selected=true]{border-color:var(--key);background:var(--soft)}.wh-list button span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wh-error{color:var(--err)!important}
+</style><section class="wh" hidden aria-label="HTML 꾸미기"><h3>HTML 꾸미기</h3><div class="wh-grid"><label class="wh-field"><span>틀</span><button type="button" data-wh-act="layouts" aria-haspopup="dialog">00 원래 모양</button></label>${select('color','색',[]) }<label class="wh-field"><span>글꼴</span><select data-wh="font" aria-label="글꼴">${fonts}</select></label>${select('size','글자 크기',[['small','작게'],['normal','보통'],['large','크게']])}${select('leading','줄 간격',[['tight','좁게'],['normal','보통'],['wide','넓게']])}${select('own','내 글',[['show','보이기'],['muted','연하게'],['hide','숨기기']])}${select('status','상태창',[['table','표'],['box','상자'],['fold','접기'],['hide','숨기기']])}${select('header','머리줄',[['chapter','장 제목'],['raw','그대로']])}${select('translation','번역 줄',[['below','아래'],['hide','숨기기']])}${select('turns','턴 번호',[['true','켬'],['false','끔']])}${select('time','시각',[['true','켬'],['false','끔']])}</div><p>인터넷이 될 때 열면 이 글꼴로 보여요</p><p>HTML은 주석이 항상 숨겨져요</p><p data-wh-strip hidden>틀 꾸밈(서술 색·굵게)이 줄어요</p><h3>미리보기</h3><p data-wh-preview-note aria-live="polite">선택한 범위의 첫 두 턴</p><iframe title="HTML 미리보기" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><h3>내 틀</h3><div class="wh-template"><input class="wide" data-wh-name aria-label="내 틀 이름" placeholder="내 틀 이름" maxlength="64"><select class="wide" data-wh-template aria-label="저장한 내 틀"></select><button type="button" data-wh-act="store">저장</button><button type="button" data-wh-act="load">불러오기</button><button type="button" data-wh-act="delete">지우기</button></div><details><summary>고급 · 직접 꾸미기(CSS)</summary><textarea data-wh="css" aria-label="직접 꾸미기 CSS" maxlength="20000"></textarea><p>20,000자까지 · https 글꼴 주소만 가져올 수 있어요</p></details><p data-wh-error class="wh-error" role="status"></p></section><div class="wh-sheet" hidden><section class="wh-list" role="dialog" aria-modal="true" aria-label="HTML 틀"><button type="button" data-wh-act="sheet-close">닫기</button>${Object.entries(layouts).map(([k,v])=>{const p=LOG_HTML_LAYOUTS[k]?getLogHTMLPalette(k,LOG_HTML_LAYOUTS[k].defaultColor):palette.light;return '<button type="button" data-wh-layout="'+k+'"><span class="wh-dot" style="--wh-dot:'+esc(p.bg||palette.light.bg)+'"></span><span>'+esc(v.label)+'</span></button>';}).join('')}</section></div>`;
+ }
+ function attach(root,{read,loadData,render}){
+  let h=load(),disposed=false,revision=0,timer=0,controller=null,promise=null;
+  const $=s=>root.querySelector(s),$$=s=>[...root.querySelectorAll(s)],section=$('.wh'),sheet=$('.wh-sheet'),error=$('[data-wh-error]'),frame=$('.wh iframe');
+  const templates=()=>readGM('cme:html:templates',[]).slice(0,20);
+  function list(){const items=templates();$('[data-wh-template]').innerHTML='<option value="">저장한 틀 고르기</option>'+items.map((x,i)=>'<option value="'+i+'">'+esc(x.name)+'</option>').join('');}
+  function paint(){
+   const colors=LOG_HTML_LAYOUTS[h.layout]?getLogHTMLVariantMap(h.layout):{light:{label:'밝은'},dark:{label:'어두운'},system:{label:'기기 따라가기'}};
+   $('[data-wh="color"]').innerHTML=Object.entries(colors).map(([k,v])=>'<option value="'+k+'">'+esc(v.label)+'</option>').join('');
+   for(const e of $$('[data-wh]'))e.value=toStringValue(h[e.dataset.wh]);
+   $('[data-wh-act="layouts"]').textContent=layouts[h.layout].label;
+   for(const e of $$('[data-wh-layout]'))e.setAttribute('aria-selected',String(e.dataset.whLayout===h.layout));
+  }
+  function value(){const v={...h};for(const e of $$('[data-wh]'))v[e.dataset.wh]=['turns','time'].includes(e.dataset.wh)?e.value==='true':e.value;return config(v);}
+  root.__wongosilRead=value;
+  async function preview(){
+   const rev=++revision;clearTimeout(timer);
+   let opts;try{opts=read();}catch(e){error.textContent=e.message;return;}section.hidden=opts.format!=='html';$('[data-wh-strip]').hidden=!(opts.clean.on&&opts.clean.markdown);
+   if(section.hidden){controller?.abort();controller=null;promise=null;return;}
+   try{
+    h=value();writeGM('cme:html:last',h);error.textContent='';
+    $('[data-wh-preview-note]').textContent='미리보기 읽는 중…';
+    if(!promise){controller=new AbortController();promise=loadData(opts,controller.signal).catch(e=>{promise=null;throw e;});}
+    const data=await promise;if(disposed||rev!==revision)return;
+    const blob=await render(data,{...read(),html:h},controller.signal);if(disposed||rev!==revision)return;
+    frame.srcdoc=await blob.text();$('[data-wh-preview-note]').textContent='선택한 범위의 첫 두 턴';
+   }catch(e){if(disposed||rev!==revision||e.name==='AbortError')return;error.textContent=e.message;$('[data-wh-preview-note]').textContent='미리보기를 만들지 못했어요.';}
+  }
+  const schedule=()=>{revision++;clearTimeout(timer);timer=setTimeout(preview,160);};
+  root.addEventListener('change',schedule);root.addEventListener('input',e=>{if(e.target.matches('[data-wh],input[name]'))schedule();});
+  root.addEventListener('click',e=>{if(e.target.closest('[data-act]')?.dataset.act!=='save')return;try{read();}catch(err){e.preventDefault();e.stopImmediatePropagation();error.textContent=err.message;error.scrollIntoView({block:'nearest'});}},true);
+  root.addEventListener('click',e=>{
+   const layout=e.target.closest('[data-wh-layout]')?.dataset.whLayout,act=e.target.closest('[data-wh-act]')?.dataset.whAct;
+   if(layout){h={...value(),layout,color:LOG_HTML_LAYOUTS[layout]?.defaultColor||'system'};paint();sheet.hidden=true;$('[data-wh-act="layouts"]').focus();schedule();return;}
+   if(e.target===sheet||act==='sheet-close'){sheet.hidden=true;$('[data-wh-act="layouts"]').focus();return;}
+   if(act==='layouts'){sheet.hidden=false;$('[data-wh-act="sheet-close"]').focus();return;}
+   if(!['store','load','delete'].includes(act))return;
+   try{
+    const items=templates(),key=$('[data-wh-template]').value,index=key===''?-1:+key;
+    if(act==='store'){
+     const name=$('[data-wh-name]').value.trim();if(!name)throw Error('내 틀 이름을 적어 주세요.');
+     const old=items.findIndex(x=>x.name===name);if(old<0&&items.length>=20)throw Error('내 틀은 20개까지 저장할 수 있어요.');
+     const item={name,config:value()};if(old<0)items.push(item);else items[old]=item;writeGM('cme:html:templates',items);list();
+    }else{if(index<0||!items[index])throw Error('저장한 내 틀을 골라 주세요.');if(act==='load'){h=config(items[index].config);paint();schedule();}else{items.splice(index,1);writeGM('cme:html:templates',items);list();}}
+    error.textContent='';
+   }catch(e){error.textContent=e.message;}
+  });
+  root.addEventListener('keydown',e=>{if(sheet.hidden)return;if(e.key==='Escape'){e.stopImmediatePropagation();sheet.hidden=true;$('[data-wh-act="layouts"]').focus();}if(e.key==='Tab'){const nodes=$$('.wh-list button'),i=nodes.indexOf(root.activeElement);e.preventDefault();nodes[(i+(e.shiftKey?-1:1)+nodes.length)%nodes.length].focus();}},true);
+  paint();list();preview();
+  return ()=>{disposed=true;revision++;clearTimeout(timer);controller?.abort();frame.srcdoc='';};
+ }
+
+ return {layouts,fonts:COA_FONT_PRESETS,groups:COA_FONT_GROUPS,defaults,config,load,prepare,safeCss,cleanHtml,statusRows,bodyFactory,uiHtml,attach};
 })();
 
 if(window.__CME_TEST_HOOK__)window.__CME_TOOLS=CME;
@@ -800,8 +1820,8 @@ if(window.__CME_TEST_HOOK__)window.__CME_TOOLS=CME;
     // ============================================================
     var THEME_PRESETS = {
         crack: {
-            light: { bg:'#F6F3EF',fg:'#242424',muted:'#606060',line:'#E1DCD5',line2:'#E1DCD5',head:'#FFFEFC',panel:'#F1EEE9',btn:'#FFFEFC',btnHover:'#FFF0E9',accent:'#BF3322',accent2:'#BF3322',accentFg:'#FFFFFF',danger:'#A43758',changedBg:'#FFF0E9',invalidBg:'#FFF0E9',mark:'#E8C8BD',headerBtn:'#BF3322',raw:'#FF4431' },
-            dark: { bg:'#171513',fg:'#ECECEC',muted:'#BDBDBD',line:'#48413A',line2:'#48413A',head:'#24211E',panel:'#312C27',btn:'#24211E',btnHover:'#3D2922',accent:'#FF9B88',accent2:'#FF9B88',accentFg:'#1F1F1F',danger:'#F0A0B7',changedBg:'#3D2922',invalidBg:'#3D2922',mark:'#785041',headerBtn:'#FF9B88',raw:'#FF4431' }
+            light: { bg:'#F8F7F4',fg:'#242424',muted:'#5F5F5F',line:'#E3E1DC',line2:'#E3E1DC',head:'#FFFFFF',panel:'#F1F0EC',btn:'#FFFFFF',btnHover:'#FCEDE7',accent:'#BE4422',accent2:'#BE4422',accentFg:'#FFFFFF',danger:'#A43758',changedBg:'#FCEDE7',invalidBg:'#FCEDE7',mark:'#F0C9BB',headerBtn:'#BE4422',raw:'#FF4431' },
+            dark: { bg:'#131315',fg:'#ECECEC',muted:'#B4B4BA',line:'#38383E',line2:'#38383E',head:'#1C1C1F',panel:'#26262A',btn:'#1C1C1F',btnHover:'#2F201B',accent:'#E86542',accent2:'#E86542',accentFg:'#1F1F1F',danger:'#F0A0B7',changedBg:'#2F201B',invalidBg:'#2F201B',mark:'#7A4130',headerBtn:'#E86542',raw:'#FF4431' }
         },
         // 기본값 — 크랙 화면과 어울리는 따뜻한 베이지/황토
         beige: {
@@ -1219,9 +2239,9 @@ if(window.__CME_TEST_HOOK__)window.__CME_TOOLS=CME;
         var overlay = document.createElement('div');
         overlay.className = OVERLAY_CLASS;
         overlay.innerHTML =
-            '<div class="cme-modal" role="dialog" aria-modal="true" aria-label="메시지 도구">' +
+            '<div class="cme-modal" role="dialog" aria-modal="true" aria-label="크랙 원고실">' +
               '<div class="cme-head">' +
-                '<h3>' + icon(IC_PENCIL, 18) + '메시지 도구</h3>' +
+                '<h3>' + icon(IC_PENCIL, 18) + '크랙 원고실</h3>' +
                 '<span class="cme-room" id="cme-room"></span>' +
                 '<button type="button" class="cme-iconbtn" id="cme-close" aria-label="닫기" title="닫기">' + icon(IC_CLOSE, 20) + '</button>' +
               '</div>' +
@@ -5804,6 +6824,64 @@ go.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var el=docum
         return out.done();
     }
 
+    async function buildWongosilHtml(ctx, turns, part, signal) {
+        const d = describe(ctx), s = ctx.opts.stats ? computeStats(turns) : null, mem = memoriesOf(ctx);
+        const prepared=CME.html.prepare(ctx.opts.html,d.title,ctx.now,turns.length);
+        let messageNo=0;
+        // Pictures, not links, loading lazily: image markdown and bare image addresses in the text show right where they
+        // are written (see cleaningFor), and the message's attached situation images show under it. Each picture is
+        // parked as <n> while *emphasis* is applied, so a * inside an address cannot break it (escaped text has no <).
+        const pic = u => `<a class="pic" href="${u}" target="_blank" rel="noopener"><img src="${u}" loading="lazy" decoding="async" alt=""></a>`;
+        const body = text => prepared.body(text);
+        const pics = m => { const list = [...new Set([...m.images, ...(m.cut || [])])].filter(u => /^https?:\/\//i.test(u)); return list.length ? `<div class="pics">${list.map(u => pic(esc(u))).join('')}</div>` : ''; };
+        const msg = (m,who) => prepared.message(m,who,pics,fmtDate,++messageNo);
+        const info = `<table class="meta">${ctx.opts.info && d.chatTitle && d.chatTitle !== d.title ? `<tr><th>대화</th><td>${esc(d.chatTitle)}</td></tr>` : ''}<tr><th>범위</th><td>${esc(rangeLabel(turns))}${part ? ` · ${part}` : ''}</td></tr><tr><th>저장</th><td>${fmtDate(ctx.now)}</td></tr></table>${ctx.opts.info && d.userNote ? `<details class="box" open><summary>유저노트</summary><div class="tx">${body(d.userNote)}</div></details>` : ''}${mem.length ? `<details class="box"><summary>장기기억 ${num(mem.length)}개</summary><ol class="mem">${mem.map(m => `<li>${m.title ? `<b>${esc(m.title)}</b> ` : ''}${esc(m.summary)}</li>`).join('')}</ol></details>` : ''}`;
+        const stats = s ? `<div class="stats"><span><b>${num(s.turns)}</b>턴</span><span>내 글 <b>${num(s.userChars)}</b>자</span><span>AI <b>${num(s.aiChars)}</b>자</span><span>리롤 <b>${num(s.rerolls)}</b></span>${s.images ? `<span>이미지 <b>${num(s.images)}</b></span>` : ''}<span>${fmtDate(s.first)} ~ ${fmtDate(s.last)}</span></div>` : '';
+        const notes = ctx.notes.length ? `<p class="note">${ctx.notes.map(esc).join('<br>')}</p>` : '';
+        const out = pieces(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(d.title)} · ${esc(rangeLabel(turns))}</title>
+<style>
+:root{--bg:#fff;--ink:#1a1918;--sub:#61605a;--mute:#85837d;--line:#e5e5e1;--u:#f5f5f2;--acc:#0c6acf}
+@media(prefers-color-scheme:dark){:root{--bg:#141413;--ink:#f0efeb;--sub:#a8a69f;--mute:#85837d;--line:#2c2b29;--u:#1e1e1c;--acc:#6aa7ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 Pretendard,'Apple SD Gothic Neo',system-ui,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:28px 20px 80px}header{padding-bottom:16px;border-bottom:1px solid var(--line)}
+.k{font-size:12px;font-weight:500;color:var(--mute)}h1{font-size:24px;font-weight:600;margin:6px 0 12px;line-height:1.35}
+.meta{border-collapse:collapse;font-size:13px}.meta th{text-align:left;color:var(--sub);font-weight:500;padding:2px 16px 2px 0;white-space:nowrap}.meta td{padding:2px 0}
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--sub);margin-top:10px}.stats b{color:var(--ink);font-weight:600}
+.box{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:12px}.box summary{cursor:pointer;font-weight:600;font-size:14px}
+.mem{margin:8px 0 0;padding-left:22px;font-size:14px;line-height:1.6}.mem li{margin:4px 0}.mem b{font-weight:600}
+.bar{position:sticky;top:0;z-index:2;display:flex;gap:8px;padding:12px 0;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar input{flex:1;min-width:0;height:40px;font:inherit;font-size:14px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit}.bar #go{flex:0 0 120px}.bar span{font-size:12px;color:var(--sub);align-self:center;white-space:nowrap}
+.t{padding:16px 0;border-bottom:1px solid var(--line);scroll-margin-top:68px}.blk{content-visibility:auto;contain-intrinsic-size:80000px;contain-intrinsic-size:auto 80000px}.blk.part{content-visibility:visible}.t h2{font-size:12px;font-weight:600;color:var(--mute);margin:0 0 8px}
+.m{border-radius:12px;padding:12px 16px;margin:8px 0}.m.u{background:var(--u)}.m.a{border:1px solid var(--line)}
+.who{font-size:12px;font-weight:600;color:var(--sub);display:flex;gap:8px;margin-bottom:4px}.who time{margin-left:auto;font-weight:400;color:var(--mute)}.st{color:#e5432a}
+.tx{white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}.tx em{color:var(--sub)}
+.pic{display:inline-block;max-width:100%;vertical-align:top}.pic img{display:block;max-width:100%;max-height:480px;height:auto;border-radius:10px;background:var(--u)}
+.pics{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.pics .pic img{max-height:360px}
+.alt{margin-top:6px;font-size:14px}.alt summary{cursor:pointer;color:var(--acc);font-size:13px}.note{font-size:13px;color:var(--sub)}.hide{display:none}
+${prepared.css}</style>${prepared.link}</head><body><div class="wrap ${prepared.root}">${prepared.header}<header><div class="k">크랙 대화 로그 · ${esc(APP.name)} ${APP.version}</div><h1>${esc(d.title)}</h1>${info}${stats}${notes}</header>
+<div class="bar"><input id="q" type="search" placeholder="내용 검색"><input id="go" type="number" placeholder="턴 번호로 이동"><span id="n"></span></div>
+<main>
+`);
+        // 50 turns per block: the browser lays out and paints only the blocks near the screen. The search hides blocks
+        // without a hit and draws partly hidden ones normally; a jump gives its block and the one before it real height.
+        for (const [i, t] of turns.entries()) {
+            await breathe(signal);
+            const id = t.no !== null ? `t${t.no}` : t.prologue ? 'p' : `r${t.rel ?? i}`;
+            const alts = ctx.opts.alts && t.alts.length ? `<details class="alt"><summary>다른 버전 ${t.alts.length}개</summary>${t.alts.map((m, k) => msg(m, `버전 ${k + 1}`)).join('')}</details>` : '';
+            out.push(`${i % 50 ? '' : i ? '</div><div class="blk">' : '<div class="blk">'}<section class="t" id="${id}"><h2>${esc(t.label)}</h2>${[t.user, ...t.replies].filter(Boolean).map(m => msg(m, whoOf(t, m))).join('')}${alts}</section>\n`);
+        }
+        out.push(`${turns.length ? '</div>' : ''}</main></div>
+<script>
+(function(){var q=document.getElementById('q'),go=document.getElementById('go'),n=document.getElementById('n'),ts=[].slice.call(document.querySelectorAll('.t')),bs=[].slice.call(document.querySelectorAll('.blk')),timer=0;
+function run(){var v=q.value.trim().toLowerCase(),c=0,cs=v!==v.toUpperCase();ts.forEach(function(t){var hit=!v||(cs?t.textContent.toLowerCase():t.textContent).indexOf(v)>=0;t.classList.toggle('hide',!hit);if(hit)c++;});
+bs.forEach(function(b){var k=b.querySelectorAll('.t:not(.hide)').length;b.classList.toggle('hide',!k);b.classList.toggle('part',k>0&&k<b.children.length);});n.textContent=v?c+'턴':'';}
+q.addEventListener('input',function(){clearTimeout(timer);timer=setTimeout(run,200);});
+go.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var el=document.getElementById('t'+go.value)||document.getElementById('r'+go.value);if(el){q.value='';run();var b=el.parentNode;[b,b.previousElementSibling].forEach(function(x){if(x)x.style.contentVisibility='visible';});el.scrollIntoView();}});})();
+</script></body></html>`);
+        return out.done();
+    }
+
+
     // ---------- Markdown ----------
     async function buildMd(ctx, turns, part, signal) {
         const d = describe(ctx), out = pieces(`# ${d.title}\n\n`), mem = memoriesOf(ctx);
@@ -5971,7 +7049,7 @@ go.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var el=docum
     // ---------- export ----------
     const FORMATS = {
         txt: { label: 'TXT', ext: 'txt', type: 'text/plain;charset=utf-8', build: buildTxt, hint: '턴 단위로 나눈 텍스트' },
-        html: { label: 'HTML', ext: 'html', type: 'text/html;charset=utf-8', build: buildHtml, hint: '브라우저로 여는 읽기용 파일 (이미지 표시, 검색, 턴 번호로 이동)' },
+        html: { label: 'HTML', ext: 'html', type: 'text/html;charset=utf-8', build: (ctx,turns,part,signal) => (!ctx.opts.html || CME.html.config(ctx.opts.html).layout==='original') ? buildHtml(ctx,turns,part,signal) : buildWongosilHtml(ctx,turns,part,signal), hint: '브라우저로 여는 읽기용 파일 (이미지 표시, 검색, 턴 번호로 이동)' },
         md: { label: 'MD', ext: 'md', type: 'text/markdown;charset=utf-8', build: buildMd, hint: 'Markdown · 노션, 옵시디언 같은 메모 앱용' },
         json: { label: 'JSON', ext: 'json', type: 'application/json;charset=utf-8', build: buildJson, hint: '다른 도구로 다시 가공하기 좋은 데이터 (청소 설정이 적용돼요)' },
         epub: { label: 'EPUB', ext: 'epub', type: 'application/epub+zip', build: buildEpub, hint: '전자책 앱으로 소설처럼 읽기' },
@@ -6389,7 +7467,7 @@ ${seg('tab', [['main', '기본', false, 'article'], ['clean', '청소', false, '
     function toolsDialogHtml(ck,theme) {
         const original=dialogHtml(ck,theme);
         const extra='<section class="sec"><h3>제거 키워드</h3><div class="card">'+sw('c-removeKeywords','이 단어가 든 메시지 빼기','한 줄에 하나씩 적어 주세요. 저장본에서만 뺍니다.','clean')+'</div><textarea class="cme-keywords" name="keywordPatterns" aria-label="제거할 키워드" placeholder="한 줄에 하나"></textarea></section>';
-        return original.replace('<div class="pane" data-pane="clean">','<div class="pane" data-pane="clean">'+extra).replace('</style>','</style><style data-cme-theme>'+CME.transcriptCss+'</style>');
+        return original.replace('<div class="pane" data-pane="clean">','<div class="pane" data-pane="clean">'+extra).replace('<p class="hint" data-format-hint></p>','<p class="hint" data-format-hint></p>'+CME.html.uiHtml()).replace('</style>','</style><style data-cme-theme>'+CME.transcriptCss+'</style>');
     }
     let openDialog = null;
     function openSaver() {
@@ -6442,7 +7520,7 @@ ${seg('tab', [['main', '기본', false, 'article'], ['clean', '청소', false, '
         const read = () => {
             const val = n => $(`[name="${n}"]`), radio = n => ($$(`[name="${n}"]`).find(el => el.checked) || {}).value;
             return {
-                ...opts, mode: radio('mode') || 'all', recent: Number(val('recent').value) || 50, from: Number(val('from').value) || 0, to: Number(val('to').value) || 0, format: radio('format') || 'txt',
+                ...opts, html: radio('format')==='html' ? (root.__wongosilRead?.() || CME.html.load()) : CME.html.load(), mode: radio('mode') || 'all', recent: Number(val('recent').value) || 50, from: Number(val('from').value) || 0, to: Number(val('to').value) || 0, format: radio('format') || 'txt',
                 info: val('info').checked, memory: val('memory').checked, stats: val('stats').checked, alts: val('alts').checked, split: val('split').checked, splitSize: Number(val('splitSize').value) || 1000, zip: val('zip').checked,
                 clean: { ...Object.fromEntries(CLEAN_KEYS.map(k => [k, val(`c-${k}`).checked])), codeFence: radio('c-codeFence') || 'keep', removeKeywords: val('c-removeKeywords').checked, keywordPatterns: val('keywordPatterns').value },
             };
@@ -6483,7 +7561,7 @@ ${seg('tab', [['main', '기본', false, 'article'], ['clean', '청소', false, '
         const onRoute = () => { if (!controller && routeChat()?.chatId !== route.chatId) close(); };
         const close = () => {
             window.removeEventListener('popstate', onRoute);
-            controller?.abort(); clearTimeout(settle); clearTimeout(disarm); openDialog = null;
+            disposeHtml(); controller?.abort(); clearTimeout(settle); clearTimeout(disarm); openDialog = null;
             v.classList.add('out'); setTimeout(() => host.remove(), 200);
             if (prevFocus?.isConnected) prevFocus.focus?.({ preventScroll: true });
         };
@@ -6541,6 +7619,22 @@ ${seg('tab', [['main', '기본', false, 'article'], ['clean', '청소', false, '
             const first = $('[name="tab"]:checked'), last = saveBtn.disabled ? closeBtn : saveBtn, a = root.activeElement;
             if (e.shiftKey && (!a || a === first || a === dlg)) { e.preventDefault(); last.focus(); }
             else if (!e.shiftKey && (!a || a === last)) { e.preventDefault(); first.focus(); }
+        });
+        const disposeHtml=CME.html.attach(root,{read,
+            async loadData(o,signal){
+                const fetched=await fetchMessages(route.chatId,{signal});
+                const {chat}=await fetchChat(route.chatId,{...o,info:true},signal);
+                const memories=o.memory?(await fetchMemories(route.chatId,{signal})).memories:[];
+                return {fetched,chat,memories,now:new Date()};
+            },
+            async render(data,o,signal){
+                if(routeChat()?.chatId!==route.chatId)throw new Error('다른 방으로 옮겨졌어요.');
+                const picked=pickTurns(o.mode,o,data.fetched,getCheckpoint(route.chatId)||{}),turns=structuredClone(picked.turns.slice(0,2));
+                if(!turns.length)throw new Error('고른 범위에 해당하는 턴이 없어요.');
+                cleanTurns(turns,cleaningFor(o),{alts:o.alts});
+                const list=CME.filterKeywords(turns,cleaningFor(o)),ctx={opts:o,now:data.now,chat:data.chat,memories:o.memory?data.memories:[],notes:picked.note,chatId:route.chatId,storyId:route.storyId,pageTitle:document.title};
+                return new Blob(await (o.html.layout==='original'?buildHtml(ctx,list,'',signal):buildWongosilHtml(ctx,list,'',signal)),{type:'text/html;charset=utf-8'});
+            }
         });
         document.body.appendChild(host);
         openDialog = host;
@@ -6607,6 +7701,7 @@ ${seg('tab', [['main', '기본', false, 'article'], ['clean', '청소', false, '
     else if (hasDom && window.__CT_TEST) window.__CT_TEST = hook;
 })();
 
+CME.ready();
 }
 function queueCompanions(){setTimeout(startCompanions,60);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queueCompanions,{once:true});else queueCompanions();
