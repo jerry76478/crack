@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         🪽 Wish RP Manager Core · CONTINUUM
 // @namespace    local.rp.context.manager
-// @version      1.5.2-continuum.23
+// @version      1.5.2-continuum.24
 // @description  Crack RP용 컨텍스트 주입·인지·자동 장기기억·자료집·전체 재구축을 하나로 관리합니다.
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-rp-manager-continuum.user.js
@@ -65,7 +65,7 @@
   // Storage IDs, ELR contract, strict AI commit validation and rollback formats are preserved.
  let WUI=null;
 
-  const SCRIPT_VERSION = '1.5.2-continuum.23';
+  const SCRIPT_VERSION = '1.5.2-continuum.24';
   const EDITION = 'core';
   const RUNTIME_HOST = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   const RUNTIME_ATTR = 'data-wish-rp-runtime';
@@ -16818,7 +16818,7 @@ const ContinuumSend20=(()=>{
   const pending=new WeakMap();let synchronous=null;
   function list(socket){let a=pending.get(socket);if(!a){a=[];pending.set(socket,a);}return a;}
   const original=W.WebSocket.prototype.send;
-  W.WebSocket.prototype.send=function(data){const entry=synchronous||(pending.get(this)||[]).find(e=>e.data===data&&!e.settled);if(entry)entry.nativeCalled=true;try{const result=original.call(this,data);if(entry)entry.sent=true;return result;}catch(e){if(entry)entry.error=e;throw e;}};
+  W.WebSocket.prototype.send=function(data){const entry=synchronous||(pending.get(this)||[]).find(e=>e.data===data&&!e.settled);if(entry)entry.nativeCalled=true;try{const result=original.call(this,data);if(entry){entry.sent=true;try{ContinuumEri24.sent(entry);}catch{}}return result;}catch(e){if(entry)entry.error=e;throw e;}};
   return {list,get synchronous(){return synchronous;},set synchronous(v){synchronous=v;},remove(socket,entry){entry.settled=true;const a=pending.get(socket);if(a){const i=a.indexOf(entry);if(i>=0)a.splice(i,1);if(!a.length)pending.delete(socket);}},size(socket){return pending.get(socket)?.length||0;}};
 })();
 
@@ -16920,6 +16920,7 @@ const c20PreparedSend=W.WebSocket.prototype.send;
 W.WebSocket.prototype.send=function(data){
   const parsed=parseFrame(data),rid=String(parsed?.payload?.chatId||''),room=state.currentRoom,ov=room?.pending?.cognitionOverrides;
   const entry={data,sent:false,nativeCalled:false,settled:false,ov,usedAt:Number(ov?.usedAt||0)},before=sendPreparationQueues.get(rid),socket=this;
+  entry.eri24=ContinuumEri24.reserve(room,parsed);
   ContinuumSend20.list(socket).push(entry);const prior=ContinuumSend20.synchronous;ContinuumSend20.synchronous=entry;
   let result;try{result=c20PreparedSend.call(socket,data);}catch(e){ContinuumSend20.remove(socket,entry);throw e;}finally{ContinuumSend20.synchronous=prior;}
   const after=sendPreparationQueues.get(rid);
@@ -21205,6 +21206,15 @@ DLG.roomCopy=d=>c23AppendSheet(c23OldCopy(d),'<section class="c23-panel">'+tog('
 {const style=document.getElementById('wish-c23-style');if(style)style.textContent+='#wish-rp-root .c23-copy .m3-copy-steps span{font-size:14px;line-height:23px;font-weight:400;color:var(--m3-fg2)}#wish-rp-root .c23-copy>p.m3-muted>b{font-size:13px;line-height:18px;font-weight:400}';}
 ui.c23SplitCapture=p=>{const d=S.dialogs.find(d=>d.type==='loreSplit'&&d.c23SplitActive&&d.pack?.scopeId===p.copyOrigin?.sourcePackId);if(d)d.c23SplitNext=p;};
 
+
+// Insert into detached renderer HTML before the existing DOM diff.
+const c24Settings=vSettings;
+vSettings=function(...args){const html=c24Settings(...args),t=document.createElement('template');t.innerHTML=html;const panel=t.content.querySelector('[data-key="recall-settings"]');if(!panel)return html;const cfg=ContinuumEri24.config(state.currentRoom);panel.insertAdjacentHTML('beforeend','<div class="c24-retrieval" data-key="c24-retrieval">'+tog('쿨다운·감쇠','eri24.enabled',cfg.enabled)+c16Text('자리가 모자랄 때, 연달아 들어간 카드는 쉬게 하고 오래 안 나온 카드를 앞으로 당김. 저장된 기억은 바뀌지 않음')+field('쿨다운 턴',inp('eri24.cooldownTurns',String(cfg.cooldownTurns),'3','number'))+field('AI 기억 턴',inp('eri24.aiMemoryTurns',String(cfg.aiMemoryTurns),'3','number'))+'</div>');return t.innerHTML;};
+for(const key of ['enabled','cooldownTurns','aiMemoryTurns'])AD.bind['eri24.'+key]=async value=>{await ContinuumEri24.set(state.currentRoom,key,value);WUIRefreshSettings();paint();};
+function c24Reasons(){const view=ContinuumEri24.view(state.currentRoom);return view.enabled&&view.reasons.length?'<div class="c24-retrieval" data-key="c24-reasons">'+view.reasons.map(x=>c16Text(x)).join('')+'</div>':'';}
+const c24Summary=injectionSummary,c24DeliveryCards=deliveryCards;injectionSummary=function(...args){return c24Summary(...args)+c24Reasons();};deliveryCards=function(...args){return c24DeliveryCards(...args)+c24Reasons();};
+if(!document.getElementById('wish-c24-style')){const style=document.createElement('style');style.id='wish-c24-style';style.textContent='#wish-rp-root .c24-retrieval{display:flex;flex-direction:column;gap:12px;min-width:0;margin-top:12px}#wish-rp-root .c24-retrieval .m3-toggle{min-height:44px}#wish-rp-root .c24-retrieval .m3-field{min-width:0}#wish-rp-root .c24-retrieval>label:not(.m3-toggle)>span{font-size:14px!important;line-height:23px!important;font-weight:400!important}#wish-rp-root .c24-retrieval input{min-height:44px;width:100%;box-sizing:border-box}#wish-rp-root .c24-retrieval .c16-note{font-size:13px!important;line-height:18px!important;color:var(--m3-fg2);white-space:normal;overflow-wrap:anywhere}';document.head.append(style);}
+
 return { sendButton:findSendAction, mountMonitor, boot, open, close, toggle: () => (S.open ? close() : open()), paint, toast, job, openSheet, closeSheet, confirm: ask, isOpen: () => S.open, ui };
 }
   const WishHeldUI=(()=>{
@@ -22128,7 +22138,7 @@ WUIAutoSave.install();
   queueQuickItemToggle=function(key,enabled){const r=state.currentRoom;if(r?.pending)for(const p of activeLorePacks(r))for(const e of p.entries||[]){if('lore:'+JSON.stringify([p.scopeId,e.id])===key&&ContinuumLore.mode(r,e.id)==='manual'){if(enabled)ContinuumLore.choose(r,e.id);else if(ContinuumLore.get(r)[e.id])delete ContinuumLore.get(r)[e.id].manualTurn;}}return c15QuickToggle(key,enabled);};
   const c15Unranked=unrankedLoreRecallItems,c15Score=scoreLoreEntries,c15Pending=makeLorePendingItem,c15Current=v2CurrentItems,c15Snapshot=snapshotSelectedItems;
   unrankedLoreRecallItems=function(r,...args){return ContinuumLore.filter(r,c15Unranked(r,...args));};
-  scoreLoreEntries=function(r,q,sem,all=false){const rows=c15Score(r,q,sem,all).filter(x=>ContinuumLore.allowed(r,x.entry.id));const forced=activeLorePacks(r).flatMap(p=>(p.entries||[]).filter(e=>e.enabled!==false&&e.type!=='speech'&&!e.speechRule&&['always','manual'].includes(ContinuumLore.mode(r,e.id))&&ContinuumLore.allowed(r,e.id)).map(e=>({pack:p,entry:e,anchor:true,score:100,keywordScore:0,semanticScore:0,matchedTerms:[]})));if(!forced.length)return rows;const ids=new Set(forced.map(x=>x.entry.id));return [...forced,...rows.filter(x=>!ids.has(x.entry.id))];};
+  scoreLoreEntries=function(r,q,sem,all=false){const rows=c15Score(r,q,sem,all).filter(x=>ContinuumLore.allowed(r,x.entry.id));const forced=activeLorePacks(r).flatMap(p=>(p.entries||[]).filter(e=>e.enabled!==false&&e.type!=='speech'&&!e.speechRule&&['always','manual'].includes(ContinuumLore.mode(r,e.id))&&ContinuumLore.allowed(r,e.id)).map(e=>({pack:p,entry:e,anchor:true,score:100,keywordScore:0,semanticScore:0,matchedTerms:[]})));if(!forced.length)return ContinuumEri24.score(r,q,rows);const ids=new Set(forced.map(x=>x.entry.id));return ContinuumEri24.score(r,q,[...forced,...rows.filter(x=>!ids.has(x.entry.id))]);};
   makeLorePendingItem=function(row,...args){const i=c15Pending(row,...args);return state.currentRoom?ContinuumLore.filter(state.currentRoom,[i])[0]||i:i;};
   snapshotSelectedItems=function(r,...args){return ContinuumLore.filter(r,c15Snapshot(r,...args));};
   v2CurrentItems=function(r,...args){return ContinuumLore.filter(r,c15Current(r,...args));};
@@ -22455,5 +22465,65 @@ roomCopyCommitLocal=async function(session,preview){if(preview.c23History!==(ses
 WUI_ADAPTER.act.roomCopyPreview=roomCopyPreview;
 
 const c23Split=wishApplyLoreSplit;wishApplyLoreSplit=async function(id){const d=WUI.ui.dlg(id);if(!d)return c23Split(id);const before=state.db;d.c23SplitActive=true;state.db=ContinuumBD.deferredSplit(before,d);try{const result=await c23Split(id);await loadLorePackCache(true);return result;}finally{state.db=before;delete d.c23SplitActive;delete d.c23SplitNext;}};WUI_ADAPTER.act.loreSplitApply=wishApplyLoreSplit;
+
+
+// Local retrieval policy only. All-fit/native retrieval bindings stay unchanged.
+const ContinuumEri24=(()=>{
+ const POLICY=1,indices=new Map(),scores=new Map(),plans=new Map(),digests=new WeakMap(),identities=new WeakMap();
+ const halfLives=Object.freeze({identity:15,character:15,relationship:8,promise:5,event:4,scene:2,first_encounter:8,other:6});
+ const integer=(v,d,max=100)=>v!=null&&Number.isInteger(Number(v))&&Number(v)>=0?Math.min(max,Number(v)):d;
+ const key=(pack,id)=>'lore:'+JSON.stringify([String(pack),String(id)]);
+ const rowKey=row=>{let x=identities.get(row.entry);if(!x||x.pack!==row.pack.scopeId){x={pack:row.pack.scopeId,key:key(row.pack.scopeId,row.entry.id)};identities.set(row.entry,x);}return x.key;};
+ function normalize(v={}){const delivery={};for(const [id,x]of Object.entries(v?.delivery||{})){if(!id.startsWith('lore:')||!x||!Number.isInteger(x.lastInjectedTurn)||x.lastInjectedTurn<0)continue;delivery[id]={lastMention:integer(x.lastMention,0,100000),lastInjectedTurn:x.lastInjectedTurn,digest:/^[a-z0-9]{1,32}$/i.test(String(x.digest||''))?x.digest:'',policyRevision:integer(x.policyRevision,POLICY),userKey:typeof x.userKey==='string'?x.userKey:''};}return {enabled:v?.enabled===true,cooldownTurns:integer(v?.cooldownTurns,3),aiMemoryTurns:integer(v?.aiMemoryTurns,3),policyRevision:POLICY,delivery};}
+ function config(r){const m=ContinuumManager.get(r);return m.eri||(m.eri=normalize());}
+ function clear(){indices.clear();scores.clear();plans.clear();}
+ function ordinal(r){
+  const rid=String(apiChatIdOf(r)),record=ContinuumHistory20.records.get(rid),frame=ContinuumLore.token(r);
+  if(!record||record.scope!==ContinuumHistory20.scope(rid)||ExternalReplay.pending(rid))return null;
+  let ix=indices.get(rid);const messages=record.messages;
+  if(!ix||ix.scope!==record.scope||!record.ids.has(ix.head)){ix={scope:record.scope,head:'',seq:0,count:0,users:new Map()};indices.set(rid,ix);while(indices.size>2)indices.delete(indices.keys().next().value);}
+  if(ix.seq!==record.seq){let stop=0;if(ix.head){for(;stop<messages.length&&String(messageIdOf(messages[stop]))!==ix.head;stop++);if(stop===messages.length)return null;}else stop=messages.length;
+   // Initial preparation scans references once. Later updates visit only the new head.
+   for(let i=Math.min(stop,messages.length-1);i>=0;i--)if(messageRoleOf(messages[i])==='user'&&messageRoleOf(messages[i-1])==='assistant'){const id=String(messageIdOf(messages[i]));if(!ix.users.has(id))ix.users.set(id,++ix.count);}
+   ix.head=String(messageIdOf(messages[0])||'');ix.seq=record.seq;
+  }
+  const stable=frame.stable; if(!Array.isArray(stable))return null;
+  const user=stable.find(m=>messageRoleOf(m)==='user');if(!user)return 0;const newestKey=String(messageIdOf(user));
+  if(!ix.users.has(newestKey)){let boundary=0;for(;boundary<stable.length;boundary++)if(messageRoleOf(stable[boundary])==='user'&&ix.users.has(String(messageIdOf(stable[boundary]))))break;if(boundary===stable.length)return null;for(let i=boundary-1;i>=0;i--)if(messageRoleOf(stable[i])==='user'&&messageRoleOf(stable[i-1])==='assistant'){const id=String(messageIdOf(stable[i]));if(!ix.users.has(id))ix.users.set(id,++ix.count);}}
+  return ix.users.get(newestKey)??null;
+ }
+ function reinjection(gap,type,aiMemoryTurns=3){if(gap<=aiMemoryTurns)return 0;return (1-Math.exp(-0.5*(gap-aiMemoryTurns)))*Math.exp(-gap*Math.LN2/(halfLives[type]||6));}
+ function digest(entry){let d=digests.get(entry);if(!d){d=aiHashTiny(loreTextAtLevel(entry,'full'));digests.set(entry,d);}return d;}
+ function exempt(r,row,old,modes,identity){const e=row.entry,choice=r.pending?.quickIncludes?.[identity],mode=modes[e.id]?.mode;return row.anchor||e.anchor||row.managerRequired||e.managerRequired||e.manualInjectionOverride==='on'||old?.managerRequired||old?.manualInjectionOverride==='on'||old?.quickChoice?.include||choice===true||choice?.include||mode==='always'||mode==='manual';}
+ function score(r,q,rows){
+  const cfg=r?.continuum?.manager?.eri;if(!cfg?.enabled)return rows;
+  const turn=ordinal(r);if(turn===null){plans.set(String(apiChatIdOf(r)),{status:'확정 턴 준비 중',reasons:[],mentions:[]});return rows;}
+  const rid=String(apiChatIdOf(r)),reasons=[],reasonGroups=new Map(),mentions=[],out=[],previous=new Map((r.pending?.items||[]).map(i=>[pendingItemIdentity(i),i])),modes=ContinuumManager.on()?r.continuum?.manager?.loreMeta||{}:{};const reason=(id,text)=>{let x=reasonGroups.get(text);if(!x){x={id,reason:text,count:0};reasonGroups.set(text,x);reasons.push(x);}x.count++;};let cache=scores.get(rid);if(!cache){cache=new Map();scores.set(rid,cache);while(scores.size>2)scores.delete(scores.keys().next().value);}
+  for(const row of rows){const id=rowKey(row),saved=cfg.delivery[id],last=saved&&(!saved.userKey||indices.get(rid)?.users.get(saved.userKey)===saved.lastInjectedTurn)?saved:null;if(row.keywordScore>0)mentions.push(id);if(exempt(r,row,previous.get(id),modes,id)){out.push(row);continue;}
+   const gap=last?Math.max(0,turn-last.lastInjectedTurn):null;
+   if(gap!==null&&gap<=cfg.cooldownTurns){reason(id,'쉬는 중('+(cfg.cooldownTurns-gap+1)+'턴 남음)');continue;}
+   const mention=last?.lastMention??turn,age=Math.max(0,turn-mention);
+   let c=cache.get(id);if(!c||c.entry!==row.entry||c.age!==age||c.memory!==cfg.aiMemoryTurns||c.base!==row.score||c.type!==row.entry.type){const boost=reinjection(age,row.entry.type,cfg.aiMemoryTurns);c={entry:row.entry,age,memory:cfg.aiMemoryTurns,base:row.score,type:row.entry.type,boost,score:row.score*(1+0.5*boost)};cache.set(id,c);}
+   out.push(c.boost?{...row,score:c.score,c24Reason:'오래 안 나옴'}:row);if(c.boost)reason(id,'오래 안 나옴');
+  }
+  // Native order already resolves ties. Sort only if the added multiplier changes it.
+  const compare=(a,b)=>Number(b.anchor)-Number(a.anchor)||b.score-a.score;let ordered=true;for(let i=1;i<out.length;i++)if(compare(out[i-1],out[i])>0){ordered=false;break;}if(!ordered)out.sort(compare);plans.set(rid,{status:'한도 초과 · 쿨다운·감쇠',turn,reasons,mentions});while(plans.size>2)plans.delete(plans.keys().next().value);return out;
+ }
+ function reserve(r,parsed){if(!r?.continuum?.manager?.eri?.enabled||!parsed||parsed.event!=='send'||String(parsed.payload?.chatId)!==String(apiChatIdOf(r)))return null;return {room:r,pending:r.pending,route:state.routeEpoch,restore:localRestoreEpoch,replay:ExternalReplay.revision(apiChatIdOf(r))};}
+ function sent(entry){const p=entry?.eri24;if(!p||!entry.sent)return;const r=p.room,rid=String(apiChatIdOf(r));if(state.currentRoom!==r||r.pending!==p.pending||p.route!==state.routeEpoch||p.restore!==localRestoreEpoch||p.replay!==ExternalReplay.revision(rid)||ExternalReplay.pending(rid))return;
+  const turn=ordinal(r),cfg=config(r),delivery=r.pending?.delivery;if(turn===null||!delivery||r.pending.lastSyncError)return;
+  const items=new Map();for(const message of delivery.messages||[])if(message.verified)for(const item of message.items||[])if(item.entryId&&item.packId&&String(message.contextBlock||'').includes(contextItemSection(item)))items.set(pendingItemIdentity(item),item);
+  const userKey=ContinuumLore.token(r).stable?.find(m=>messageRoleOf(m)==='user');
+  let changed=false;for(const [id,item]of items){const row=activeLorePacks(r).find(p=>p.scopeId===item.packId)?.entries.find(e=>e.id===item.entryId);if(!row)continue;const hash=digest(row),old=cfg.delivery[id];if(old?.lastInjectedTurn===turn&&old.digest===hash)continue;cfg.delivery[id]={lastMention:plans.get(rid)?.mentions?.includes(id)?turn:old?.lastMention??turn,lastInjectedTurn:turn,digest:hash,policyRevision:POLICY,userKey:userKey?String(messageIdOf(userKey)):''};changed=true;}
+  if(changed){scores.delete(rid);void saveRoom(r).catch(()=>{});}
+ }
+ async function set(r,k,v){if(!['enabled','cooldownTurns','aiMemoryTurns'].includes(k))throw Error('알 수 없는 회수 설정');if(k!=='enabled'&&(!Number.isInteger(Number(v))||Number(v)<0||Number(v)>100))throw Error('턴 수는 0~100입니다.');if(k==='enabled'&&v===true&&!ContinuumHistory20.records.has(String(apiChatIdOf(r))))await WishHistory.read(r);const cfg=config(r);cfg[k]=k==='enabled'?v===true:Number(v);scores.delete(String(apiChatIdOf(r)));plans.delete(String(apiChatIdOf(r)));await saveRoom(r);}
+ function view(r){const cfg=r?.continuum?.manager?.eri,p=plans.get(String(apiChatIdOf(r))),allfit=r?.pending?.recallPlan?.method==='all-fit';return {enabled:cfg?.enabled===true,status:cfg?.enabled?(allfit?'모두 포함':p?.status||'한도 초과 시 적용'):'꺼짐',reasons:cfg?.enabled&&!allfit?[...new Set((p?.reasons||[]).map(x=>x.reason))]:[]};}
+ return {POLICY,normalize,config,ordinal,reinjection,halfLives,score,reserve,sent,set,view,clear,scores,plans,indices,key};
+})();
+const c24Normalize=ContinuumManager.normalize;ContinuumManager.normalize=function(v={}){const m=c24Normalize(v);m.eri=ContinuumEri24.normalize(v.eri);return m;};
+const c24Copy=copyContinuumReferences;copyContinuumReferences=function(target,source,packs,...args){const result=c24Copy(target,source,packs,...args),cfg=ContinuumEri24.normalize(source.continuum?.manager?.eri);cfg.delivery={};ContinuumManager.get(target).eri=cfg;return result;};
+const c24Restore=restoreManagerBackup;restoreManagerBackup=async function(...args){ContinuumEri24.clear();try{return await c24Restore(...args);}finally{ContinuumEri24.clear();}};
+const c24Bridge=c23Window.__WishReferenceBridge,c24V3=Object.freeze({...c24Bridge,version:3,capabilities:Object.freeze({...c24Bridge.capabilities,loreCooldown:true}),read(chatId){const out=c24Bridge.read(chatId);return out.ok?{...out,loreRetrieval:ContinuumEri24.view(state.currentRoom)}:out;}});Object.defineProperty(c23Window,'__WishReferenceBridge',{value:c24V3,configurable:true});Object.defineProperty(c23Window,'__WishReferenceReady',{value:Promise.resolve(c24V3),configurable:true});
 
 })();
