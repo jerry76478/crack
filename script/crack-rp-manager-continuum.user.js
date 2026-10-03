@@ -22499,7 +22499,7 @@ const ContinuumEri24=(()=>{
   const cfg=r?.continuum?.manager?.eri;if(!cfg?.enabled)return rows;
   const turn=ordinal(r);if(turn===null){plans.set(String(apiChatIdOf(r)),{status:'확정 턴 준비 중',reasons:[],mentions:[]});return rows;}
   const rid=String(apiChatIdOf(r)),reasons=[],reasonGroups=new Map(),mentions=[],out=[],previous=new Map((r.pending?.items||[]).map(i=>[pendingItemIdentity(i),i])),modes=ContinuumManager.on()?r.continuum?.manager?.loreMeta||{}:{};const reason=(id,text)=>{let x=reasonGroups.get(text);if(!x){x={id,reason:text,count:0};reasonGroups.set(text,x);reasons.push(x);}x.count++;};let cache=scores.get(rid);if(!cache){cache=new Map();scores.set(rid,cache);while(scores.size>2)scores.delete(scores.keys().next().value);}
-  for(const row of rows){const id=rowKey(row),saved=cfg.delivery[id],last=saved&&(!saved.userKey||indices.get(rid)?.users.get(saved.userKey)===saved.lastInjectedTurn)?saved:null;if(row.keywordScore>0)mentions.push(id);if(exempt(r,row,previous.get(id),modes,id)){out.push(row);continue;}
+  for(const row of rows){const id=rowKey(row),saved=cfg.delivery[id],last=saved&&saved.lastInjectedTurn<=turn&&(!saved.userKey||indices.get(rid)?.users.get(saved.userKey)===saved.lastInjectedTurn)?saved:null;if(row.keywordScore>0)mentions.push(id);if(exempt(r,row,previous.get(id),modes,id)){out.push(row);continue;}
    const gap=last?Math.max(0,turn-last.lastInjectedTurn):null;
    if(gap!==null&&gap<=cfg.cooldownTurns){reason(id,'쉬는 중('+(cfg.cooldownTurns-gap+1)+'턴 남음)');continue;}
    const mention=last?.lastMention??turn,age=Math.max(0,turn-mention);
