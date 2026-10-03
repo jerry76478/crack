@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         📱 Crack Mobile Utility (모바일 유틸 합본) 커스텀
 // @namespace    crack-mobile-utility
-// @version      4.6.0.2
+// @version      4.6.0.3
 // @description  4.6.0: 입력창 아래 버튼 개별 숨기기, 9/30 크랙 개편 대응(분기 방 배지·전송 감지·초안 정리·캐릭터 채팅·유저노트 길게 눌러 선택), 긴 방·홈·방 이동 반복 작업과 메모리 누수 최적화, 라디오존데 복구(CDN 직접 조회·신규 모델 자동 추가·GM.xmlHttpRequest 호환)와 줄 간격 고정, 미니사이드바 문체 변경, 정보바 숫자 애니메이션, 전체화면·입력창 펼치기 SVG 아이콘. 허브 SVG 복원, 모델 맨 왼쪽 배치 및 전환 버튼 간격 수정. 미니사이드바 다크/라이트·소설/채팅 전환. 코드블록 자동 줄바꿈, 라이트 테마 코드·보조 글자 대비 수정, 테마 판별 통일, DOM·캐시·라디오존데 반복 처리 최적화. 모바일용 합본: 입력창 설정·초안 자동 저장·입력 글자수 카운터·우측 상단 펼치기 버튼, 상단바 접기, 빈 전송 방지, 엔딩 버튼 숨김, 와이드뷰, 글씨/이미지 크기, 썸네일 움짤 정지, 라디오존데 인라인, 대시보드 원본식 정보바/미니사이드바(게임 HUD·모바일 삽화·Wish RP Manager 바로가기 포함), 글자수·시간 배지·답변별 모델·실측 크래커, 메시지 길게 누르기 메뉴, 로그 캡처, 외부 테마 자동 공존
 // @author       Gia
 // @downloadURL  https://raw.githubusercontent.com/jerry76478/crack/main/script/crack-mobile-utility.user.js
@@ -32,7 +32,7 @@
 
 (() => {
     'use strict';
-    const VERSION = '4.6.0.2';
+    const VERSION = '4.6.0.3';
     const CMU_RUNTIME_ATTR = 'data-cmu-runtime-version';
     const CMU_RUNTIME_KEY = '__CRACK_MOBILE_UTILITY_RUNTIME__';
     const runtimeRoot = document.documentElement;
@@ -2107,13 +2107,13 @@
     }
 
 
-    /* 4.6.0.2 우리 색: 크랙 주황 + 미색(밝음) / 먹색(어두움) — WRMC 새 화면과 같은 색표.
+    /* 4.6.0.3 우리 색: 결정 49 · 웜 그레이(밝음) / 차콜(어두움) — WRMC 새 화면과 같은 색표.
        원본 토큰 블록은 그대로 두고, 같은 선택자를 뒤에 다시 써서 색 값만 덮는다. */
-    #cmu-settings-panel, #cmu-settings-scrim { --bg:#F6F3EF;--card:#FFFEFC;--cardh:#F1EEE9;--tx:#242424;--sub:#606060;--bd:#E1DCD5;--icobg:#F1EEE9;--ac:#FF4431;--acf:#BF3322;--acbg:#FFF0E9;--pbg:rgba(246,243,239,.97);--indbg:#FFFEFC; }
-    @media (prefers-color-scheme: dark) { #cmu-settings-panel, #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; } }
-    html[data-theme="dark"] #cmu-settings-panel, html[data-theme="dark"] #cmu-settings-scrim, body[data-theme="dark"] #cmu-settings-panel, body[data-theme="dark"] #cmu-settings-scrim, html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; }
-    html[data-theme="light"] #cmu-settings-panel, html[data-theme="light"] #cmu-settings-scrim, body[data-theme="light"] #cmu-settings-panel, body[data-theme="light"] #cmu-settings-scrim, html[data-cmu-theme="light"] #cmu-settings-panel, html[data-cmu-theme="light"] #cmu-settings-scrim { --bg:#F6F3EF;--card:#FFFEFC;--cardh:#F1EEE9;--tx:#242424;--sub:#606060;--bd:#E1DCD5;--icobg:#F1EEE9;--ac:#FF4431;--acf:#BF3322;--acbg:#FFF0E9;--pbg:rgba(246,243,239,.97);--indbg:#FFFEFC; }
-    html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#171513;--card:#24211E;--cardh:#312C27;--tx:#ECECEC;--sub:#BDBDBD;--bd:#48413A;--icobg:#312C27;--ac:#FF4431;--acf:#FF9B88;--acbg:#3D2922;--pbg:rgba(23,21,19,.96);--indbg:#3D2922; }
+    #cmu-settings-panel, #cmu-settings-scrim { --bg:#F8F7F4;--card:#FFFFFF;--cardh:#F1F0EC;--tx:#242424;--sub:#5F5F5F;--bd:#E3E1DC;--icobg:#F1F0EC;--ac:#BE4422;--acf:#BE4422;--acbg:#FCEDE7;--pbg:rgba(248,247,244,.97);--indbg:#FFFFFF; }
+    @media (prefers-color-scheme: dark) { #cmu-settings-panel, #cmu-settings-scrim { --bg:#131315;--card:#1C1C1F;--cardh:#26262A;--tx:#ECECEC;--sub:#B4B4BA;--bd:#38383E;--icobg:#26262A;--ac:#E86542;--acf:#E86542;--acbg:#2F201B;--pbg:rgba(19,19,21,.96);--indbg:#2F201B; } }
+    html[data-theme="dark"] #cmu-settings-panel, html[data-theme="dark"] #cmu-settings-scrim, body[data-theme="dark"] #cmu-settings-panel, body[data-theme="dark"] #cmu-settings-scrim, html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#131315;--card:#1C1C1F;--cardh:#26262A;--tx:#ECECEC;--sub:#B4B4BA;--bd:#38383E;--icobg:#26262A;--ac:#E86542;--acf:#E86542;--acbg:#2F201B;--pbg:rgba(19,19,21,.96);--indbg:#2F201B; }
+    html[data-theme="light"] #cmu-settings-panel, html[data-theme="light"] #cmu-settings-scrim, body[data-theme="light"] #cmu-settings-panel, body[data-theme="light"] #cmu-settings-scrim, html[data-cmu-theme="light"] #cmu-settings-panel, html[data-cmu-theme="light"] #cmu-settings-scrim { --bg:#F8F7F4;--card:#FFFFFF;--cardh:#F1F0EC;--tx:#242424;--sub:#5F5F5F;--bd:#E3E1DC;--icobg:#F1F0EC;--ac:#BE4422;--acf:#BE4422;--acbg:#FCEDE7;--pbg:rgba(248,247,244,.97);--indbg:#FFFFFF; }
+    html[data-cmu-theme="dark"] #cmu-settings-panel, html[data-cmu-theme="dark"] #cmu-settings-scrim { --bg:#131315;--card:#1C1C1F;--cardh:#26262A;--tx:#ECECEC;--sub:#B4B4BA;--bd:#38383E;--icobg:#26262A;--ac:#E86542;--acf:#E86542;--acbg:#2F201B;--pbg:rgba(19,19,21,.96);--indbg:#2F201B; }
 
     /* 뒤 배경 어둡게 — 클릭은 통과(pointer-events:none)라서 바깥 터치로 닫기 동작은 기존과 같다 */
     #cmu-settings-scrim {
@@ -2956,9 +2956,9 @@
       overflow-y: auto;
       box-sizing: border-box;
       padding: 5px;
-      border: 1px solid #48413A;
+      border: 1px solid #38383E;
       border-radius: 11px;
-      background: rgba(36,33,30,.97);
+      background: rgba(28,28,31,.97);
       color: #ECECEC;
       box-shadow: 0 12px 34px rgba(0,0,0,.48);
       backdrop-filter: blur(14px);
@@ -2988,7 +2988,7 @@
       transform: none;
     }
     #cmu-compact-model-menu button.is-selected {
-      background: #3D2922;
+      background: #2F201B;
       color: #ECECEC;
     }
     #cmu-compact-model-menu .cmu-compact-model-icon {
@@ -3019,25 +3019,25 @@
     #cmu-compact-model-menu .cmu-compact-model-check {
       flex: 0 0 12px;
       width: 12px;
-      color: #FF9B88;
+      color: #E86542;
       font-size: 13px;
       font-weight: 900;
       text-align: center;
     }
     body[data-theme="light"] #cmu-compact-model-menu,
     html[data-theme="light"] #cmu-compact-model-menu {
-      border-color: #E1DCD5;
-      background: rgba(255,254,252,.98);
+      border-color: #E3E1DC;
+      background: rgba(255,255,255,.98);
       color: #242424;
       box-shadow: 0 12px 34px rgba(0,0,0,.22);
     }
     body[data-theme="light"] #cmu-compact-model-menu button.is-selected,
     html[data-theme="light"] #cmu-compact-model-menu button.is-selected {
-      background: #FFF0E9;
+      background: #FCEDE7;
       color: #242424;
     }
     body[data-theme="light"] #cmu-compact-model-menu .cmu-compact-model-check,
-    html[data-theme="light"] #cmu-compact-model-menu .cmu-compact-model-check { color: #BF3322; }
+    html[data-theme="light"] #cmu-compact-model-menu .cmu-compact-model-check { color: #BE4422; }
 
 
     /* 4.3.0.8: 원본 행 직접 선택은 유지하고, 모델 팝업만 더 작고 단일 박스로 정리. */
@@ -9208,7 +9208,7 @@
         ['modelButton', '모델'], ['themeButton', '다크/라이트'], ['episodeModeButton', '소설/채팅'],
         ['guideButton', '가이드'], ['profileButton', '프로필'], ['profileBoxButton', '프로필 박스'], ['noteButton', '노트'],
         ['proseStyleButton', '문체'], ['outputButton', '출력'], ['summaryButton', '요약'], ['imageButton', '이미지'], ['archiveButton', '보관함'],
-        ['roomBackgroundButton', '이미지 테마'], ['scenePainterButton', '모바일 삽화'], ['wishManagerButton', 'Wish RP'], ['guideManagerButton', '지침 관리'], ['sceneBlurButton', 'CSP 테마'],
+        ['roomBackgroundButton', '이미지 테마'], ['scenePainterButton', '모바일 삽화'], ['wishManagerButton', 'Wish RP'], ['wongosilButton', '원고실'], ['guideManagerButton', '지침 관리'], ['sceneBlurButton', 'CSP 테마'],
         ['startButton', '시작'], ['loreButton', '로어'], ['translatorButton', '번역'], ['aiSummaryButton', 'AI 요약'], ['gameHudButton', '게임 HUD']
     ];
     const SIDE_PART_ICON_KEYS = Object.freeze({
@@ -9227,6 +9227,7 @@
         roomBackgroundButton: 'roomBackground',
         scenePainterButton: 'scenePainter',
         wishManagerButton: 'wishManager',
+        wongosilButton: 'wongosil',
         guideManagerButton: 'guideManager',
         sceneBlurButton: 'sceneBlur',
         startButton: 'start',
@@ -10093,7 +10094,7 @@
             ? `
         <div class="sec">미니 사이드바</div>
         ${qCard(`
-          ${qSwitch('dashboardSidebar', '미니사이드바 표시', '모델 · 가이드 · 노트 · 로어 · 모바일 삽화 · Wish RP · 게임 HUD', { group: 'g-side' })}
+          ${qSwitch('dashboardSidebar', '미니사이드바 표시', '모델 · 가이드 · 노트 · 로어 · 모바일 삽화 · Wish RP · 원고실 · 게임 HUD', { group: 'g-side' })}
           ${qChipWrap('g-side', sideRows, !!settings.dashboardSidebar)}
         `)}`
             : '';
@@ -11684,6 +11685,7 @@
         roomBackgroundButton: true,
         scenePainterButton: true,
         wishManagerButton: true,
+        wongosilButton: true,
         guideManagerButton: true,
         sceneBlurButton: true,
         startButton: true,
@@ -11988,6 +11990,7 @@
         gameHud: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="chud-btn-icon chud-game-hud-icon" aria-hidden="true"><path d="M7.2 7.6h9.6c2.15 0 3.62 1.42 4.12 4l.7 3.62c.36 1.88-.54 3.18-1.9 3.18-.8 0-1.5-.38-2.08-1.06l-1.24-1.44H7.6l-1.24 1.44c-.58.68-1.28 1.06-2.08 1.06-1.36 0-2.26-1.3-1.9-3.18l.7-3.62c.5-2.58 1.97-4 4.12-4z"></path><path d="M7.2 10.2v3.6M5.4 12h3.6"></path><circle cx="16.25" cy="10.9" r=".82" fill="currentColor" stroke="none"></circle><circle cx="18.2" cy="13.05" r=".82" fill="currentColor" stroke="none"></circle></svg>',
         scenePainter: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="chud-btn-icon chud-scene-painter-icon" aria-hidden="true"><path d="M14.7 4.2 19.8 9.3"></path><path d="m13.5 5.4 5.1 5.1-8.35 8.35-5.95 1.2 1.2-5.95z"></path><path d="m5.5 14.1 4.4 4.4"></path><path d="M15.8 3.1c.74-.74 1.94-.74 2.68 0l2.42 2.42c.74.74.74 1.94 0 2.68l-2.3 2.3-5.1-5.1z"></path></svg>',
         wishManager: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="chud-btn-icon chud-wish-manager-icon" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>',
+        wongosil: '<svg width="15.5" height="15.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" class="chud-btn-icon chud-wongosil-icon" aria-hidden="true"><path d="M13 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8M7 8h4M7 12h3M7 16h8M13 12l1-4 5-5a2.1 2.1 0 0 1 3 3l-5 5-4 1ZM18 4l3 3"></path></svg>',
         guideManager: '<svg class="chud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5h6v2.2a.8.8 0 0 1-.8.8H9.8a.8.8 0 0 1-.8-.8z"/><path d="M8.5 12h7"/><path d="M8.5 16h5"/></svg>',
     };
     function isOwnElement(el) {
@@ -12570,6 +12573,14 @@
         showToast('Wish RP Manager 준비 중 · 잠시 후 자동으로 열림');
         return true;
     }
+    function openWongosilLite() {
+        if (document.documentElement?.hasAttribute('data-crack-wongosil-ready')) {
+            document.dispatchEvent(new CustomEvent('crack-wongosil:open', { detail: { tool: 'edit' } }));
+            return true;
+        }
+        showToast('크랙 원고실이 없거나 준비 중이에요');
+        return false;
+    }
     function refreshSideAvailability(force = false) {
         const now = Date.now();
         const age = now - Number(DASH_SIDE.availableAt || 0);
@@ -12597,6 +12608,7 @@
             gameHudButton: isGameHudInstalledLite(),
             scenePainterButton: isMobileScenePainterInstalledLite(),
             wishManagerButton: isWishRpManagerInstalledLite(),
+            wongosilButton: true,
             guideManagerButton: isGuideManagerInstalledLite(),
             roomBackgroundButton: isCustomRoomBackgroundInstalledLite(),
             sceneBlurButton: isScenePainterBackgroundInstalledLite(),
@@ -12769,6 +12781,7 @@
     }
     cmuListen(document, 'crack-ai-summary:ready', refreshIntegratedSideButtonsLite);
     cmuListen(document, 'wish-rp-manager:ready', refreshIntegratedSideButtonsLite);
+    cmuListen(document, 'crack-wongosil:ready', refreshIntegratedSideButtonsLite);
     let cmuSideRouteProbeToken = 0;
     function scheduleIntegratedSideButtonsRouteRefreshLite() {
         if (!settings.dashboardSidebar)
@@ -13915,6 +13928,7 @@
                 roomBackgroundButton: makeSideButton('roomBackgroundButton', 'chud-room-bg-btn', '일반 이미지 테마 설정', SIDE_ICON.roomBackground, () => openExternalThemeSettingsLite('custom-room')),
                 scenePainterButton: makeSideButton('scenePainterButton', 'chud-scene-painter-btn', 'AI 삽화 생성 · 모바일 Scene Painter', SIDE_ICON.scenePainter, openMobileScenePainterLite),
                 wishManagerButton: makeSideButton('wishManagerButton', 'chud-wish-manager-btn', 'Wish RP Manager', SIDE_ICON.wishManager, openWishRpManagerLite),
+                wongosilButton: makeSideButton('wongosilButton', 'chud-wongosil-btn', '크랙 원고실', SIDE_ICON.wongosil, openWongosilLite),
                 guideManagerButton: makeSideButton('guideManagerButton', 'chud-guide-manager-btn', '지침 관리', SIDE_ICON.guideManager, openGuideManagerLite),
                 sceneBlurButton: makeSideButton('sceneBlurButton', 'chud-scene-blur-btn', 'CSP 테마 설정', SIDE_ICON.sceneBlur, () => openExternalThemeSettingsLite('csp')),
                 startButton: makeSideButton('startButton', 'chud-start-btn', '시작 설정', SIDE_ICON.start, openStartSettingLite),
@@ -13929,7 +13943,7 @@
             buttons.profileButton.dataset.sideKey = 'nativeProfileButton';
             buttons.profileBoxButton.dataset.cpmExternalProfileLauncher = 'true';
             DASH_SIDE.btns = buttons;
-            content.append(buttons.modelButton, buttons.themeButton, buttons.episodeModeButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.proseStyleButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
+            content.append(buttons.modelButton, buttons.themeButton, buttons.episodeModeButton, buttons.guideButton, buttons.profileButton, buttons.profileBoxButton, buttons.noteButton, buttons.proseStyleButton, buttons.outputButton, buttons.summaryButton, buttons.imageButton, buttons.archiveButton, buttons.roomBackgroundButton, buttons.scenePainterButton, buttons.wishManagerButton, buttons.wongosilButton, buttons.guideManagerButton, buttons.sceneBlurButton, buttons.startButton, buttons.loreButton, buttons.translatorButton, buttons.aiSummaryButton, buttons.gameHudButton);
             bar.append(content);
         }
         if (bar.parentElement !== shell)
